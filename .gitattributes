@@ -1,0 +1,14 @@
+# Normalize text to LF in the repository regardless of contributor settings.
+* text=auto eol=lf
+
+# Shell scripts and agent-consumed configuration must be LF in the working tree.
+# CRLF makes Bash fail with "syntax error near unexpected token" on Linux and
+# macOS, which would break installation and CI.
+*.sh text eol=lf
+*.rules text eol=lf
+*.toml text eol=lf
+*.md text eol=lf
+*.mjs text eol=lf
+
+# PowerShell tolerates either ending; CRLF matches Windows editors.
+*.ps1 text eol=crlf
