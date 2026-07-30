@@ -237,8 +237,6 @@ dependency review for pull requests.
 - `PLAN.md`: the approach behind the change currently in flight, replaced when
   the next non-trivial change begins
 - `.agents/skills/`: reusable skills installed into both agents
-- `skills-optional/`: skills kept but not installed, each tied to one product or
-  kind of project
 - `codex-plugins.txt`: opt-in Codex plugin selections
 - `ai-home/AGENTS.md`: shared global instructions for both agents
 - `ai-home/codex/`: Codex configuration, profiles, and command rules

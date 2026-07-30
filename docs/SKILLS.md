@@ -69,8 +69,8 @@ used often enough to justify an always-loaded description, and specific enough
 that its trigger will not misfire.
 
 A skill tied to one product, one environment, or one kind of project does not
-meet that bar. It stays in the repository as an optional skill, or moves into the
-project that uses it.
+meet that bar. Keep it with the repositories that use it, as a project-local
+skill, rather than installing it on every machine.
 
 ## Repository skills
 
@@ -90,19 +90,6 @@ Installed into both agents by the installer.
 - `web-development`
 - `windows-sysadmin`
 
-## Optional skills
-
-Kept in `skills-optional/` and never installed. Each is tied to one product or
-one kind of project, so it belongs with the repositories that use it rather than
-on every machine.
-
-- `forgejo-maintainer`
-- `hugo`
-- `mdbook`
-
-To use one, either copy it into that project's `.agents/skills/`, or move it
-into `.agents/skills/` here and rerun the installer to make it global. Optional
-skills are still validated, so they do not rot while unused.
-
 Run `./scripts/validate.sh` after adding, moving, or changing a skill.
-Validation fails when either list and its directory drift apart.
+Validation fails when this list and the skill directories drift apart, and
+removing a skill also requires rerunning the installer so its links are pruned.

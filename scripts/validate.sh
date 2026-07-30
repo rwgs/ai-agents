@@ -99,8 +99,6 @@ if [[ -d "$repo_root/.codex/skills" ]]; then
   fail "legacy .codex/skills directory still exists"
 fi
 
-# Optional skills are validated like installed ones so they do not rot while
-# unused, but they are listed under a different heading and never installed.
 validate_skill_tree() {
   local tree="$1"
   local skill_dir skill_file skill_basename first_line skill_name
@@ -136,27 +134,15 @@ documented_under() {
 }
 
 installed_skills="$(validate_skill_tree .agents/skills | sort)"
-optional_skills="$(validate_skill_tree skills-optional | sort)"
 
 # Counted here rather than inside the function, because command substitution
 # runs it in a subshell where an incremented counter would be discarded.
-skill_count="$((
-  $(printf '%s\n' "$installed_skills" | grep -c .) +
-  $(printf '%s\n' "$optional_skills" | grep -c .)
-))"
+skill_count="$(printf '%s\n' "$installed_skills" | grep -c .)"
 
 [[ -n "$installed_skills" ]] || fail "no skills found under .agents/skills"
 
 [[ "$(documented_under 'Repository skills')" == "$installed_skills" ]] ||
   fail "docs/SKILLS.md does not match .agents/skills"
-[[ "$(documented_under 'Optional skills')" == "$optional_skills" ]] ||
-  fail "docs/SKILLS.md does not match skills-optional"
-
-# An optional skill must not also be installed, or the installer would link a
-# skill the documentation says is unavailable.
-duplicate_skills="$(comm -12 <(printf '%s\n' "$installed_skills") <(printf '%s\n' "$optional_skills"))"
-[[ -z "$duplicate_skills" ]] ||
-  fail "skills present in both .agents/skills and skills-optional: $duplicate_skills"
 
 for forbidden in auth.json history.jsonl installation_id state_5.sqlite goals_1.sqlite memories_1.sqlite; do
   [[ ! -e "$repo_root/$forbidden" ]] || fail "runtime file must not be tracked: $forbidden"

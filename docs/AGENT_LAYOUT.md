@@ -88,9 +88,6 @@ This repository manages only:
 | `.agents/skills/<name>/` | `~/.agents/skills/<name>/` | symbolic link |
 | `.agents/skills/<name>/` | `~/.claude/skills/<name>/` | symbolic link |
 
-`skills-optional/` is never installed. Move a skill into `.agents/skills/` and
-rerun the installer to make it global.
-
 Each run also prunes stale skill links: an entry in either skills directory that
 is a link into this repository's `.agents/skills/` whose source no longer exists
 is removed, so deleting a skill or making it optional does not leave a broken

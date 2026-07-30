@@ -29,8 +29,8 @@
 - [x] Make skill descriptions agent-neutral and separate the host and fleet
   sysadmin triggers.
 - [x] Add the `adopt-baseline` skill for standardising existing repositories.
-- [x] Add the `web-development` skill and move product-specific skills to
-  `skills-optional/`.
+- [x] Add the `web-development` skill and drop product-specific skills from the
+  default set.
 - [x] Prune stale managed skill links on every install.
 - [ ] Run repository, shell, installer, and skill validation locally.
 - [ ] Confirm the Windows installer integration test passes in CI.
