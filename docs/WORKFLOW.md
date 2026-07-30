@@ -5,16 +5,19 @@
 | File | Purpose |
 | --- | --- |
 | `AGENTS.md` | Durable instructions the coding agent loads automatically |
+| `CLAUDE.md` | One-line `@AGENTS.md` import, because Claude Code ignores `AGENTS.md` |
 | `SPEC.md` | Product and technical requirements and acceptance criteria |
 | `ROADMAP.md` | Ordered outcomes, dependencies, risks, and exit criteria |
 | `TASKS.md` | Current actionable work and validated status |
+| `PLAN.md` | How the change in flight is being implemented, and why |
 | `.agents/skills/` | Reusable workflows Codex can invoke |
 | `docs/` | Reference material loaded only when requested or linked |
 
 ## Complete lifecycle
 
 1. Install this repository's global instructions, configuration, rules, and
-   reusable skills.
+   reusable skills. Use `$adopt-baseline` once per repository to standardise an
+   existing project on these conventions.
 2. Inspect the real repository, branch, worktree, architecture, runtime paths,
    and existing validation.
 3. Put durable project conventions and boundaries in `AGENTS.md`.
@@ -23,7 +26,7 @@
 5. Order outcomes, risks, exit criteria, and validation in `ROADMAP.md`.
 6. Break the current phase into reviewable work in `TASKS.md`.
 7. Use `$ai-project-manager` to produce a requirement-linked plan with automated
-   and manual validation.
+   and manual validation, and record the chosen approach in `PLAN.md`.
 8. Stop for plan approval when the user reserved that checkpoint.
 9. Implement one approved phase, run focused checks, and inspect the diff.
 10. Run the complete local gate and update task status only after it passes.

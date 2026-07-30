@@ -2,7 +2,7 @@
 
 ## Scope
 
-This repository is the source of truth for Titus's portable Codex
+This repository is the source of truth for portable Claude and Codex
 configuration, reusable skills, and durable coding-agent instructions. The root
 `AGENTS.md` is the project maintenance file and follows the AGENTS.md convention
 for tools that load it automatically.
@@ -42,7 +42,8 @@ for tools that load it automatically.
 ## Before editing
 
 - State the plan or success criteria before editing. For non-trivial work,
-  include the verification you expect to run.
+  include the verification you expect to run and record the approach in
+  `PLAN.md` so it survives the conversation and appears in review.
 - Read the files you will touch and the nearby callers, consumers, or docs that
   define their behavior.
 - Match existing project patterns, naming, layout, and style even if a different
@@ -56,7 +57,10 @@ for tools that load it automatically.
 - Keep credentials, tokens, sessions, history, caches, logs, and runtime
   databases out of this repository.
 - Put reusable workflows in `.agents/skills/<name>/SKILL.md`.
-- Put portable user configuration in `codex-home/`.
+- Put instructions that apply to every repository in `ai-home/AGENTS.md`; it is
+  installed as the global instructions for both agents.
+- Put agent-specific portable configuration in `ai-home/codex/` or
+  `ai-home/claude/`.
 - Put project maintenance instructions in this file.
 - Do not assume files in `docs/` are loaded automatically.
 - Use the minimum code or documentation change that solves the stated problem.
@@ -73,7 +77,10 @@ Read only the documents needed for the task:
 - `SPEC.md` for product requirements, boundaries, and acceptance criteria.
 - `ROADMAP.md` for ordered outcomes, risks, and phase exit criteria.
 - `TASKS.md` for the current phase, validation status, and remaining work.
-- `docs/CODEX_LAYOUT.md` for Codex discovery and installation boundaries.
+- `PLAN.md` for the approach behind the change currently in flight.
+- `docs/AGENT_LAYOUT.md` for Claude and Codex discovery and installation
+  boundaries.
+- `docs/RTK.md` for the full RTK command catalog.
 - `docs/SKILLS.md` when creating or changing skills.
 - `docs/WORKFLOW.md` when changing the repository development workflow.
 
