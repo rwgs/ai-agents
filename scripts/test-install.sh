@@ -2,14 +2,15 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-task_test_root="$(mktemp -d "${TMPDIR:-/tmp}/titus-ai-install-test.XXXXXX")"
+task_test_root="$(mktemp -d "${TMPDIR:-/tmp}/ai-install-test.XXXXXX")"
 test_codex_home="$task_test_root/codex home"
 test_agents_home="$task_test_root/agents home"
+test_claude_home="$task_test_root/claude home"
 test_user_home="$task_test_root/user home"
 test_github_repo="$test_user_home/github/nested/project"
 
 cleanup() {
-  if [[ -d "$task_test_root" && "$(basename "$task_test_root")" == titus-ai-install-test.* ]]; then
+  if [[ -d "$task_test_root" && "$(basename "$task_test_root")" == ai-install-test.* ]]; then
     rm -rf -- "$task_test_root"
   fi
 }
@@ -29,31 +30,87 @@ assert_link() {
     fail "unexpected link target: $target"
 }
 
+# The Claude settings assertions need a working interpreter. A non-functional
+# python3 shim can sit on PATH, so confirm the candidate actually runs.
+test_python=""
+for python_candidate in python3 python; do
+  if command -v "$python_candidate" >/dev/null 2>&1 &&
+    "$python_candidate" --version >/dev/null 2>&1; then
+    test_python="$python_candidate"
+    break
+  fi
+done
+
 mkdir -p "$test_codex_home"
+mkdir -p "$test_claude_home"
 mkdir -p "$test_github_repo/.git"
 printf 'original global instructions\n' >"$test_codex_home/AGENTS.md"
 
-HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" \
+# Seed real-looking Claude state so the merge is proven non-destructive.
+cat >"$test_claude_home/settings.json" <<'EOF'
+{
+  "model": "opus[1m]",
+  "permissions": {
+    "allow": [
+      "Bash(git add *)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  }
+}
+EOF
+
+HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" CLAUDE_CONFIG_DIR="$test_claude_home" \
   "$repo_root/scripts/install.sh" >/dev/null
 
-assert_link "$test_codex_home/AGENTS.md" "$repo_root/codex-home/AGENTS.md"
+assert_link "$test_codex_home/AGENTS.md" "$repo_root/ai-home/AGENTS.md"
 [[ -f "$test_codex_home/config.toml" && ! -L "$test_codex_home/config.toml" ]] ||
   fail "expected generated config file: $test_codex_home/config.toml"
 grep -Fqx "[projects.\"$test_user_home/github\"]" "$test_codex_home/config.toml" ||
   fail "generated config does not trust the user GitHub root"
 grep -Fqx "[projects.\"$test_github_repo\"]" "$test_codex_home/config.toml" ||
   fail "generated config does not trust a nested Git repository"
-assert_link "$test_codex_home/rules" "$repo_root/codex-home/rules"
-assert_link "$test_codex_home/ollama.config.toml" "$repo_root/codex-home/ollama.config.toml"
-assert_link "$test_codex_home/llamacpp.config.toml" "$repo_root/codex-home/llamacpp.config.toml"
+assert_link "$test_codex_home/rules" "$repo_root/ai-home/codex/rules"
+assert_link "$test_codex_home/ollama.config.toml" "$repo_root/ai-home/codex/ollama.config.toml"
+assert_link "$test_codex_home/llamacpp.config.toml" "$repo_root/ai-home/codex/llamacpp.config.toml"
 
 for skill_dir in "$repo_root"/.agents/skills/*; do
   [[ -d "$skill_dir" ]] || continue
   assert_link "$test_agents_home/skills/$(basename "$skill_dir")" "$skill_dir"
+  assert_link "$test_claude_home/skills/$(basename "$skill_dir")" "$skill_dir"
 done
 
+assert_link "$test_claude_home/CLAUDE.md" "$repo_root/ai-home/AGENTS.md"
+
+if [[ -n "$test_python" ]]; then
+  [[ -f "$test_claude_home/settings.json" ]] ||
+    fail "expected merged Claude settings: $test_claude_home/settings.json"
+
+  "$test_python" - "$test_claude_home/settings.json" <<'PYTHON' || fail "Claude settings merge is not conservative"
+import json
+import pathlib
+import sys
+
+settings = json.loads(pathlib.Path(sys.argv[1]).read_text())
+permissions = settings["permissions"]
+allow = permissions["allow"]
+
+assert settings["model"] == "opus[1m]", "unrelated setting was lost"
+assert permissions["additionalDirectories"] == ["/tmp"], "additionalDirectories changed"
+assert "deny" not in permissions and "ask" not in permissions, "absent keys were invented"
+assert allow[0] == "Bash(git add *)", "existing allow entry was lost or reordered"
+assert "Bash(rtk *)" in allow, "derived Bash rule missing"
+assert "PowerShell(rtk *)" in allow, "derived PowerShell rule missing"
+assert len(allow) == len(set(allow)), "merge introduced duplicates"
+PYTHON
+
+  claude_settings_before="$task_test_root/claude-settings-before.json"
+  cp "$test_claude_home/settings.json" "$claude_settings_before"
+fi
+
 shopt -s nullglob
-instruction_backups=("$test_codex_home"/backups/titus-ai-*/AGENTS.md)
+instruction_backups=("$test_codex_home"/backups/ai-*/AGENTS.md)
 shopt -u nullglob
 [[ ${#instruction_backups[@]} -eq 1 ]] ||
   fail "expected one AGENTS.md backup, found ${#instruction_backups[@]}"
@@ -62,26 +119,31 @@ shopt -u nullglob
 
 link_fixture_dir="$task_test_root/link fixtures"
 mkdir -p "$link_fixture_dir"
-ln -s "$repo_root/codex-home/AGENTS.md" "$link_fixture_dir/managed instructions"
+ln -s "$repo_root/ai-home/AGENTS.md" "$link_fixture_dir/managed instructions"
 rm -- "$test_codex_home/AGENTS.md"
 ln -s "../link fixtures/managed instructions" "$test_codex_home/AGENTS.md"
 raw_instruction_target="$(readlink "$test_codex_home/AGENTS.md")"
 
-HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" \
+HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" CLAUDE_CONFIG_DIR="$test_claude_home" \
   "$repo_root/scripts/install.sh" >/dev/null
 [[ "$(readlink "$test_codex_home/AGENTS.md")" == "$raw_instruction_target" ]] ||
   fail "idempotent install replaced an equivalent relative link"
 
 shopt -s nullglob
-instruction_backups=("$test_codex_home"/backups/titus-ai-*/AGENTS.md)
+instruction_backups=("$test_codex_home"/backups/ai-*/AGENTS.md)
 shopt -u nullglob
 [[ ${#instruction_backups[@]} -eq 1 ]] ||
   fail "idempotent install created another AGENTS.md backup"
 
+if [[ -n "$test_python" ]]; then
+  cmp -s "$claude_settings_before" "$test_claude_home/settings.json" ||
+    fail "idempotent install changed the merged Claude settings"
+fi
+
 rm -- "$test_codex_home/rules"
-ln -s "$repo_root/codex-home/rules/." "$test_codex_home/rules"
+ln -s "$repo_root/ai-home/codex/rules/." "$test_codex_home/rules"
 raw_rules_target="$(readlink "$test_codex_home/rules")"
-HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" \
+HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" CLAUDE_CONFIG_DIR="$test_claude_home" \
   "$repo_root/scripts/install.sh" >/dev/null
 [[ "$(readlink "$test_codex_home/rules")" == "$raw_rules_target" ]] ||
   fail "idempotent install replaced an equivalent normalized link"
@@ -94,11 +156,11 @@ rm -- "$test_codex_home/ollama.config.toml"
 ln -s "../cycle fixtures/cycle-a" "$test_codex_home/ollama.config.toml"
 cycle_error_log="$task_test_root/cycle-error.log"
 
-HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" \
+HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" CLAUDE_CONFIG_DIR="$test_claude_home" \
   "$repo_root/scripts/install.sh" >/dev/null 2>"$cycle_error_log"
 grep -q '^error: too many symbolic-link hops:' "$cycle_error_log" ||
   fail "cyclic link did not report a bounded-resolution error"
-assert_link "$test_codex_home/ollama.config.toml" "$repo_root/codex-home/ollama.config.toml"
+assert_link "$test_codex_home/ollama.config.toml" "$repo_root/ai-home/codex/ollama.config.toml"
 
 fake_bin="$task_test_root/fake bin"
 plugin_log="$task_test_root/plugin-calls.log"
@@ -111,8 +173,9 @@ chmod +x "$fake_bin/codex"
 
 plugin_codex_home="$task_test_root/plugin codex"
 plugin_agents_home="$task_test_root/plugin agents"
+plugin_claude_home="$task_test_root/plugin claude"
 HOME="$test_user_home" PATH="$fake_bin:$PATH" CODEX_PLUGIN_TEST_LOG="$plugin_log" \
-  CODEX_HOME="$plugin_codex_home" AGENTS_HOME="$plugin_agents_home" \
+  CODEX_HOME="$plugin_codex_home" AGENTS_HOME="$plugin_agents_home" CLAUDE_CONFIG_DIR="$plugin_claude_home" \
   "$repo_root/scripts/install.sh" --plugins >/dev/null
 
 expected_plugin_calls="$(sed 's/^/plugin add /' "$repo_root/codex-plugins.txt")"
@@ -122,24 +185,28 @@ actual_plugin_calls="$(sed -n '1,$p' "$plugin_log")"
 
 dry_run_codex_home="$task_test_root/dry run codex"
 dry_run_agents_home="$task_test_root/dry run agents"
+dry_run_claude_home="$task_test_root/dry run claude"
 dry_run_plugin_log="$task_test_root/dry-run-plugin-calls.log"
 HOME="$test_user_home" PATH="$fake_bin:$PATH" CODEX_PLUGIN_TEST_LOG="$dry_run_plugin_log" \
-  CODEX_HOME="$dry_run_codex_home" AGENTS_HOME="$dry_run_agents_home" \
+  CODEX_HOME="$dry_run_codex_home" AGENTS_HOME="$dry_run_agents_home" CLAUDE_CONFIG_DIR="$dry_run_claude_home" \
   "$repo_root/scripts/install.sh" --dry-run --plugins >/dev/null
 [[ ! -e "$dry_run_codex_home" && ! -L "$dry_run_codex_home" ]] ||
   fail "dry-run created CODEX_HOME"
 [[ ! -e "$dry_run_agents_home" && ! -L "$dry_run_agents_home" ]] ||
   fail "dry-run created AGENTS_HOME"
+[[ ! -e "$dry_run_claude_home" && ! -L "$dry_run_claude_home" ]] ||
+  fail "dry-run created CLAUDE_CONFIG_DIR"
 [[ ! -e "$dry_run_plugin_log" ]] || fail "dry-run invoked Codex plugin installation"
 
 control_user_home="$task_test_root/control user home"
 control_repo="$control_user_home/github/bad"$'\n'"project"
 control_codex_home="$task_test_root/control codex"
 control_agents_home="$task_test_root/control agents"
+control_claude_home="$task_test_root/control claude"
 control_error_log="$task_test_root/control-error.log"
 mkdir -p "$control_repo/.git"
 
-if HOME="$control_user_home" CODEX_HOME="$control_codex_home" AGENTS_HOME="$control_agents_home" \
+if HOME="$control_user_home" CODEX_HOME="$control_codex_home" AGENTS_HOME="$control_agents_home" CLAUDE_CONFIG_DIR="$control_claude_home" \
   "$repo_root/scripts/install.sh" --dry-run >/dev/null 2>"$control_error_log"; then
   fail "installer accepted a project path containing a control character"
 fi

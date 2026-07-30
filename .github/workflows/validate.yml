@@ -46,6 +46,30 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-StrictMode -Version Latest
+          $ErrorActionPreference = 'Stop'
+          if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) {
+            Set-PSRepository PSGallery -InstallationPolicy Trusted
+            Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+          }
+          # The installers expose -DryRun, which README documents, so they do not
+          # also implement the -WhatIf that ShouldProcess would require.
+          $findings = @(
+            Invoke-ScriptAnalyzer -Path scripts -Severity Warning, Error `
+              -ExcludeRule PSUseShouldProcessForStateChangingFunctions
+          )
+          if ($findings.Count) {
+            $findings |
+              Format-Table RuleName, ScriptName, Line, Message -AutoSize |
+              Out-String -Width 200 |
+              Write-Output
+            throw "PSScriptAnalyzer reported $($findings.Count) finding(s)."
+          }
+          Write-Output 'PSScriptAnalyzer: no findings'
+
       - name: Test PowerShell installer
         shell: pwsh
         run: ./scripts/test-install.ps1

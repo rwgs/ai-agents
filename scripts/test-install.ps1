@@ -5,13 +5,15 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$taskTestRoot = Join-Path ([System.IO.Path]::GetTempPath()) "titus-ai-install-test-$([guid]::NewGuid())"
+$taskTestRoot = Join-Path ([System.IO.Path]::GetTempPath()) "ai-install-test-$([guid]::NewGuid())"
 $testCodexHome = Join-Path $taskTestRoot 'codex home'
 $testAgentsHome = Join-Path $taskTestRoot 'agents home'
+$testClaudeHome = Join-Path $taskTestRoot 'claude home'
 $testUserHome = Join-Path $taskTestRoot 'user home'
 $testGitHubRepo = Join-Path (Join-Path (Join-Path $testUserHome 'github') 'nested') 'project'
 $previousCodexHome = [Environment]::GetEnvironmentVariable('CODEX_HOME', 'Process')
 $previousAgentsHome = [Environment]::GetEnvironmentVariable('AGENTS_HOME', 'Process')
+$previousClaudeHome = [Environment]::GetEnvironmentVariable('CLAUDE_CONFIG_DIR', 'Process')
 $previousPluginTestLog = [Environment]::GetEnvironmentVariable('CODEX_PLUGIN_TEST_LOG', 'Process')
 $previousUserProfile = [Environment]::GetEnvironmentVariable('USERPROFILE', 'Process')
 
@@ -53,15 +55,32 @@ function Assert-Link {
 
 try {
     New-Item -ItemType Directory -Path $testCodexHome -Force | Out-Null
+    New-Item -ItemType Directory -Path $testClaudeHome -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $testGitHubRepo '.git') -Force | Out-Null
     Set-Content -LiteralPath (Join-Path $testCodexHome 'AGENTS.md') -Value 'original global instructions'
+
+    # Seed real-looking Claude state so the merge is proven non-destructive.
+    Set-Content -LiteralPath (Join-Path $testClaudeHome 'settings.json') -Value @'
+{
+  "model": "opus[1m]",
+  "permissions": {
+    "allow": [
+      "Bash(git add *)"
+    ],
+    "additionalDirectories": [
+      "/tmp"
+    ]
+  }
+}
+'@
 
     $env:USERPROFILE = $testUserHome
     $env:CODEX_HOME = $testCodexHome
     $env:AGENTS_HOME = $testAgentsHome
+    $env:CLAUDE_CONFIG_DIR = $testClaudeHome
     & (Join-Path $repoRoot 'scripts/install.ps1') | Out-Null
 
-    Assert-Link (Join-Path $testCodexHome 'AGENTS.md') (Join-Path $repoRoot 'codex-home/AGENTS.md')
+    Assert-Link (Join-Path $testCodexHome 'AGENTS.md') (Join-Path $repoRoot 'ai-home/AGENTS.md')
     $installedConfigPath = Join-Path $testCodexHome 'config.toml'
     $installedConfig = Get-Item -LiteralPath $installedConfigPath -Force
     Assert-Condition ($installedConfig.LinkType -ne 'SymbolicLink') "Expected generated config file: $installedConfigPath"
@@ -74,14 +93,40 @@ try {
     Assert-Condition (
         $installedConfigContent.Contains("[projects.`"$escapedGitHubRepo`"]")
     ) 'Generated config does not trust a nested Git repository'
-    Assert-Link (Join-Path $testCodexHome 'rules') (Join-Path $repoRoot 'codex-home/rules')
-    Assert-Link (Join-Path $testCodexHome 'ollama.config.toml') (Join-Path $repoRoot 'codex-home/ollama.config.toml')
-    Assert-Link (Join-Path $testCodexHome 'llamacpp.config.toml') (Join-Path $repoRoot 'codex-home/llamacpp.config.toml')
+    Assert-Link (Join-Path $testCodexHome 'rules') (Join-Path $repoRoot 'ai-home/codex/rules')
+    Assert-Link (Join-Path $testCodexHome 'ollama.config.toml') (Join-Path $repoRoot 'ai-home/codex/ollama.config.toml')
+    Assert-Link (Join-Path $testCodexHome 'llamacpp.config.toml') (Join-Path $repoRoot 'ai-home/codex/llamacpp.config.toml')
 
     Get-ChildItem -LiteralPath (Join-Path $repoRoot '.agents/skills') -Directory |
         ForEach-Object {
             Assert-Link (Join-Path (Join-Path $testAgentsHome 'skills') $_.Name) $_.FullName
+            Assert-Link (Join-Path (Join-Path $testClaudeHome 'skills') $_.Name) $_.FullName
         }
+
+    Assert-Link (Join-Path $testClaudeHome 'CLAUDE.md') (Join-Path $repoRoot 'ai-home/AGENTS.md')
+
+    $claudeSettingsPath = Join-Path $testClaudeHome 'settings.json'
+    $mergedSettings = Get-Content -LiteralPath $claudeSettingsPath -Raw |
+        ConvertFrom-Json -AsHashtable -Depth 100
+    $mergedAllow = @($mergedSettings.permissions.allow)
+    Assert-Condition ($mergedSettings.model -eq 'opus[1m]') 'Unrelated Claude setting was lost'
+    Assert-Condition (
+        $mergedSettings.permissions.additionalDirectories[0] -eq '/tmp'
+    ) 'Claude additionalDirectories changed'
+    Assert-Condition (
+        -not $mergedSettings.permissions.ContainsKey('deny') -and
+        -not $mergedSettings.permissions.ContainsKey('ask')
+    ) 'Absent Claude permission keys were invented'
+    Assert-Condition (
+        $mergedAllow[0] -eq 'Bash(git add *)'
+    ) 'Existing Claude allow entry was lost or reordered'
+    Assert-Condition (
+        $mergedAllow -contains 'Bash(rtk *)' -and $mergedAllow -contains 'PowerShell(rtk *)'
+    ) 'Derived Claude allow entries missing'
+    Assert-Condition (
+        $mergedAllow.Count -eq ($mergedAllow | Select-Object -Unique).Count
+    ) 'Claude merge introduced duplicates'
+    $claudeSettingsBefore = Get-Content -LiteralPath $claudeSettingsPath -Raw
 
     $instructionBackups = @(
         Get-ChildItem -LiteralPath (Join-Path $testCodexHome 'backups') -Filter 'AGENTS.md' -File -Recurse
@@ -91,11 +136,14 @@ try {
     Assert-Condition ($backupContent.Trim() -eq 'original global instructions') 'AGENTS.md backup content changed'
 
     & (Join-Path $repoRoot 'scripts/install.ps1') | Out-Null
-    Assert-Link (Join-Path $testCodexHome 'AGENTS.md') (Join-Path $repoRoot 'codex-home/AGENTS.md')
+    Assert-Link (Join-Path $testCodexHome 'AGENTS.md') (Join-Path $repoRoot 'ai-home/AGENTS.md')
     $instructionBackups = @(
         Get-ChildItem -LiteralPath (Join-Path $testCodexHome 'backups') -Filter 'AGENTS.md' -File -Recurse
     )
     Assert-Condition ($instructionBackups.Count -eq 1) 'Idempotent install created another AGENTS.md backup'
+    Assert-Condition (
+        (Get-Content -LiteralPath $claudeSettingsPath -Raw) -ceq $claudeSettingsBefore
+    ) 'Idempotent install changed the merged Claude settings'
 
     $pluginLog = Join-Path $taskTestRoot 'plugin-calls.log'
     $env:CODEX_PLUGIN_TEST_LOG = $pluginLog
@@ -106,6 +154,7 @@ try {
 
     $env:CODEX_HOME = Join-Path $taskTestRoot 'plugin codex'
     $env:AGENTS_HOME = Join-Path $taskTestRoot 'plugin agents'
+    $env:CLAUDE_CONFIG_DIR = Join-Path $taskTestRoot 'plugin claude'
     & (Join-Path $repoRoot 'scripts/install.ps1') -Plugins | Out-Null
 
     $expectedPluginCalls = @(
@@ -120,13 +169,16 @@ try {
 
     $dryRunCodexHome = Join-Path $taskTestRoot 'dry run codex'
     $dryRunAgentsHome = Join-Path $taskTestRoot 'dry run agents'
+    $dryRunClaudeHome = Join-Path $taskTestRoot 'dry run claude'
     $dryRunPluginLog = Join-Path $taskTestRoot 'dry-run-plugin-calls.log'
     $env:CODEX_PLUGIN_TEST_LOG = $dryRunPluginLog
     $env:CODEX_HOME = $dryRunCodexHome
     $env:AGENTS_HOME = $dryRunAgentsHome
+    $env:CLAUDE_CONFIG_DIR = $dryRunClaudeHome
     & (Join-Path $repoRoot 'scripts/install.ps1') -DryRun -Plugins | Out-Null
     Assert-Condition (-not (Test-Path -LiteralPath $dryRunCodexHome)) 'Dry-run created CODEX_HOME'
     Assert-Condition (-not (Test-Path -LiteralPath $dryRunAgentsHome)) 'Dry-run created AGENTS_HOME'
+    Assert-Condition (-not (Test-Path -LiteralPath $dryRunClaudeHome)) 'Dry-run created CLAUDE_CONFIG_DIR'
     Assert-Condition (-not (Test-Path -LiteralPath $dryRunPluginLog)) 'Dry-run invoked Codex plugin installation'
 
     Write-Output 'installer integration test passed'
@@ -144,6 +196,13 @@ finally {
     }
     else {
         $env:AGENTS_HOME = $previousAgentsHome
+    }
+
+    if ($null -eq $previousClaudeHome) {
+        Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue
+    }
+    else {
+        $env:CLAUDE_CONFIG_DIR = $previousClaudeHome
     }
 
     if ($null -eq $previousPluginTestLog) {
@@ -166,7 +225,7 @@ finally {
     $normalizedTestRoot = [System.IO.Path]::GetFullPath($taskTestRoot)
     if (
         $normalizedTestRoot.StartsWith($tempRoot, [StringComparison]::OrdinalIgnoreCase) -and
-        (Split-Path -Leaf $normalizedTestRoot).StartsWith('titus-ai-install-test-')
+        (Split-Path -Leaf $normalizedTestRoot).StartsWith('ai-install-test-')
     ) {
         Remove-Item -LiteralPath $normalizedTestRoot -Recurse -Force -ErrorAction SilentlyContinue
     }

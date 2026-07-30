@@ -1,8 +1,8 @@
-# Titus AI specification
+# AI specification
 
 ## Problem
 
-Codex installations mix portable configuration with credentials, sessions,
+Claude/Codex installations mix portable configuration with credentials, sessions,
 caches, and other machine-local state. Coding agents also need consistent
 instructions and reusable workflows without replacing project-specific
 requirements.
@@ -10,12 +10,18 @@ requirements.
 ## Users
 
 The primary user is a developer who works across Linux, macOS, and Windows and
-wants the same safe Codex baseline in multiple repositories.
+wants the same safe Claude/Codex baseline in multiple repositories.
 
 ## Required behavior
 
-- Install global Codex instructions, configuration, rules, local-model
+- Install global Claude/Codex instructions, configuration, rules, local-model
   profiles, and reusable skills from this repository.
+- Install one shared instruction file as the global instructions for both agents,
+  and one skill directory into both agents' skill locations.
+- Derive Claude Code's command permissions from the same rule file Codex uses, so
+  the allowlist has a single hand-authored source.
+- Merge managed Claude Code permissions into an existing `settings.json` without
+  discarding interactively approved permissions or unrelated settings.
 - Optionally install an explicit list of recommended Codex plugins from
   configured marketplaces.
 - Trust the current user's `~/github` directory and every Git worktree
@@ -34,10 +40,16 @@ wants the same safe Codex baseline in multiple repositories.
 
 ## Architecture
 
-- `codex-home/` contains portable files installed into `CODEX_HOME`.
-- The installer renders `config.toml` with machine-specific exact trust entries
-  while linking the other managed files.
-- `.agents/skills/` contains reusable workflows linked into `AGENTS_HOME`.
+- `ai-home/AGENTS.md` is the shared global instruction file, linked to
+  `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`.
+- `ai-home/codex/` contains portable files installed into `CODEX_HOME`.
+- `ai-home/codex/rules/default.rules` is the single source for both permission
+  systems; the installer derives Claude Code's `permissions.allow` entries from
+  it.
+- The installer renders `config.toml` with machine-specific exact trust entries,
+  merges Claude Code's `settings.json`, and links the other managed files.
+- `.agents/skills/` contains reusable workflows linked into `AGENTS_HOME` and
+  `CLAUDE_CONFIG_DIR`.
 - `scripts/install.sh` and `scripts/install.ps1` perform user-scoped
   installation.
 - `codex-plugins.txt` records plugin selectors installed only through the
@@ -63,10 +75,13 @@ wants the same safe Codex baseline in multiple repositories.
   capable of creating symbolic links.
 - Optional tools may add validation but must not make ordinary installation
   depend on unrelated developer tooling.
+- The Claude permission merge uses `python3` or `python` when present and is
+  skipped with a warning otherwise, so installation never fails for lack of a
+  JSON tool.
 
 ## Non-goals
 
-- Mirroring the complete Codex home directory.
+- Mirroring the complete Claude/Codex home directory.
 - Managing credentials, plugin caches or authentication, sessions, or caches.
 - Installing plugins without an explicit opt-in.
 - Replacing project-specific `AGENTS.md` or requirements.
@@ -84,11 +99,15 @@ wants the same safe Codex baseline in multiple repositories.
   a live marketplace.
 - Every skill has valid front matter and the documented skill inventory matches
   the actual directories.
+- Installer tests verify that a Claude permission merge preserves existing
+  settings and pre-existing allow entries, and that rerunning adds nothing.
 - Pull requests run validation and dependency review on the latest commit.
 - Workflow documentation covers planning, implementation, review, manual
   testing, and merge gates.
 
 ## Unresolved questions
 
-- Whether future installers should offer optional user-wide Claude Code
-  instructions in addition to the repository-local `CLAUDE.md` routing.
+None currently open. The previous question about user-wide Claude Code
+instructions is resolved: the installer links the shared `ai-home/AGENTS.md` to
+`~/.claude/CLAUDE.md`, and the repository-local `CLAUDE.md` is a one-line
+`@AGENTS.md` import.
