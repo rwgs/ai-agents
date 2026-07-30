@@ -1,6 +1,6 @@
-# Titus AI tasks
+# AI tasks
 
-## Current phase: Workflow alignment
+## Completed phase: Workflow alignment
 
 - [x] Add project planning documents and reusable planning templates.
 - [x] Add a focused pull-request readiness skill.
@@ -13,6 +13,25 @@
 - [x] Confirm Windows installer integration, including plugin installation and
   recursive GitHub trust generation, passes in CI.
 - [x] Inspect the final diff and stage only workflow-alignment changes.
+
+## Current phase: Claude and Codex parity
+
+- [x] Rename `codex-home/` to `ai-home/` and split shared and per-agent files.
+- [x] Link the shared instruction file to both agents' global instruction paths.
+- [x] Link every skill into `~/.claude/skills/` as well as `~/.agents/skills/`.
+- [x] Derive Claude permissions from `default.rules` and merge them safely.
+- [x] Reduce `CLAUDE.md` to `@AGENTS.md` and move the RTK catalog to `docs/RTK.md`.
+- [x] Update the specification, roadmap, layout, and skill documentation.
+- [x] Rename PowerShell functions to approved verbs and singular nouns, and add
+  PSScriptAnalyzer to local validation and CI.
+- [x] Add a `PLAN.md` convention, template, and documentation routing.
+- [x] Add the `powershell-scripting` and `windows-sysadmin` skills.
+- [x] Make skill descriptions agent-neutral and separate the host and fleet
+  sysadmin triggers.
+- [x] Add the `adopt-baseline` skill for standardising existing repositories.
+- [ ] Run repository, shell, installer, and skill validation locally.
+- [ ] Confirm the Windows installer integration test passes in CI.
+- [ ] Inspect the final diff and stage only parity changes.
 
 ## Next phase: Enforced repository governance
 
