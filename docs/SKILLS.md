@@ -76,7 +76,6 @@ clear `name` and `description`.
 - `powershell-scripting`
 - `pr-readiness`
 - `python-ai`
-- `quickshell`
 - `rust-cli`
 - `show-codex-reset-expiries`
 - `windows-sysadmin`
