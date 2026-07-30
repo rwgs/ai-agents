@@ -1,9 +1,14 @@
 ---
 name: linux-sysadmin
-description: Diagnose and operate Linux systems, especially Rocky Linux and Ubuntu, including SSH, SELinux, permissions, firewalls, packages, processes, logs, and systemd services. Use when Codex is asked to troubleshoot hosts, prepare commands, write runbooks, fix service failures, or reason about Linux administration.
+description: Diagnose and operate the operating system of a single Linux host, especially Ubuntu, including SSH, SELinux, permissions, firewalls, packages, processes, logs, and systemd services. Use when troubleshooting one machine, fixing a service failure, preparing host commands, or writing a host runbook. For work spanning several machines, storage appliances, DNS, or reverse proxies, use infrastructure instead.
 ---
 
 # linux-sysadmin
+
+## Scope
+
+One host's operating system. Reach for `infrastructure` when the change or
+outage crosses machines, and for `windows-sysadmin` on Windows hosts.
 
 ## Workflow
 

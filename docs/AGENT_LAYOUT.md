@@ -38,6 +38,13 @@ execpolicy entries in the `prefix_rule(...)` DSL, while `~/.claude/rules/` holds
 Markdown instruction fragments. The names collide but the contents are unrelated,
 so these directories are never shared or cross-linked.
 
+**Claude Code writes personal state into the repository; Codex does not.**
+Claude Code creates `.claude/settings.local.json` as soon as a permission is
+approved for a project, and it records absolute paths. It must be ignored by
+Git. Codex keeps project trust in the machine-wide `config.toml`, so nothing
+personal lands in `.codex/`. Neither directory should be created up front; add a
+file only when a project needs something the machine-wide baseline lacks.
+
 **Permissions have no shared runtime format.** Codex reads its own DSL; Claude
 Code reads `permissions.allow` strings inside `settings.json`. There is no file
 both can parse, so `ai-home/codex/rules/default.rules` is the single
