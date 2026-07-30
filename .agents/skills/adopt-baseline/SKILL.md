@@ -35,13 +35,15 @@ Report the inventory before editing.
 ## 2. Reconcile instruction files
 
 Claude Code reads `CLAUDE.md` and never `AGENTS.md`, so the convention is a
-repository `AGENTS.md` plus a `CLAUDE.md` containing only `@AGENTS.md`.
+repository `AGENTS.md` plus a `CLAUDE.md` whose only instruction content is an
+`@AGENTS.md` import on a line of its own. A short note explaining the file is
+fine; instructions are not.
 
 Handle the case that applies:
 
 - **Neither exists.** Create `AGENTS.md` from the template and write `CLAUDE.md`
-  containing the single line `@AGENTS.md`.
-- **`AGENTS.md` only.** Add the one-line `CLAUDE.md`. Nothing else changes.
+  containing an `@AGENTS.md` import on a line of its own.
+- **`AGENTS.md` only.** Add the importing `CLAUDE.md`. Nothing else changes.
 - **`CLAUDE.md` only, with content.** Move its content into `AGENTS.md` first,
   then replace `CLAUDE.md` with the import. Never reduce a `CLAUDE.md` to the
   import before its content is preserved somewhere.
@@ -145,7 +147,8 @@ Two asymmetries matter:
 ## Validation
 
 - `AGENTS.md` contains every instruction that previously lived in `CLAUDE.md`.
-- `CLAUDE.md` contains only `@AGENTS.md`.
+- `CLAUDE.md` imports `AGENTS.md` on a line of its own and carries no
+  instructions of its own.
 - Every adopted planning document describes this repository, with no leftover
   placeholder text.
 - Project-local skills resolve under both `.agents/skills/` and

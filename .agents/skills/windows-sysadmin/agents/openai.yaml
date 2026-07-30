@@ -1,0 +1,4 @@
+interface:
+  display_name: "Windows Sysadmin"
+  short_description: "Diagnose Windows services and hosts"
+  default_prompt: "Use $windows-sysadmin to troubleshoot a Windows service, registry, firewall, or Event Log issue."

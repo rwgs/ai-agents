@@ -71,11 +71,17 @@ if [[ -n "$python_tool" ]]; then
     fail "ai-home/codex/config.toml must enable features.memories"
 fi
 
-# The repository-local CLAUDE.md must stay a bridge to AGENTS.md, because Claude
-# Code does not read AGENTS.md and a divergent copy would drift.
-if [[ "$(tr -d '[:space:]' <"$repo_root/CLAUDE.md")" != "@AGENTS.md" ]]; then
-  fail "CLAUDE.md must contain only the @AGENTS.md import"
-fi
+# The repository-local CLAUDE.md must bridge to AGENTS.md, because Claude Code
+# does not read AGENTS.md and a divergent copy would drift. Surrounding prose is
+# fine; the import must be on a line of its own for Claude Code to resolve it.
+grep -qE '^[[:space:]]*@AGENTS\.md[[:space:]]*$' "$repo_root/CLAUDE.md" ||
+  fail "CLAUDE.md must import AGENTS.md with a line containing only @AGENTS.md"
+
+# Instructions belong in AGENTS.md so both agents get them. A CLAUDE.md that has
+# grown past a short explanation is drifting back into a second source of truth.
+claude_md_lines="$(grep -cv '^[[:space:]]*$' "$repo_root/CLAUDE.md")"
+[[ "$claude_md_lines" -le 15 ]] ||
+  fail "CLAUDE.md has $claude_md_lines lines; put instructions in AGENTS.md instead"
 
 derived_rules="$(
   sed -n 's/^prefix_rule(pattern=\["\([^"]*\)"\], decision="allow")$/\1/p' \
@@ -93,42 +99,64 @@ if [[ -d "$repo_root/.codex/skills" ]]; then
   fail "legacy .codex/skills directory still exists"
 fi
 
-skill_count=0
-actual_skills=""
-for skill_dir in "$repo_root"/.agents/skills/*; do
-  [[ -d "$skill_dir" ]] || continue
-  skill_count=$((skill_count + 1))
-  skill_file="$skill_dir/SKILL.md"
-  skill_basename="$(basename "$skill_dir")"
+# Optional skills are validated like installed ones so they do not rot while
+# unused, but they are listed under a different heading and never installed.
+validate_skill_tree() {
+  local tree="$1"
+  local skill_dir skill_file skill_basename first_line skill_name
 
-  if [[ ! -f "$skill_file" ]]; then
-    fail "missing ${skill_file#"$repo_root"/}"
-    continue
-  fi
+  for skill_dir in "$repo_root/$tree"/*; do
+    [[ -d "$skill_dir" ]] || continue
+    skill_file="$skill_dir/SKILL.md"
+    skill_basename="$(basename "$skill_dir")"
 
-  first_line="$(sed -n '1p' "$skill_file")"
-  [[ "$first_line" == "---" ]] || fail "${skill_file#"$repo_root"/} has no YAML front matter"
-  grep -q '^name: .\+' "$skill_file" || fail "${skill_file#"$repo_root"/} has no name"
-  grep -q '^description: .\+' "$skill_file" || fail "${skill_file#"$repo_root"/} has no description"
-  skill_name="$(sed -n 's/^name: //p' "$skill_file" | sed -n '1p')"
-  [[ "$skill_name" == "$skill_basename" ]] ||
-    fail "${skill_file#"$repo_root"/} name does not match its directory"
-  ! grep -q '\[TODO:' "$skill_file" || fail "${skill_file#"$repo_root"/} contains TODO placeholders"
-  actual_skills+="$skill_basename"$'\n'
-done
+    if [[ ! -f "$skill_file" ]]; then
+      fail "missing ${skill_file#"$repo_root"/}"
+      continue
+    fi
 
-[[ $skill_count -gt 0 ]] || fail "no skills found under .agents/skills"
+    first_line="$(sed -n '1p' "$skill_file")"
+    [[ "$first_line" == "---" ]] || fail "${skill_file#"$repo_root"/} has no YAML front matter"
+    grep -q '^name: .\+' "$skill_file" || fail "${skill_file#"$repo_root"/} has no name"
+    grep -q '^description: .\+' "$skill_file" || fail "${skill_file#"$repo_root"/} has no description"
+    skill_name="$(sed -n 's/^name: //p' "$skill_file" | sed -n '1p')"
+    [[ "$skill_name" == "$skill_basename" ]] ||
+      fail "${skill_file#"$repo_root"/} name does not match its directory"
+    ! grep -q '\[TODO:' "$skill_file" || fail "${skill_file#"$repo_root"/} contains TODO placeholders"
+    printf '%s\n' "$skill_basename"
+  done
+}
 
-# The sed expression is intentionally literal.
-# shellcheck disable=SC2016
-documented_skills="$(
-  sed -n '/^## Repository skills$/,/^## /p' "$repo_root/docs/SKILLS.md" |
+documented_under() {
+  # The sed expression is intentionally literal.
+  # shellcheck disable=SC2016
+  sed -n "/^## $1\$/,/^## /p" "$repo_root/docs/SKILLS.md" |
     sed -n 's/^- `\([^`]*\)`$/\1/p' |
     sort
-)"
-actual_skills="$(printf '%s' "$actual_skills" | sort)"
-[[ "$documented_skills" == "$actual_skills" ]] ||
+}
+
+installed_skills="$(validate_skill_tree .agents/skills | sort)"
+optional_skills="$(validate_skill_tree skills-optional | sort)"
+
+# Counted here rather than inside the function, because command substitution
+# runs it in a subshell where an incremented counter would be discarded.
+skill_count="$((
+  $(printf '%s\n' "$installed_skills" | grep -c .) +
+  $(printf '%s\n' "$optional_skills" | grep -c .)
+))"
+
+[[ -n "$installed_skills" ]] || fail "no skills found under .agents/skills"
+
+[[ "$(documented_under 'Repository skills')" == "$installed_skills" ]] ||
   fail "docs/SKILLS.md does not match .agents/skills"
+[[ "$(documented_under 'Optional skills')" == "$optional_skills" ]] ||
+  fail "docs/SKILLS.md does not match skills-optional"
+
+# An optional skill must not also be installed, or the installer would link a
+# skill the documentation says is unavailable.
+duplicate_skills="$(comm -12 <(printf '%s\n' "$installed_skills") <(printf '%s\n' "$optional_skills"))"
+[[ -z "$duplicate_skills" ]] ||
+  fail "skills present in both .agents/skills and skills-optional: $duplicate_skills"
 
 for forbidden in auth.json history.jsonl installation_id state_5.sqlite goals_1.sqlite memories_1.sqlite; do
   [[ ! -e "$repo_root/$forbidden" ]] || fail "runtime file must not be tracked: $forbidden"

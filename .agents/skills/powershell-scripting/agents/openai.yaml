@@ -1,0 +1,4 @@
+interface:
+  display_name: "PowerShell Scripting"
+  short_description: "Write and debug safe PowerShell scripts"
+  default_prompt: "Use $powershell-scripting to create, review, or debug a PowerShell script."

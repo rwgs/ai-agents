@@ -62,23 +62,47 @@ clear `name` and `description`.
 - Keep project requirements in project documentation, not reusable skills.
 - Use `agents/openai.yaml` only for useful UI metadata or dependencies.
 
+## Which skills belong in the default set
+
+A skill is installed on every machine when it is reusable across repositories,
+used often enough to justify an always-loaded description, and specific enough
+that its trigger will not misfire.
+
+A skill tied to one product, one environment, or one kind of project does not
+meet that bar. It stays in the repository as an optional skill, or moves into the
+project that uses it.
+
 ## Repository skills
+
+Installed into both agents by the installer.
 
 - `adopt-baseline`
 - `ai-project-manager`
 - `bash-scripting`
-- `forgejo-maintainer`
-- `hugo`
 - `infrastructure`
 - `linux-sysadmin`
-- `mdbook`
 - `podman-operator`
 - `powershell-scripting`
 - `pr-readiness`
 - `python-ai`
 - `rust-cli`
 - `show-codex-reset-expiries`
+- `web-development`
 - `windows-sysadmin`
 
-Run `./scripts/validate.sh` after adding or changing a skill. Validation fails
-when this list and the skill directories drift apart.
+## Optional skills
+
+Kept in `skills-optional/` and never installed. Each is tied to one product or
+one kind of project, so it belongs with the repositories that use it rather than
+on every machine.
+
+- `forgejo-maintainer`
+- `hugo`
+- `mdbook`
+
+To use one, either copy it into that project's `.agents/skills/`, or move it
+into `.agents/skills/` here and rerun the installer to make it global. Optional
+skills are still validated, so they do not rot while unused.
+
+Run `./scripts/validate.sh` after adding, moving, or changing a skill.
+Validation fails when either list and its directory drift apart.

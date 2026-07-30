@@ -230,13 +230,15 @@ dependency review for pull requests.
 ## Repository layout
 
 - `AGENTS.md`: instructions for maintaining this repository
-- `CLAUDE.md`: a one-line `@AGENTS.md` import, because Claude Code does not read
+- `CLAUDE.md`: an `@AGENTS.md` import, because Claude Code does not read
   `AGENTS.md`
 - `SPEC.md`, `ROADMAP.md`, and `TASKS.md`: requirements, phase order, and
   validated task status
 - `PLAN.md`: the approach behind the change currently in flight, replaced when
   the next non-trivial change begins
-- `.agents/skills/`: reusable skills for both agents
+- `.agents/skills/`: reusable skills installed into both agents
+- `skills-optional/`: skills kept but not installed, each tied to one product or
+  kind of project
 - `codex-plugins.txt`: opt-in Codex plugin selections
 - `ai-home/AGENTS.md`: shared global instructions for both agents
 - `ai-home/codex/`: Codex configuration, profiles, and command rules

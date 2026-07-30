@@ -1,0 +1,4 @@
+interface:
+  display_name: "mdBook"
+  short_description: "Build and validate mdBook documentation"
+  default_prompt: "Use $mdbook to create, edit, validate, or troubleshoot an mdBook."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Adopt Baseline"
+  short_description: "Standardise a repository on the shared agent baseline"
+  default_prompt: "Use $adopt-baseline to standardise this repository on the shared instructions, planning documents, and skills."
