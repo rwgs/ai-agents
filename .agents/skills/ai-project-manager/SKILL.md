@@ -1,6 +1,6 @@
 ---
 name: ai-project-manager
-description: Turn repository planning docs into actionable AI-agent implementation plans using AGENTS.md, SPEC.md, ROADMAP.md, TASKS.md, approval checkpoints, validation, and incremental execution. Use when Codex is asked to plan a project, create or reconcile project docs, derive tasks, coordinate phases, update task status, or manage an AI-assisted development workflow.
+description: Turn repository planning docs into actionable AI-agent implementation plans using AGENTS.md, SPEC.md, ROADMAP.md, TASKS.md, approval checkpoints, validation, and incremental execution. Use when asked to plan a project, create or reconcile project docs, derive tasks, coordinate phases, update task status, or manage an AI-assisted development workflow.
 ---
 
 # ai-project-manager
@@ -15,7 +15,9 @@ description: Turn repository planning docs into actionable AI-agent implementati
 3. Determine missing requirements, unresolved decisions, dependencies, risks,
    and implementation impact.
 4. Create a phase plan that maps to acceptance criteria and defines automated
-   validation, manual validation, rollback, and pause points.
+   validation, manual validation, rollback, and pause points. Record the chosen
+   approach, rejected alternatives, and verification in `PLAN.md` so it survives
+   the conversation and appears in review.
 5. Present the plan and stop when the user requested planning only or reserved
    implementation approval.
 6. Once implementation is authorized, execute one reviewable phase at a time.
