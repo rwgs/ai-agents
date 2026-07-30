@@ -145,6 +145,39 @@ try {
         (Get-Content -LiteralPath $claudeSettingsPath -Raw) -ceq $claudeSettingsBefore
     ) 'Idempotent install changed the merged Claude settings'
 
+    # Pruning: a link into this repository whose source is gone must be removed,
+    # while anything the installer did not create must survive. The stale link is
+    # fabricated rather than made by deleting a real skill, so the test never
+    # mutates the repository it is running from.
+    $claudeSkills = Join-Path $testClaudeHome 'skills'
+    New-Item -ItemType SymbolicLink -Force `
+        -Path (Join-Path $claudeSkills 'removed-skill') `
+        -Target (Join-Path $repoRoot '.agents/skills/removed-skill') | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $claudeSkills 'handmade-skill') -Force | Out-Null
+    $foreignDir = Join-Path $taskTestRoot 'foreign skills/foreign-skill'
+    New-Item -ItemType Directory -Path $foreignDir -Force | Out-Null
+    New-Item -ItemType SymbolicLink -Force `
+        -Path (Join-Path $claudeSkills 'foreign-skill') -Target $foreignDir | Out-Null
+
+    & (Join-Path $repoRoot 'scripts/install.ps1') -DryRun | Out-Null
+    Assert-Condition (
+        $null -ne (Get-Item -LiteralPath (Join-Path $claudeSkills 'removed-skill') -Force -ErrorAction SilentlyContinue)
+    ) 'Dry-run pruned a stale skill link'
+
+    & (Join-Path $repoRoot 'scripts/install.ps1') | Out-Null
+    Assert-Condition (
+        -not (Get-Item -LiteralPath (Join-Path $claudeSkills 'removed-skill') -Force -ErrorAction SilentlyContinue)
+    ) 'Stale managed skill link was not pruned'
+    Assert-Condition (
+        Test-Path -LiteralPath (Join-Path $claudeSkills 'handmade-skill') -PathType Container
+    ) 'Pruning removed a hand-made skill directory'
+    Assert-Condition (
+        $null -ne (Get-Item -LiteralPath (Join-Path $claudeSkills 'foreign-skill') -Force -ErrorAction SilentlyContinue)
+    ) 'Pruning removed a link pointing outside the repository'
+    Assert-Condition (
+        Test-Path -LiteralPath $foreignDir -PathType Container
+    ) 'Pruning followed a link and deleted its target'
+
     $pluginLog = Join-Path $taskTestRoot 'plugin-calls.log'
     $env:CODEX_PLUGIN_TEST_LOG = $pluginLog
     function global:codex {

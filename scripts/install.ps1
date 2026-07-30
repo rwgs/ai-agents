@@ -402,6 +402,52 @@ function Install-ClaudeSettingsFile {
     Write-Output "merged managed permissions: $claudeSettings"
 }
 
+function Remove-StaleManagedSkill {
+    param(
+        [Parameter(Mandatory)]
+        [string] $SkillsDirectory
+    )
+
+    if (-not (Test-Path -LiteralPath $SkillsDirectory -PathType Container)) {
+        return
+    }
+
+    $managedRoot = Get-NormalizedPath (Join-Path $repoRoot '.agents/skills')
+    $managedPrefix = $managedRoot + [System.IO.Path]::DirectorySeparatorChar
+
+    Get-ChildItem -LiteralPath $SkillsDirectory -Force | ForEach-Object {
+        # Only ever consider links this installer could have created. A real
+        # directory, or a link pointing anywhere else, belongs to the user.
+        if ($_.LinkType -ne 'SymbolicLink' -or -not $_.Target) {
+            return
+        }
+
+        $linkTarget = [string] $_.Target
+        if (-not [System.IO.Path]::IsPathRooted($linkTarget)) {
+            $linkTarget = Join-Path (Split-Path -Parent $_.FullName) $linkTarget
+        }
+        $linkTarget = Get-NormalizedPath $linkTarget
+
+        if (-not $linkTarget.StartsWith($managedPrefix, [StringComparison]::OrdinalIgnoreCase)) {
+            return
+        }
+
+        # The source is gone, so the skill was removed or made optional.
+        if (Test-Path -LiteralPath $linkTarget) {
+            return
+        }
+
+        if ($DryRun) {
+            Write-DryRunCommand "Remove-Item -LiteralPath '$($_.FullName)' -Force"
+        }
+        else {
+            # -Recurse would follow the link and delete the source it points at.
+            [System.IO.Directory]::Delete($_.FullName)
+        }
+        Write-Output "pruned stale skill link: $($_.FullName)"
+    }
+}
+
 function Install-RecommendedPlugin {
     Get-Content -LiteralPath $pluginManifest |
         ForEach-Object {
@@ -438,6 +484,9 @@ Get-ChildItem -LiteralPath (Join-Path $repoRoot '.agents/skills') -Directory |
         Set-ManagedLink $_.FullName (Join-Path (Join-Path $agentsHome 'skills') $_.Name)
         Set-ManagedLink $_.FullName (Join-Path (Join-Path $claudeHome 'skills') $_.Name)
     }
+
+Remove-StaleManagedSkill (Join-Path $agentsHome 'skills')
+Remove-StaleManagedSkill (Join-Path $claudeHome 'skills')
 
 if ($Plugins) {
     Install-RecommendedPlugin

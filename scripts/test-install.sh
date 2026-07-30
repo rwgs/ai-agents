@@ -162,6 +162,38 @@ grep -q '^error: too many symbolic-link hops:' "$cycle_error_log" ||
   fail "cyclic link did not report a bounded-resolution error"
 assert_link "$test_codex_home/ollama.config.toml" "$repo_root/ai-home/codex/ollama.config.toml"
 
+# Pruning: a link into this repository whose source is gone must be removed,
+# while anything the installer did not create must survive. The stale link is
+# fabricated rather than made by deleting a real skill, so the test never
+# mutates the repository it is running from.
+ln -s "$repo_root/.agents/skills/removed-skill" "$test_claude_home/skills/removed-skill"
+mkdir -p "$test_claude_home/skills/handmade-skill"
+foreign_dir="$task_test_root/foreign skills/foreign-skill"
+mkdir -p "$foreign_dir"
+ln -s "$foreign_dir" "$test_claude_home/skills/foreign-skill"
+ln -s "$task_test_root/missing/foreign-orphan" "$test_claude_home/skills/foreign-orphan"
+
+HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" CLAUDE_CONFIG_DIR="$test_claude_home" \
+  "$repo_root/scripts/install.sh" --dry-run >"$task_test_root/prune-dry-run.log" 2>&1
+[[ -L "$test_claude_home/skills/removed-skill" ]] ||
+  fail "dry-run pruned a stale skill link"
+grep -q '^pruned stale skill link: ' "$task_test_root/prune-dry-run.log" ||
+  fail "dry-run did not report the prune it would perform"
+
+HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" CLAUDE_CONFIG_DIR="$test_claude_home" \
+  "$repo_root/scripts/install.sh" >/dev/null
+
+[[ ! -L "$test_claude_home/skills/removed-skill" ]] ||
+  fail "stale managed skill link was not pruned"
+[[ -d "$test_claude_home/skills/handmade-skill" ]] ||
+  fail "pruning removed a hand-made skill directory"
+[[ -L "$test_claude_home/skills/foreign-skill" ]] ||
+  fail "pruning removed a link pointing outside the repository"
+[[ -L "$test_claude_home/skills/foreign-orphan" ]] ||
+  fail "pruning removed a broken link the installer did not create"
+[[ -d "$foreign_dir" ]] ||
+  fail "pruning followed a link and deleted its target"
+
 fake_bin="$task_test_root/fake bin"
 plugin_log="$task_test_root/plugin-calls.log"
 mkdir -p "$fake_bin"

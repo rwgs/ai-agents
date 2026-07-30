@@ -337,6 +337,28 @@ install_claude_settings() {
   printf 'merged managed permissions: %s\n' "$target"
 }
 
+prune_managed_skills() {
+  local skills_dir="$1"
+  local entry link_target
+
+  [[ -d "$skills_dir" ]] || return 0
+
+  for entry in "$skills_dir"/*; do
+    # Only ever consider links this installer could have created. A real
+    # directory, or a link pointing anywhere else, belongs to the user.
+    [[ -L "$entry" ]] || continue
+
+    link_target="$(readlink "$entry")" || continue
+    [[ "$link_target" == "$repo_root/.agents/skills/"* ]] || continue
+
+    # The source is gone, so the skill was removed or made optional.
+    [[ -e "$link_target" ]] && continue
+
+    run rm -f -- "$entry"
+    printf 'pruned stale skill link: %s\n' "$entry"
+  done
+}
+
 install_recommended_plugins() {
   local plugin
 
@@ -364,6 +386,9 @@ for skill_dir in "$repo_root"/.agents/skills/*; do
   link_managed_path "$skill_dir" "$agents_home/skills/$(basename "$skill_dir")"
   link_managed_path "$skill_dir" "$claude_home/skills/$(basename "$skill_dir")"
 done
+
+prune_managed_skills "$agents_home/skills"
+prune_managed_skills "$claude_home/skills"
 
 if "$install_plugins"; then
   install_recommended_plugins

@@ -24,7 +24,7 @@ relevant document.
 
 **Claude Code does not read `AGENTS.md`.** It reads only `CLAUDE.md`. A
 repository that serves both agents keeps its instructions in `AGENTS.md` and adds
-a `CLAUDE.md` containing the single line `@AGENTS.md`, which is Anthropic's
+a `CLAUDE.md` importing it with a bare `@AGENTS.md` line, which is Anthropic's
 documented bridge. This repository does exactly that.
 
 **Claude Code cannot see `.agents/skills/`.** That path is a Codex convention and
@@ -87,6 +87,16 @@ This repository manages only:
 | `ai-home/codex/rules/default.rules` | `permissions.allow` in `~/.claude/settings.json` | derived and merged |
 | `.agents/skills/<name>/` | `~/.agents/skills/<name>/` | symbolic link |
 | `.agents/skills/<name>/` | `~/.claude/skills/<name>/` | symbolic link |
+
+`skills-optional/` is never installed. Move a skill into `.agents/skills/` and
+rerun the installer to make it global.
+
+Each run also prunes stale skill links: an entry in either skills directory that
+is a link into this repository's `.agents/skills/` whose source no longer exists
+is removed, so deleting a skill or making it optional does not leave a broken
+link behind. Real directories, and links pointing anywhere else, are never
+touched, and the prune reports what it would remove during a dry run without
+removing it.
 
 `~/.codex/config.toml` is rendered rather than linked so the installer can add
 machine-specific trust entries.
