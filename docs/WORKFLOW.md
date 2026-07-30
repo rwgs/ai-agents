@@ -5,7 +5,7 @@
 | File | Purpose |
 | --- | --- |
 | `AGENTS.md` | Durable instructions the coding agent loads automatically |
-| `CLAUDE.md` | One-line `@AGENTS.md` import, because Claude Code ignores `AGENTS.md` |
+| `CLAUDE.md` | An `@AGENTS.md` import, because Claude Code ignores `AGENTS.md` |
 | `SPEC.md` | Product and technical requirements and acceptance criteria |
 | `ROADMAP.md` | Ordered outcomes, dependencies, risks, and exit criteria |
 | `TASKS.md` | Current actionable work and validated status |

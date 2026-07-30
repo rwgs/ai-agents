@@ -31,7 +31,7 @@ agent actually reads:
 - `.agents/skills/<name>/` links into both agents' skill directories.
 - `ai-home/codex/rules/default.rules` stays the only command list; the installer
   derives `Bash(x *)` and `PowerShell(x *)` entries from it for Claude Code.
-- The repository-local `CLAUDE.md` is the single line `@AGENTS.md`.
+- The repository-local `CLAUDE.md` imports `AGENTS.md` rather than repeating it.
 
 ## Trade-offs
 

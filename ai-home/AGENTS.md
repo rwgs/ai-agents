@@ -54,7 +54,7 @@ Git passthrough covers every subcommand. Run `rtk --help` for the full catalog.
 
 - Use `AGENTS.md` for durable repository conventions. Claude Code does not read
   `AGENTS.md`, so a repository that supports both agents needs a `CLAUDE.md`
-  containing the single line `@AGENTS.md`.
+  containing an `@AGENTS.md` import on a line of its own.
 - Use `.codex/config.toml` for trusted project-specific Codex settings, and
   `.claude/settings.json` for project-specific Claude Code settings.
 - Use skills for reusable task workflows. Codex loads them from
