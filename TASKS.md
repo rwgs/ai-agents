@@ -38,8 +38,15 @@
 - [x] Narrow the default skill set to workflow, language, and project skills by
   dropping the systems administration, infrastructure, and container skills.
 - [x] Run repository, shell, installer, and skill validation locally.
-- [ ] Confirm the Windows installer integration test passes in CI.
-- [ ] Inspect the final diff and stage only parity changes.
+- [ ] Confirm the Windows installer integration test passes in CI. The first run
+  ever to execute, dispatched manually as run `30653338945`, failed on
+  `windows-latest` while `ubuntu-latest` and `macos-latest` passed. Stale-link
+  pruning called `[System.IO.Directory]::Delete` on a link Windows had recorded as
+  a file, because `New-Item -ItemType SymbolicLink` produces a file reparse point
+  when the target does not exist, which is how `scripts/test-install.ps1`
+  fabricates the stale link. `install.sh` uses `rm -f` and is unaffected. Fixed by
+  deleting through the entry itself; awaiting a CI run to confirm.
+- [x] Inspect the final diff and stage only parity changes.
 
 ## Current phase: Decision records
 
@@ -69,7 +76,14 @@
 - [x] Run repository, shell, installer, and skill validation on a platform where
   the installer integration test can create symbolic links. Git Bash on Windows
   cannot, and that failure reproduces on a clean tree. WSL passes in full.
-- [ ] Confirm validation passes in CI on Linux, macOS, and Windows.
+- [ ] Confirm validation passes in CI on Linux, macOS, and Windows. Linux and
+  macOS are confirmed by run `30653338945`; Windows waits on the pruning fix above.
+- [ ] Find out why no push has ever triggered the workflow. Actions is enabled,
+  all actions are allowed, `Validate` is registered and active with a
+  `push: branches: [main]` trigger, and commits have been pushed to `main`, yet
+  the repository had zero workflow runs and zero check runs until one was
+  dispatched by hand. Until this is explained, no push-triggered run can be
+  treated as evidence, and every CI confirmation here rests on a manual dispatch.
 
 ## Completed phase: Line endings and manifest ergonomics
 

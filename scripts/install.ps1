@@ -441,8 +441,12 @@ function Remove-StaleManagedSkill {
             Write-DryRunCommand "Remove-Item -LiteralPath '$($_.FullName)' -Force"
         }
         else {
-            # -Recurse would follow the link and delete the source it points at.
-            [System.IO.Directory]::Delete($_.FullName)
+            # Delete on the entry itself removes the link and never the source,
+            # which -Recurse would follow. It also copes with either reparse
+            # type, unlike [System.IO.Directory]::Delete: Windows records a link
+            # made while its target is missing as a file, so a stale link can be
+            # a file reparse point pointing at a directory that used to exist.
+            $_.Delete()
         }
         Write-Output "pruned stale skill link: $($_.FullName)"
     }

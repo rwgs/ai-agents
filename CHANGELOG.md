@@ -10,6 +10,11 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-07-31
 
+- Fixed stale skill-link pruning on Windows. Pruning a link whose target no
+  longer exists could fail with "The directory name is invalid", aborting the
+  installer after it had linked the current skills but before it finished
+  removing the obsolete ones. Rerun the installer on Windows if a removed skill
+  is still listed. Linux and macOS were never affected.
 - Changed the composition of the installed skill set. Rerun the installer to add
   the new links and prune the removed ones.
   - Added `python-scripting` for general Python work: environment detection, ruff,
