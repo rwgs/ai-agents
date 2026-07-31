@@ -494,10 +494,14 @@ function Install-CodexPlugin {
 
     Get-Content -LiteralPath $codexPluginManifest |
         ForEach-Object {
-            $plugin = $_.Trim()
-            if (-not $plugin) {
+            # Both manifests ignore blank lines and lines whose first non-blank
+            # character is a hash, so each file can record why its own format
+            # differs from the other's.
+            if ($_ -match '^\s*(#|$)') {
                 return
             }
+
+            $plugin = $_.Trim()
 
             # Codex ships openai-curated as a built-in marketplace, so a plugin
             # from it needs no registration step.
@@ -514,11 +518,11 @@ function Install-ClaudePlugin {
 
     Get-Content -LiteralPath $claudePluginManifest |
         ForEach-Object {
-            $fields = $_.Trim() -split '\s+', 2
-            if (-not $fields[0]) {
+            if ($_ -match '^\s*(#|$)') {
                 return
             }
 
+            $fields = $_.Trim() -split '\s+', 2
             if ($fields.Count -lt 2 -or -not $fields[1].Trim()) {
                 throw "Claude Code plugin entry has no marketplace source: $($fields[0])"
             }

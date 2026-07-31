@@ -66,26 +66,28 @@
 - [x] Move `default.rules` out of `ai-home/codex/` to `ai-home/rules/` so the
   shared permission source is not filed under one agent, and correct the
   `AGENTS.md` claim that `ai-home/claude/` exists.
-- [ ] Run repository, shell, installer, and skill validation on a platform where
+- [x] Run repository, shell, installer, and skill validation on a platform where
   the installer integration test can create symbolic links. Git Bash on Windows
-  cannot, and that failure reproduces on a clean tree.
+  cannot, and that failure reproduces on a clean tree. WSL passes in full.
 - [ ] Confirm validation passes in CI on Linux, macOS, and Windows.
 
-## Next phase: Line endings and manifest ergonomics
+## Completed phase: Line endings and manifest ergonomics
 
 - [x] Refresh this checkout so the working tree matches `.gitattributes`. It
   predated that file and carried CRLF throughout, so `scripts/validate.sh` could
   not run from WSL. Re-checking the tree out also cleared stale index stat data
   that reported thirteen byte-identical files as modified.
-- [ ] Fail validation when a tracked file other than `*.ps1` contains a carriage
+- [x] Fail validation when a tracked file other than `*.ps1` contains a carriage
   return, so line-ending drift is caught by a check instead of discovered
-  part-way through an unrelated change.
-- [ ] Allow `#` comments and blank lines in `codex-plugins.txt` and
+  part-way through an unrelated change. The pattern is built with `printf`
+  because Git Bash's Bash drops a `$'\r'` word, and an empty pattern matched
+  every tracked file instead of none.
+- [x] Allow `#` comments and blank lines in `codex-plugins.txt` and
   `claude-plugins.txt`, so each manifest can explain why a Claude Code entry
   carries a marketplace URL and a Codex entry does not. Both installers, the
-  validator, and both installer tests read these files and all four must skip
-  the new lines. This reverses part of the manifest decision recorded in
-  `DECISIONS.md`, so add a superseding entry rather than editing that one.
+  validator, and both installer tests read these files and all of them skip the
+  new lines. This reverses part of the manifest decision recorded in
+  `DECISIONS.md`, so a superseding entry was added rather than editing that one.
 
 ## Later phase: Re-appliable repository baseline
 

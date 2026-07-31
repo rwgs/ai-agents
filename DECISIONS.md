@@ -8,6 +8,41 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-07-31 Let the plugin manifests carry comments
+
+Status: Accepted. Supersedes in part "One plugin manifest per agent" below, which
+recorded that the manifests reject comment lines. The rest of that entry stands.
+
+### Decision
+
+`codex-plugins.txt` and `claude-plugins.txt` ignore blank lines and lines whose
+first non-blank character is `#`. Every reader applies that one rule: both
+installers, `scripts/validate.sh`, and both installer tests. Comments are
+whole-line only.
+
+### Why
+
+The two formats differ by one field, and the reason for the difference lived in
+`README.md` and in duplicated installer comments, so neither file could state its
+own format. Rejecting every non-entry line was justified earlier by a stray field
+caught during testing, but that argues for validating entries, not for refusing
+the only place a format can be explained where it is used.
+
+### Rejected alternatives
+
+- Trailing comments after an entry: every reader would have to strip a comment
+  before parsing, and a Claude Code entry already carries two fields, to save one
+  line in a file with one entry.
+- Explaining both formats only in `README.md`: the previous state, which put the
+  explanation three files away from what it explains and let the manifests drift
+  from it silently.
+
+### Consequences
+
+A reader added later must skip these lines or it will treat a comment as a plugin
+selector. A format change now updates the manifest it changes as well as
+`README.md`.
+
 ## 2026-07-31 Keep the shared permission source outside `ai-home/codex/`
 
 Status: Accepted.
@@ -200,7 +235,7 @@ still open; see `TASKS.md`.
 
 ## 2026-07-30 One plugin manifest per agent
 
-Status: Accepted.
+Status: Superseded in part by the comment-support entry above. The rest stands.
 
 ### Decision
 

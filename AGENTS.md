@@ -100,6 +100,9 @@ Read only the documents needed for the task:
 - Run `./scripts/test-install.sh` directly when diagnosing Linux or macOS
   installer behavior. Windows installer behavior is covered by
   `./scripts/test-install.ps1` in CI.
+- Run validation from an environment that can create symbolic links. Git Bash on
+  Windows cannot, so the installer integration test fails there on a clean tree;
+  WSL passes in full.
 
 ## Version control
 

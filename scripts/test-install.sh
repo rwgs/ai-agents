@@ -216,7 +216,11 @@ HOME="$test_user_home" PATH="$fake_bin:$PATH" CODEX_PLUGIN_TEST_LOG="$plugin_log
   CODEX_HOME="$plugin_codex_home" AGENTS_HOME="$plugin_agents_home" CLAUDE_CONFIG_DIR="$plugin_claude_home" \
   "$repo_root/scripts/install.sh" --plugins >/dev/null
 
-expected_plugin_calls="$(sed 's/^/plugin add /' "$repo_root/codex-plugins.txt")"
+# Both manifests ignore blank lines and lines whose first non-blank character is
+# a hash, so the expected calls come from the entries alone.
+expected_plugin_calls="$(
+  awk '!/^[[:space:]]*(#|$)/ { print "plugin add " $0 }' "$repo_root/codex-plugins.txt"
+)"
 actual_plugin_calls="$(sed -n '1,$p' "$plugin_log")"
 [[ "$actual_plugin_calls" == "$expected_plugin_calls" ]] ||
   fail "installer did not install the expected Codex plugins"
@@ -224,7 +228,7 @@ actual_plugin_calls="$(sed -n '1,$p' "$plugin_log")"
 # A Claude Code plugin needs its marketplace registered first, so each manifest
 # entry must produce the marketplace add before the install.
 expected_claude_calls="$(
-  awk 'NF { printf "plugin marketplace add %s\nplugin install %s\n", $2, $1 }' \
+  awk '!/^[[:space:]]*(#|$)/ { printf "plugin marketplace add %s\nplugin install %s\n", $2, $1 }' \
     "$repo_root/claude-plugins.txt"
 )"
 actual_claude_calls="$(sed -n '1,$p' "$claude_plugin_log")"

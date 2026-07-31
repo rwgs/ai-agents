@@ -197,8 +197,11 @@ try {
     $env:CLAUDE_CONFIG_DIR = Join-Path $taskTestRoot 'plugin claude'
     & (Join-Path $repoRoot 'scripts/install.ps1') -Plugins | Out-Null
 
+    # Both manifests ignore blank lines and lines whose first non-blank character
+    # is a hash, so the expected calls come from the entries alone.
     $expectedPluginCalls = @(
         Get-Content -LiteralPath (Join-Path $repoRoot 'codex-plugins.txt') |
+            Where-Object { $_ -notmatch '^\s*(#|$)' } |
             ForEach-Object { "plugin add $($_.Trim())" }
     )
     $actualPluginCalls = @(Get-Content -LiteralPath $pluginLog)
@@ -211,12 +214,11 @@ try {
     # manifest entry must produce the marketplace add before the install.
     $expectedClaudeCalls = @(
         Get-Content -LiteralPath (Join-Path $repoRoot 'claude-plugins.txt') |
+            Where-Object { $_ -notmatch '^\s*(#|$)' } |
             ForEach-Object {
                 $fields = $_.Trim() -split '\s+', 2
-                if ($fields[0]) {
-                    "plugin marketplace add $($fields[1].Trim())"
-                    "plugin install $($fields[0])"
-                }
+                "plugin marketplace add $($fields[1].Trim())"
+                "plugin install $($fields[0])"
             }
     )
     $actualClaudeCalls = @(Get-Content -LiteralPath $claudePluginLog)

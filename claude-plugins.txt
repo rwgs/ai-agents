@@ -1,1 +1,10 @@
+# Claude Code plugin selectors, one per line, as <plugin>@<marketplace> followed
+# by the marketplace git URL. Blank lines and lines whose first non-blank
+# character is a hash are ignored.
+#
+# An entry carries the marketplace source as well as the selector, because Claude
+# Code registers no marketplace until its first interactive start, so an
+# installer that runs before that has to add one. The URL is spelled out because
+# owner/repo shorthand resolves over SSH. In codex-plugins.txt the selector on
+# its own is enough.
 superpowers@claude-plugins-official https://github.com/anthropics/claude-plugins-official.git

@@ -1,1 +1,7 @@
+# Codex plugin selectors, one per line, as <plugin>@<marketplace>. Blank lines
+# and lines whose first non-blank character is a hash are ignored.
+#
+# An entry is the selector on its own, because Codex resolves it against its
+# built-in marketplaces and openai-curated is one of them. Every entry in
+# claude-plugins.txt also carries a marketplace URL.
 superpowers@openai-curated

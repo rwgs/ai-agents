@@ -113,6 +113,9 @@ The source is written as a full HTTPS URL because `owner/repo` shorthand
 resolves over SSH. Every command involved is idempotent, so rerunning the
 installer re-clones and reinstalls nothing.
 
+Both manifests ignore blank lines and lines whose first non-blank character is
+`#`, so each file records its own format.
+
 Only the agents actually present are touched. A missing `codex` or `claude`
 command skips that agent's plugins with a warning rather than failing the run,
 so a machine with one agent installed still gets a complete installation.

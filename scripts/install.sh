@@ -370,13 +370,19 @@ agent_is_available() {
   return 1
 }
 
+# Both manifests ignore blank lines and lines whose first non-blank character is
+# a hash, so each file can record why its own format differs from the other's.
+is_manifest_entry() {
+  [[ ! "$1" =~ ^[[:space:]]*(#|$) ]]
+}
+
 install_codex_plugins() {
   local plugin
 
   agent_is_available codex || return 0
 
   while IFS= read -r plugin || [[ -n "$plugin" ]]; do
-    [[ -n "$plugin" ]] || continue
+    is_manifest_entry "$plugin" || continue
     # Codex ships openai-curated as a built-in marketplace, so a plugin from it
     # needs no registration step.
     run codex plugin add "$plugin"
@@ -384,12 +390,13 @@ install_codex_plugins() {
 }
 
 install_claude_plugins() {
-  local selector source
+  local line selector source
 
   agent_is_available claude || return 0
 
-  while read -r selector source || [[ -n "$selector" ]]; do
-    [[ -n "$selector" ]] || continue
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    is_manifest_entry "$line" || continue
+    read -r selector source <<<"$line"
 
     if [[ -z "$source" ]]; then
       printf 'error: Claude Code plugin entry has no marketplace source: %s\n' \

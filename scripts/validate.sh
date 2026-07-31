@@ -55,6 +55,13 @@ done
 
 selector='[a-z0-9][a-z0-9-]*@[a-z0-9][a-z0-9-]*'
 
+# Both manifests ignore blank lines and lines whose first non-blank character is
+# a hash, so each file can record its own format. The installers and both
+# installer tests apply the same rule.
+manifest_entries() {
+  grep -Ev '^[[:space:]]*(#|$)' "$repo_root/$1" || true
+}
+
 # Codex resolves a selector against its built-in marketplaces, so a Codex entry
 # is the selector alone. Claude Code registers no marketplace until its first
 # interactive start, so a Claude entry also carries the marketplace source the
@@ -62,16 +69,21 @@ selector='[a-z0-9][a-z0-9-]*@[a-z0-9][a-z0-9-]*'
 validate_plugin_manifest() {
   local manifest="$1"
   local pattern="$2"
-  local count duplicates
+  local entries count duplicates
 
-  if grep -Evq "$pattern" "$repo_root/$manifest"; then
+  entries="$(manifest_entries "$manifest")"
+  count="$(printf '%s\n' "$entries" | grep -c . || true)"
+
+  if [[ "$count" -eq 0 ]]; then
+    fail "$manifest contains no plugins"
+    return
+  fi
+
+  if printf '%s\n' "$entries" | grep -Evq "$pattern"; then
     fail "$manifest contains an invalid plugin entry"
   fi
 
-  count="$(grep -Ec "$pattern" "$repo_root/$manifest" || true)"
-  [[ "$count" -gt 0 ]] || fail "$manifest contains no plugins"
-
-  duplicates="$(sort "$repo_root/$manifest" | uniq -d)"
+  duplicates="$(printf '%s\n' "$entries" | sort | uniq -d)"
   [[ -z "$duplicates" ]] || fail "$manifest contains duplicate plugins"
 }
 
@@ -178,6 +190,21 @@ if command -v git >/dev/null 2>&1 &&
   if git -C "$repo_root" ls-files | grep -Eq '(^|/)(auth\.json|history\.jsonl|installation_id|.*\.sqlite(-shm|-wal)?)$'; then
     fail "tracked Codex runtime or credential files detected"
   fi
+
+  # .gitattributes checks every tracked file out with LF except *.ps1, and a
+  # CRLF shell script fails on Linux and macOS with a syntax error. git grep
+  # reads working-tree bytes; Git Bash's grep strips CR before matching. The
+  # pattern is built with printf because Git Bash's Bash drops a $'\r' word,
+  # which would leave an empty pattern that matches every line of every file.
+  carriage_return="$(printf '\r')"
+
+  while IFS= read -r carriage_return_file; do
+    [[ -n "$carriage_return_file" ]] || continue
+    fail "carriage return in tracked file: $carriage_return_file"
+  done <<<"$(
+    git -C "$repo_root" grep -I -l -e "$carriage_return" -- . ':(exclude)*.ps1' ||
+      true
+  )"
 fi
 
 if ! bash -n \
