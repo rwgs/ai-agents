@@ -127,9 +127,11 @@ permission namespaces and a rule for one does not cover the other:
 ```
 
 The trailing ` *` is the prefix wildcard for command tools, so one entry per
-namespace covers the bare command and every argument list. Edit
-`ai-home/rules/default.rules` and rerun the installer to change the
-allowlist for both agents.
+namespace covers the bare command and every argument list. Adding a rule and
+rerunning the installer adds it for both agents. Removing a rule does not yet
+withdraw the previously derived Claude entry because `settings.json` also holds
+independently approved permissions; the state-preserving phase in `TASKS.md`
+owns that provenance defect.
 
 This grants Claude Code the same latitude the Codex configuration already
 assumes, including system-affecting commands such as `systemctl` and `pkexec`.

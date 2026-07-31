@@ -28,6 +28,8 @@ wants the same safe Claude/Codex baseline in multiple repositories.
   discovered recursively beneath it on each installation.
 - Preview installation without changing the target system.
 - Preserve existing managed targets in timestamped backups before replacement.
+- Preserve machine-owned Codex configuration and interactively approved rules
+  while applying repository-owned defaults.
 - Leave credentials, sessions, history, caches, plugin state, and runtime
   databases untouched unless plugin installation is explicitly requested.
 - Support repeated installation without replacing already-correct links.
@@ -38,6 +40,9 @@ wants the same safe Claude/Codex baseline in multiple repositories.
   customised.
 - Validate repository structure, configuration syntax, skill metadata,
   documentation consistency, and installer behavior.
+- Stop managing a permission when it is removed from the curated rule source.
+  Never delete an existing grant unless installer ownership is provable; report
+  an ambiguous identical grant for conservative resolution.
 - Run Linux, macOS, and Windows validation on every push to the default branch,
   and on manual dispatch. There is no pull-request flow to gate.
 
@@ -71,7 +76,7 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 ## Machine-owned agent state
 
 Verified on a Windows machine running the Codex desktop application, against
-`~/.codex` as Codex left it. Both facts contradict what the installer currently
+`~/.codex` as Codex left it. These facts contradict what the installer currently
 assumes, and `TASKS.md` carries the work to reconcile them.
 
 - `~/.codex/rules/default.rules` accumulates interactively approved prefix rules,
@@ -87,6 +92,16 @@ assumes, and `TASKS.md` carries the work to reconcile them.
   `ai-home/codex/config.toml` discards all of it. Trust entries are also lost
   wherever repositories live outside `~/github`, because the render generates
   entries only from that root.
+- Claude Code's permission merge is append-only. Removing a rule from
+  `ai-home/rules/default.rules` leaves its derived `Bash(...)` and
+  `PowerShell(...)` entries in `settings.json`, so the documented single source
+  can grant a permission but cannot currently withdraw one. The file also holds
+  independently approved entries, so set replacement is not safe without
+  provenance.
+- The PowerShell installer uses `ConvertFrom-Json -AsHashtable -Depth 100`.
+  Windows PowerShell 5.1 on the reviewed machine supports neither parameter,
+  while CI exercises PowerShell 7 through `pwsh`. The supported edition is not
+  currently stated.
 
 ## Security and privacy
 
@@ -95,7 +110,8 @@ assumes, and `TASKS.md` carries the work to reconcile them.
 - Do not require administrator privileges for normal installation.
 - Keep destructive actions narrowly scoped and require explicit authorization.
 - Give GitHub Actions the minimum permissions required by each job.
-- Pin third-party actions and let Dependabot keep those pins current.
+- Pin third-party actions and keep those pins current through a dependency-update
+  path compatible with the accepted repository workflow.
 
 ## Compatibility
 
@@ -134,6 +150,13 @@ assumes, and `TASKS.md` carries the work to reconcile them.
   the actual directories.
 - Installer tests verify that a Claude permission merge preserves existing
   settings and pre-existing allow entries, and that rerunning adds nothing.
+- Installer tests verify that populated Codex configuration and rule files keep
+  every machine-owned entry. Removing a curated permission withdraws every
+  provably installer-owned grant and preserves and reports any identical grant
+  whose ownership cannot be established.
+- Windows validation names and exercises every supported PowerShell edition.
+- CI rejects malformed Codex rule syntax without depending on a developer's
+  locally installed Codex executable.
 - A dispatched run validates the latest commit on all three platforms. The
   `dependency-review` job is gated on `pull_request` and so never runs; `TASKS.md`
   carries the decision on what replaces it.
@@ -145,6 +168,18 @@ assumes, and `TASKS.md` carries the work to reconcile them.
 - How an adopting repository is told that a skill it copied from the pool has
   changed. The pool now has commits to record, so the comparison is possible; the
   reporting is not built.
+- How managed Codex config keys, rules, and derived Claude permissions record
+  ownership strongly enough to support both additive updates and safe removals.
+- Whether the portable default remains full access with no approval prompts. The
+  current `approval_policy = "never"` plus
+  `sandbox_mode = "danger-full-access"` is Codex's unrestricted preset, while
+  this specification describes a safe baseline and requires explicit
+  authorization for destructive work.
+- Whether PowerShell 7 is the documented minimum or the installer must also run
+  under Windows PowerShell 5.1.
+- How dependency updates and dependency review work after the accepted decision
+  to create no branches or pull requests. Dependabot and the current dependency
+  review action both deliver through pull requests.
 
 Closed decisions and the alternatives they rejected are recorded in
 `DECISIONS.md`, including the resolved questions about user-wide Claude Code

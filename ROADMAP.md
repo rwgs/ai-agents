@@ -2,7 +2,7 @@
 
 ## Phase 1: Portable Codex foundation
 
-Status: Complete
+Status: Reopened. The state-preserving remediation is the current Phase 4.
 
 ### Outcome
 
@@ -17,7 +17,8 @@ skills install without replacing private Codex runtime state.
 
 ## Phase 2: Workflow alignment
 
-Status: In progress
+Status: Complete as originally scoped. No-pull-request governance cleanup is in
+Phase 6.
 
 ### Outcome
 
@@ -28,8 +29,9 @@ review, manual-testing, and merge workflow.
 
 - Add repository planning documents and reusable project templates.
 - Separate project planning from pull-request readiness.
-- Add cross-platform installer integration tests and pull-request CI.
-- Add Dependabot coverage, dependency review, and PR evidence prompts.
+- Add cross-platform installer integration tests and validation CI.
+- Add Dependabot coverage, dependency review, and change-evidence prompts. The
+  later no-pull-request decision leaves the PR-only pieces for Phase 6.
 - Align Claude routing and workflow documentation.
 - Add explicit, cross-platform installation for selected plugins in both agents
   without making ordinary installs mutate plugin state.
@@ -41,8 +43,8 @@ review, manual-testing, and merge workflow.
 ### Risks
 
 - Windows symbolic-link behavior can differ by permissions and host policy.
-- Required GitHub checks cannot be configured until their final names exist on
-  the default branch.
+- A repository-level GitHub Actions app setting can prevent push runs even when
+  the workflow YAML has the correct trigger; Phase 4 owns live verification.
 
 ### Exit criteria
 
@@ -53,7 +55,8 @@ review, manual-testing, and merge workflow.
 
 ## Phase 3: Claude and Codex parity
 
-Status: In progress
+Status: Complete as originally scoped. Newly discovered ownership and removal
+defects are in Phase 4.
 
 ### Outcome
 
@@ -87,7 +90,56 @@ each agent actually reads.
 - A merge into a populated `settings.json` preserves every existing key and
   allow entry, and reruns report no change.
 
-## Phase 4: Re-appliable repository baseline
+## Phase 4: State-preserving installation and reliable validation
+
+Status: In progress
+
+### Outcome
+
+Installing into an active Claude/Codex setup changes only repository-owned
+defaults, preserves machine-owned state and independent approvals, and produces
+validation automatically on every push to `main`.
+
+### Included work
+
+- Merge portable Codex configuration into the active `config.toml` instead of
+  replacing unrelated keys, and discover trust roots that match where
+  repositories actually live.
+- Reconcile curated Codex rules and derived Claude permissions with explicit
+  ownership, so additions and removals are both safe.
+- Decide whether the installed Codex default is an unrestricted personal preset
+  or a sandboxed, approval-capable baseline, then align the specification,
+  instructions, and configuration with that choice.
+- State the supported PowerShell editions and exercise them in validation.
+- Make malformed rules and executable skill scripts fail validation in CI.
+- Restore and verify automatic GitHub Actions runs for pushes to `main`.
+- Perform a real first install only after the state model is safe and Windows
+  symbolic-link creation is available.
+
+### Dependencies and risks
+
+- `config.toml`, Codex rules, and Claude permissions mix repository defaults with
+  state written by the applications. Replacing a set or file can silently lose
+  data; append-only behavior can silently retain a withdrawn permission.
+- Windows link creation requires Developer Mode or elevation on the reviewed
+  machine.
+- The GitHub Actions automatic check-suite preference has no read endpoint, so
+  proving the push trigger requires changing the live setting and observing a
+  subsequent push.
+
+### Exit criteria
+
+- Seeded machine-owned config keys, trust entries, Codex approvals, Claude
+  settings, and independent permissions all survive installation and reruns.
+- Removing one curated rule removes only provably installer-owned grants in both
+  agents and reports any ambiguous identical grant without deleting it.
+- Every supported PowerShell edition passes its installer test.
+- A push to `main` creates a three-platform validation run without a manual
+  dispatch.
+- A dry run and then a real install on the reviewed Windows machine complete
+  without losing its pre-existing state.
+
+## Phase 5: Re-appliable repository baseline
 
 Status: Planned
 
@@ -106,8 +158,8 @@ forked and since developed further.
   adds documents and sections that are missing and reports convention drift for
   a human to apply. It never overwrites an adopted document.
 - Propagate the development infrastructure that adoption currently skips:
-  `.gitattributes`, and optionally the validation workflow, Dependabot
-  configuration, and pull-request template.
+  `.gitattributes`, the optional validation workflow, and the dependency-update
+  configuration retained by Phase 6.
 - Name a location for optional skills and document how a repository draws from
   it, so a stack-specific skill can be added per project rather than installed
   everywhere.
@@ -131,7 +183,7 @@ forked and since developed further.
 - Re-applying a second time with no baseline change reports nothing to do.
 - Adoption and update are covered by the same validation the installer has.
 
-## Phase 5: Enforced repository governance
+## Phase 6: Enforced repository governance
 
 Status: Planned
 
@@ -142,15 +194,20 @@ without gates a single maintainer committing to `main` cannot satisfy.
 
 ### Included work
 
-- Make a push to `main` trigger validation reliably, which it does not currently
-  do.
-- Confirm secret scanning, push protection, and Dependabot.
-- Decide what replaces dependency review, which only runs on pull requests and
-  is therefore now unreachable.
+- Confirm secret scanning, push protection, and the selected dependency-update
+  mechanism.
+- Reconcile Dependabot, dependency review, and the pull-request template with the
+  accepted no-branch, no-pull-request workflow.
+- Reconcile reusable readiness guidance with the single-maintainer path where an
+  independent human review is unavailable.
 
 ### Exit criteria
 
 - Every push to `main` produces a validation run, and its conclusion is visible
   without a manual dispatch.
-- Secret scanning, push protection, and Dependabot are confirmed enabled.
-- No documented gate depends on a pull request or a second reviewer.
+- Secret scanning and push protection are confirmed enabled, and the retained
+  dependency-update mechanism is verified operational.
+- Dependency updates have a documented path that does not contradict the
+  accepted workflow.
+- No documented gate or required repository artifact depends on a pull request
+  or a second reviewer.

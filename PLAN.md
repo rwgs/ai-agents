@@ -1,89 +1,97 @@
-# A versioned skill pool and an installed set of tooling skills
+# Repository review and planning reconciliation
 
-Approach for the change currently in flight. Replaced when the next non-trivial
-change begins, so anything that must outlive this change is promoted first:
-decisions that constrain future work to `DECISIONS.md`, and verified facts that
-change how the project is understood to `AGENTS.md` or `SPEC.md`.
+Approach for the review currently in flight. Replaced when the next non-trivial
+change begins, so anything that must outlive this review is promoted first:
+verified product facts to `SPEC.md`, actionable work to `TASKS.md`, and closed
+choices to `DECISIONS.md`.
 
 ## Problem
 
-Two questions left open in `SPEC.md` and one gap found while answering them:
+The repository's local gate passes, but its planning documents and user guidance
+do not describe one coherent current state:
 
-- The optional skill pool had no recorded location. It was in
-  `~/OneDrive/Development/ai/skills-optional/`, a plain directory holding
-  `forgejo-maintainer`, `hugo`, `infrastructure`, `linux-sysadmin`, `mdbook`,
-  `podman-operator`, and `windows-sysadmin`. Nothing in either repository said so.
-- `python-ai`, `rust-cli`, and `web-development` were installed on every machine
-  without a decision either way.
-- `python-ai` reads as a Python skill and covers only Python AI applications, so
-  general Python work matched nothing while appearing covered.
+- Several sections in `TASKS.md` are labeled current although all of their work
+  is complete, while the unsafe installation behavior is filed as later work.
+- Phase 1 claims that installation preserves private Codex state even though the
+  current installer replaces `config.toml` and links a rules directory that
+  Codex writes into.
+- The Claude permission merge only adds entries, so removing a curated rule does
+  not withdraw its derived permission as the documentation promises.
+- Accepted no-branch and no-pull-request workflow decisions conflict with
+  Dependabot, dependency review, the required pull-request template, and an
+  unconditional independent-review step in `pr-readiness`.
+- Adoption and skill-pool guidance disagree about the planning documents to take
+  and whether project-local skills are copied twice or exposed from one source.
 
 ## Constraints discovered
 
-- Installed skills are symlinked, not copied: `scripts/install.sh` links
-  `.agents/skills/<name>` into both `~/.agents/skills/` and `~/.claude/skills/`.
-  A pull updates every machine, so the installed set needs no update mechanism and
-  only the pool does.
-- The pool directory is not a Git repository, so an adopting repository has no
-  commit to record and drift cannot be computed at all.
-- Reach against the eight repositories under `~/Development`: Rust one, JS/TS two,
-  Python one. `fabled-lands` and `web-fabled-lands-dev` have no `package.json` at
-  any depth, so `web-development` does not fire in two of the browser-facing
-  projects.
-- `web-development` already separates cleanly. Its "Browser and local server
-  debugging" section names no JavaScript; every other section is lockfiles,
-  `tsconfig.json`, ESLint, Prettier, Biome, or Vitest and Jest.
-- `AGENTS.md` requires visual verification for UI changes and no skill supported
-  it.
-- `gh` is not installed on this machine, in Git Bash or in PowerShell, so a remote
-  repository cannot be created from here.
-- `docs/SKILLS.md` lists the installed set and `scripts/validate.sh` fails when
-  that list and the directories drift, so both move together or neither does.
+- The worktree began clean on `main` at
+  `b6591810d3648f716624c12848a3c57c345ab32a`, matching `origin/main`.
+- The complete WSL gate passed before editing:
+  `installer integration test passed` and
+  `validation passed: 8 skills checked`.
+- The installed Codex CLI is `0.146.0-alpha.9.2`. Its strict-config-capable
+  `exec` command accepted the repository's base `config.toml`, and
+  `codex execpolicy check` accepted `default.rules` and allowed `rtk gain`.
+- The current official Codex manual describes
+  `approval_policy = "never"` plus
+  `sandbox_mode = "danger-full-access"` as full access, recommends the
+  workspace-write/on-request pair as the lower-risk local preset, and confirms
+  that TUI approvals are written to
+  `~/.codex/rules/default.rules`.
+- Windows PowerShell `5.1.26100.8875` is present on the reviewed machine, and
+  its `ConvertFrom-Json` has neither `AsHashtable` nor `Depth`. The
+  installer uses both; CI uses PowerShell 7 through `pwsh`.
+- GitHub live status could not be refreshed because the installed connector is
+  not connected and `gh` is unavailable. The automatic-push task therefore
+  remains pending on its recorded evidence instead of being guessed complete.
+- No installer behavior changes in this review. A `CHANGELOG.md` entry would
+  incorrectly imply that pulling this commit makes installation safe.
 
 ## Approach
 
-- Build the pool as a local Git repository at `~/Development/ai-skills`, outside
-  OneDrive so nothing syncs a `.git` directory. Move the seven pool skills in,
-  add `rust-cli` and `python-ai`, and commit. Leave creating the private
-  `rwgs/ai-skills` remote and the first push to be done where `gh` or the web UI
-  is available.
-- Add `python-scripting` to the installed set, shaped like `bash-scripting` and
-  `powershell-scripting`: uv, virtual environments, ruff, pytest, type checking.
-- Extract the browser and local-server rules from `web-development` into
-  `web-verification`, installed and stack-agnostic. Cross-reference both ways, as
-  `docs/SKILLS.md` requires for adjacent skills.
-- Move the remaining `web-development` tooling to the pool as well, and promote its
-  one destructive-mistake rule, detecting the package manager from the lockfile, to
-  `ai-home/AGENTS.md`. Record the criterion that decides this, so the next language
-  skill does not need a fresh argument.
-- Update `docs/SKILLS.md`, `SPEC.md` (both unresolved questions close),
-  `README.md`, `CHANGELOG.md`, and `TASKS.md` in the same change.
+- Add an immediate README warning against installing into a populated Codex home.
+- Correct the README and `docs/AGENT_LAYOUT.md` claim that rerunning after a rule
+  removal currently changes both agents.
+- Extend `SPEC.md` with the verified state-ownership, permission-removal, and
+  PowerShell compatibility facts plus acceptance criteria and unresolved
+  decisions.
+- Reconcile `ROADMAP.md`: close the historically completed workflow phases,
+  reopen the false state-preservation claim, and make safe installation plus
+  reliable push validation the single current phase.
+- Reorganize `TASKS.md` so only one phase is current, completed work is not
+  mixed with open tasks, each new defect has an observable acceptance condition,
+  speculative MCP work is not scheduled, and no-PR/adoption contradictions are
+  explicit future decisions.
+- Leave implementation and live GitHub settings unchanged. The ownership model,
+  execution posture, PowerShell support floor, and bot-PR policy each materially
+  change the result and require their own recorded decision before code changes.
+  Claude's unlabelled permission set may make identical managed and independent
+  grants indistinguishable, so the decision must define a conservative reported
+  outcome rather than assume provenance can always be reconstructed.
 
 ## Trade-offs
 
-- The pool is a copy-and-record repository rather than a submodule. A submodule
-  pins a commit without extra machinery but forces a fixed path in every adopting
-  repository, and the recorded-commit approach reuses the drift reporting already
-  planned for the baseline documents.
-- `web-development` was kept installed at first, on the grounds that the split
-  needed something to be judged by. That was a reach argument, and reach has no
-  threshold; the criterion recorded instead is whether an agent reaches for the
-  language as a tool or works in it because it is the stack. The first attempt is
-  left visible in `DECISIONS.md` as a superseded entry rather than rewritten.
-- Promoting the lockfile rule to global instructions rather than leaving it in the
-  pooled skill trades one always-loaded line for coverage that no longer depends on
-  a `.js` or `.ts` trigger. The rest of the skill is genuinely stack-bound.
-- The installed set falls from nine to eight, and every language skill in it is now
-  one an agent reaches for in any repository.
-- `show-codex-reset-expiries` stays installed although it is tied to one product,
-  because it was considered and kept.
+- The review prioritizes preventing state loss and restoring trustworthy
+  validation over the re-applicable baseline. This delays new adoption features
+  until the baseline being propagated is safe.
+- Historical completed tasks remain visible, including work later superseded.
+  Their wording is clarified where a later audit proved that the original
+  "safe" claim was too broad.
+- The README warning is intentionally stronger than the existing backup claim.
+  Backups make replacement recoverable; they do not make replacement
+  state-preserving.
+- MCP management remains visible as a candidate but is removed from scheduled
+  work until a concrete requirement exists.
 
 ## Verification
 
-- `./scripts/validate.sh` under WSL, which checks the skill inventory against
-  `docs/SKILLS.md`, every skill's front matter, and the installer integration test
-  that needs symbolic links.
-- `scripts/install.sh --dry-run` to confirm the two new skills link and the two
-  removed ones are pruned rather than left behind.
-- `git log` in the pool repository, to confirm the nine skills are committed
-  before anything is deleted from OneDrive.
+- Run `./scripts/validate.sh` under WSL after the documentation edits.
+- Inspect the complete diff and confirm that only planning and safety guidance
+  changed.
+- Search for multiple current phases, stale phase numbers, and unqualified
+  populated-home install guidance.
+- Confirm `ROADMAP.md`, `TASKS.md`, and `SPEC.md` agree on the current phase,
+  unresolved decisions, and exit criteria.
+- Do not mark live GitHub settings, a real Windows install, or cross-platform CI
+  as verified; none can be established by this documentation-only change.

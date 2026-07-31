@@ -14,12 +14,14 @@
   recursive GitHub trust generation, passes in CI.
 - [x] Inspect the final diff and stage only workflow-alignment changes.
 
-## Current phase: Claude and Codex parity
+## Completed phase: Claude and Codex parity
 
 - [x] Rename `codex-home/` to `ai-home/` and split shared and per-agent files.
 - [x] Link the shared instruction file to both agents' global instruction paths.
 - [x] Link every skill into `~/.claude/skills/` as well as `~/.agents/skills/`.
-- [x] Derive Claude permissions from `default.rules` and merge them safely.
+- [x] Derive Claude permissions from `default.rules` and add missing entries
+  without replacing unrelated settings. The later removal/provenance defect is
+  tracked in the current phase.
 - [x] Reduce `CLAUDE.md` to `@AGENTS.md` and move the RTK catalog to `docs/RTK.md`.
 - [x] Update the specification, roadmap, layout, and skill documentation.
 - [x] Rename PowerShell functions to approved verbs and singular nouns, and add
@@ -49,7 +51,7 @@
   `30657841763` on `main`.
 - [x] Inspect the final diff and stage only parity changes.
 
-## Current phase: Decision records
+## Completed phase: Decision records
 
 - [x] Add `DECISIONS.md`, register it in the validator's required-file list, the
   `AGENTS.md` routing list, and the `docs/WORKFLOW.md` role table.
@@ -81,24 +83,6 @@
   `30657841763`, dispatched on `main` at `6ba19e3`, passed `ubuntu-latest`,
   `macos-latest`, and `windows-latest`. `dependency-review` skipped, as it always
   will now.
-- [ ] Make a push to `main` trigger the workflow. It never has. Actions is
-  enabled, all actions are allowed, and `Validate` is active with a
-  `push: branches: [main]` trigger, yet pushing `90073f0` created check suites for
-  the `claude` and `cloudflare-workers-and-pages` apps and none for GitHub Actions,
-  while `workflow_dispatch` runs the same workflow fine. That is the signature of
-  automatic check-suite creation being off for the Actions app, a per-repository
-  per-app setting that defaults to on, has no web UI, and no read endpoint. Run,
-  with a personal access token in `GH_TOKEN`, because the OAuth-app token Git
-  Credential Manager stores is refused with HTTP 403:
-
-  ```
-  gh api --method PATCH repos/rwgs/ai/check-suites/preferences \
-    -f 'auto_trigger_checks[][app_id]=15368' -F 'auto_trigger_checks[][setting]=true'
-  ```
-
-  Confirm `15368` is the GitHub Actions app in the response, then push a trivial
-  commit and check that a run appears. Until this works, every CI confirmation
-  here rests on a manual dispatch, and a push can land unverified.
 
 ## Completed phase: Line endings and manifest ergonomics
 
@@ -118,7 +102,7 @@
   new lines. This reverses part of the manifest decision recorded in
   `DECISIONS.md`, so a superseding entry was added rather than editing that one.
 
-## Current phase: A versioned skill pool
+## Completed phase: A versioned skill pool
 
 - [x] Decide where the optional skill pool lives. It was in an unversioned
   `~/OneDrive/Development/ai/skills-optional/`, holding nine skills, and nothing
@@ -148,31 +132,71 @@
 - [x] Delete `~/OneDrive/Development/ai/skills-optional/`, after confirming all
   thirty files were content-identical to the pushed pool and differed only in line
   endings. The emptied parent directory went with it.
-- [ ] Install on this machine, which needs symbolic links: Developer Mode has never
-  been enabled here, the `AppModelUnlock` key is absent, and the shell is
-  unelevated, so every link fails with an administrator-privilege error. Nothing is
-  installed yet either, so this is a first install and not a rerun: there are no
-  stale `python-ai`, `rust-cli`, or `web-development` links to prune.
-- [ ] Decide what the installer does about the Codex state recorded in the
-  `SPEC.md` "Machine-owned agent state" section before installing here. The
-  additive steps are safe; linking `rules/` and rendering `config.toml` are not.
+- [x] Remove the empty `skills-optional/` directory left on disk by the commit
+  that dropped the optional tree. Nothing tracked, ignored, or referenced it.
 
-## Later phase: Reconcile installation with machine-owned Codex state
+## Current phase: State-preserving installation and reliable validation
 
-- [ ] Merge `config.toml` rather than rendering it, preserving every key the
-  machine owns, and generate trust entries for the roots repositories actually
-  live under instead of `~/github` alone.
-- [ ] Settle whether `ai-home/rules/` can be linked at all, given that Codex
-  writes approved prefix rules into `default.rules`. Linking makes this repository
-  the store for one-off session approvals; the alternative is the merge treatment
-  `settings.json` already gets.
-- [ ] Record the outcome in `DECISIONS.md` as a superseding entry. The accepted
-  2026-06-21 entry lists the rules directory as fully repository-owned and
-  justifies rendering `config.toml` by trust entries alone, and both halves of
-  that premise are now known to be wrong.
-- [ ] Cover the new behavior in `scripts/test-install.sh`,
-  `scripts/test-install.ps1`, and `scripts/validate.sh`, and add a `CHANGELOG.md`
-  entry, because this changes what installation does to a machine.
+- [ ] Restore automatic validation on pushes to `main`. Actions is enabled, all
+  actions are allowed, and `Validate` has a `push: branches: [main]` trigger, but
+  pushing `90073f0` created check suites for the `claude` and
+  `cloudflare-workers-and-pages` apps and none for GitHub Actions. Manual dispatch
+  works. The evidence points to automatic check-suite creation being disabled for
+  the Actions app, a per-repository per-app setting with no read endpoint or web
+  UI. With a personal access token in `GH_TOKEN` (the Git Credential Manager
+  OAuth token receives HTTP 403), run:
+
+  ```
+  gh api --method PATCH repos/rwgs/ai/check-suites/preferences \
+    -f 'auto_trigger_checks[][app_id]=15368' -F 'auto_trigger_checks[][setting]=true'
+  ```
+
+  Acceptance: the response identifies `15368` as GitHub Actions, and the next
+  push creates a three-platform `Validate` run without manual dispatch. The
+  GitHub connector was not connected during the 2026-07-31 review, so current
+  live state remains unverified.
+- [ ] Define one ownership and provenance model for `config.toml`, Codex rules,
+  and derived Claude permissions before changing installer code. It must preserve
+  application-written state, support safe managed additions and removals, and
+  either distinguish an installer-owned grant from an independently approved
+  identical grant or define a conservative, visible outcome where the target
+  format makes that distinction impossible. Record the choice in `DECISIONS.md`
+  as a superseding entry to the 2026-06-21 link decision.
+- [ ] Merge portable Codex defaults into `config.toml` instead of replacing the
+  file, and generate exact trust entries from configurable or discovered roots
+  that include where repositories actually live. Acceptance: seeded marketplace,
+  plugin, MCP, desktop, notification, sandbox, and out-of-`~/github` trust state
+  survives install and an idempotent rerun.
+- [ ] Reconcile `ai-home/rules/default.rules` and Claude's derived
+  `permissions.allow` entries using the recorded ownership model. Acceptance:
+  Codex keeps interactive approvals out of this working tree, removing one
+  curated rule removes only provably managed Bash and PowerShell grants, and an
+  ambiguous identical grant survives with an actionable report.
+- [ ] Decide whether the portable Codex default intentionally uses the
+  unrestricted `approval_policy = "never"` plus
+  `sandbox_mode = "danger-full-access"` preset or changes to an
+  approval-capable sandbox. Align `SPEC.md`, `ai-home/AGENTS.md`, README guidance,
+  and tests with the decision; do not leave a "safe baseline" claim paired with
+  an undocumented unrestricted execution posture.
+- [ ] State the minimum supported PowerShell edition and make implementation and
+  CI match it. Windows PowerShell 5.1 on the reviewed machine lacks both
+  `ConvertFrom-Json -AsHashtable` and `-Depth`, while the installer uses both and
+  CI tests only `pwsh`. Acceptance: every documented edition runs the populated
+  `settings.json` merge and the complete installer integration test.
+- [ ] Close executable validation gaps while changing the installers. CI must
+  reject malformed `default.rules` without relying on a developer-local Codex
+  binary, exercise managed permission removal and populated Codex state on both
+  platforms, and at minimum syntax-check the bundled
+  `show-reset-expiries.mjs` script.
+- [ ] Update `README.md`, `docs/AGENT_LAYOUT.md`, `SPEC.md`, tests, and
+  `CHANGELOG.md` with the implemented behavior, then run the complete local gate
+  and a manually dispatched three-platform workflow before relying on the fixed
+  push trigger.
+- [ ] Install on this machine only after the state-preserving behavior passes.
+  This is a first install, and symbolic links still require enabling Developer
+  Mode or using an elevated shell. Acceptance: dry-run reports the intended
+  changes, the real install preserves the pre-existing Codex and Claude state,
+  and both agents report the expected instructions and skills after restart.
 
 ## Later phase: Re-appliable repository baseline
 
@@ -183,17 +207,32 @@
   missing documents and sections and reports drift without overwriting an
   adopted document. It reads both recorded commits, so a copied pool skill is
   reported alongside a stale document.
-- [ ] Extend adoption to install `.gitattributes`, and offer the validation
-  workflow, Dependabot configuration, and pull-request template.
+- [ ] Reconcile the reusable workflows before building update mode:
+  `adopt-baseline` must inventory and select `DECISIONS.md` whenever it adopts
+  `PLAN.md`, treat `CHANGELOG.md` conditionally, and expose a pooled skill to
+  both agents from one project-local source. `ai-project-manager` must discover
+  the existing `PLAN.md` and conditional `CHANGELOG.md` it is expected to use.
+- [ ] Align `docs/SKILLS.md` with `adopt-baseline` on one dual-agent wiring
+  method. The current pool instructions say to copy a skill into both
+  `.agents/skills/` and `.claude/skills/`, while the adoption skill requires one
+  `.agents/skills/` source plus an ignored link, and the two approaches have
+  different drift behavior.
+- [ ] Resolve the installed-skill policy exception for
+  `show-codex-reset-expiries`: either record why a user-wide agent-operations
+  skill is allowed despite being product-specific, or move it to the pool.
+- [ ] Extend adoption to install `.gitattributes` and offer the validation
+  workflow plus whichever dependency-update configuration Phase 6 retains. Do
+  not propagate the current pull-request template into a no-pull-request flow.
 - [ ] Give a new repository its own entry point instead of a skill named for
   adopting an existing one.
 - [ ] Prove the loop on a scratch repository: adopt, change the baseline,
   re-apply, and confirm no customisation is lost and a second re-apply reports
   nothing to do.
-- [x] Remove the empty `skills-optional/` directory left on disk by the commit
-  that dropped the optional tree. Nothing tracked, ignored, or referenced it.
 
-## Later phase: MCP server management
+## Candidate work: MCP server management
+
+Not scheduled. Add this to `SPEC.md` and the roadmap only after a concrete
+cross-machine MCP requirement justifies it.
 
 - [ ] Add an opt-in MCP server manifest and install it with `codex mcp add` and
   `claude mcp add`, leaving MCP state untouched without the explicit option.
@@ -205,11 +244,19 @@
 
 ## Later phase: Enforced repository governance
 
-- [ ] Confirm secret scanning, push protection, and Dependabot are enabled.
-- [ ] Decide what replaces dependency review. It is gated on
-  `github.event_name == 'pull_request'`, so with no pull requests it never runs.
-  Either trigger it another way or drop the job rather than leave a check that
-  reads as covered.
+- [ ] Confirm secret scanning and push protection are enabled. Confirm
+  Dependabot only after deciding how it can deliver updates under the accepted
+  workflow.
+- [ ] Reconcile the no-branch, no-pull-request decision with all PR-only
+  artifacts. Dependabot opens branches and pull requests, `dependency-review`
+  is gated on `pull_request`, and `.github/pull_request_template.md` is still a
+  validator-required file. Choose and record either a narrowly stated bot-PR
+  exception or a non-PR replacement/removal for all three.
+- [ ] Reconcile `pr-readiness` with the single-maintainer path. Its workflow
+  currently requires a fresh independent review while `DECISIONS.md` rejects a
+  gate that needs a second party. Define what local readiness requires when no
+  independent reviewer exists, and keep the stronger gate for repositories that
+  do require one.
 - [ ] Decide whether a default-branch ruleset is worth configuring at all. Every
   gate previously planned here required a pull request or a second reviewer, and
   neither exists in a single-maintainer flow.

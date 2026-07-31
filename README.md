@@ -21,6 +21,14 @@ On Windows, run the PowerShell installer from the repository root:
 .\scripts\install.ps1
 ```
 
+> [!WARNING]
+> On a populated Codex home, use `--dry-run` / `-DryRun` or isolated
+> `CODEX_HOME` and `CLAUDE_CONFIG_DIR` values for now. The current installer
+> renders `config.toml` and replaces `rules/` with a repository link, while
+> current Codex versions store machine-owned configuration and interactively
+> approved rules in those locations. The state-preserving replacement is the
+> current phase in `TASKS.md`.
+
 Restart Codex and Claude Code after installation. Existing managed files are
 backed up under `~/.codex/backups/`. Credentials, sessions, history, caches, and
 plugins are not changed by default.
@@ -51,7 +59,9 @@ shared:
 - **The command allowlist has one source.** `ai-home/rules/default.rules`
   is hand-authored for Codex; the installer derives Claude Code's
   `permissions.allow` entries from the same file. Edit that file and rerun the
-  installer to change both.
+  installer to add entries to both. Removing a rule does not yet withdraw the
+  previously derived Claude entry; that ownership defect is in the current
+  phase.
 - **Nothing else is shared.** The two `rules/` directories mean unrelated things,
   and the configuration formats have no overlap.
 
@@ -247,8 +257,9 @@ The llama.cpp profile expects a Responses-compatible endpoint at
 ```
 
 The validation includes an isolated Linux or macOS installer integration test.
-GitHub Actions also exercises the PowerShell installer on Windows and runs
-dependency review for pull requests.
+GitHub Actions also exercises the PowerShell installer on Windows. Its
+dependency-review job is pull-request-only and therefore unreachable under this
+repository's accepted no-pull-request flow; `TASKS.md` carries the resolution.
 
 ## Repository layout
 
