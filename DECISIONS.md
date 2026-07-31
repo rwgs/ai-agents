@@ -8,6 +8,132 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-07-31 The optional skill pool is its own repository
+
+Status: Accepted. Resolves the open question left by "Which skills are installed
+on every machine" below.
+
+### Decision
+
+The optional skill pool is a separate private repository, `rwgs/ai-skills`. A
+repository that wants one of its skills copies it in and records the pool commit
+it took.
+
+### Why
+
+An installed skill needs no update mechanism: the installer symlinks
+`.agents/skills/<name>` into `~/.agents/skills/` and `~/.claude/skills/`, so a
+pull in this repository updates every machine and every project at once. A pool
+skill is different only because it is drawn into a repository, which means a
+copy, and a copy drifts.
+
+Detecting that drift requires a version identity to record. The repository
+boundary is not what makes updating easier; the commit is. A pool with no commit
+to pin gives the planned `adopt-baseline` update mode nothing to compare an
+adopted copy against, so drift could never be reported for skills even once it is
+reported for documents.
+
+### Rejected alternatives
+
+- The unversioned directory the skills were actually in,
+  `~/OneDrive/Development/ai/skills-optional/`: it has no version identity to
+  record, so drift is uncomputable by construction, and OneDrive syncing a `.git`
+  directory is a known source of repository corruption.
+- A branch of this repository: already rejected below, and unchanged by this
+  entry.
+- Reintroducing `skills-optional/` here: also already rejected below. A second
+  tree, a second documented list, and a duplicate check still cost more than they
+  give.
+
+### Consequences
+
+`forgejo-maintainer`, `hugo`, `infrastructure`, `linux-sysadmin`, `mdbook`,
+`podman-operator`, and `windows-sysadmin` move out of OneDrive into the pool
+repository, joined by `python-ai` and `rust-cli`. The `adopt-baseline` update mode
+must read a recorded pool commit as well as a recorded baseline commit.
+
+## 2026-07-31 Installed skills cover tooling, not stacks or domains
+
+Status: Accepted. Applies the bar set by "Which skills are installed on every
+machine" below to the four skills that were left undecided.
+
+### Decision
+
+- `python-ai` and `rust-cli` move to the pool. Both are scoped to one stack, and
+  `python-ai` further to one domain.
+- `python-scripting` joins the installed set, alongside `bash-scripting` and
+  `powershell-scripting`.
+- `web-development` splits. Its stack-agnostic browser and local-server rules
+  become `web-verification`, installed; the JS/TS tooling keeps the
+  `web-development` name and stays installed.
+
+### Why
+
+`python-ai` reads as a Python skill and is not one. Every section of it is
+AI-specific, and its only generally useful content is four diagnostic commands.
+General Python was therefore uncovered while appearing covered, which is worse
+than an absence: an agent reaching for Python as a tool in a repository that is
+not a Python project matched nothing.
+
+The split follows the same reasoning in the other direction. Serving over HTTP
+rather than `file://`, not orphaning a server that holds the port, and a service
+worker returning stale assets after a change are true of any web application
+whatever its backend, but they were reachable only behind a `.js`/`.ts` trigger.
+Two of eight local repositories have a `package.json` while more than two are
+browser-facing. The extracted skill also gives the visual-verification rule in
+`AGENTS.md` a skill to stand on, which it did not have.
+
+### Rejected alternatives
+
+- Keeping `python-ai` installed to cover general Python work: it does not cover
+  it, so this trades a real gap for the appearance of coverage.
+- Leaving `web-development` whole: one description line instead of two, but the
+  browser rules stay locked behind a stack trigger that most browser-facing
+  repositories here do not fire.
+- Moving `web-development` to the pool as well: its tooling half is still wanted
+  wherever JS/TS exists, and with the browser rules extracted the two halves have
+  different reach. Revisit once the split has been used.
+
+### Consequences
+
+The installed set stays at nine skills. Removing a skill requires rerunning the
+installer so its links are pruned, and `docs/SKILLS.md` must match the
+directories or validation fails.
+
+## 2026-07-31 The line-ending check exempts by extension
+
+Status: Accepted. Promoted from `PLAN.md` when that file was replaced.
+
+### Decision
+
+`scripts/validate.sh` fails when `git grep` finds a carriage return in any
+tracked file except `*.ps1`, named as a literal path exclusion rather than read
+from each file's `eol` attribute.
+
+### Why
+
+The check exists to catch any carriage return, and `git ls-files --eol` reports a
+file holding a lone CR as `-text` rather than `crlf`, so it answers which line
+ending a file uses and not whether it holds a carriage return.
+
+One extension is exempt today. Reading the `eol` attribute instead would make the
+check agree with `.gitattributes` automatically, which sounds like an improvement
+and is the failure mode: a future `eol=crlf` entry would then be exempted
+silently, with no diff showing that the check stopped covering something.
+
+### Rejected alternatives
+
+- `git ls-files --eol`: purpose-built for line endings, but classifies a lone CR
+  as binary.
+- Deriving the exemption from `.gitattributes`: removes the coupling at the cost
+  of removing the review step that coupling forces.
+
+### Consequences
+
+Adding an `eol=crlf` entry to `.gitattributes` requires adding the same path to
+the exclusion in `scripts/validate.sh`. Neither file references the other, so the
+pairing lives here.
+
 ## 2026-07-31 Let the plugin manifests carry comments
 
 Status: Accepted. Supersedes in part "One plugin manifest per agent" below, which

@@ -259,7 +259,10 @@ dependency review for pull requests.
   validated task status
 - `PLAN.md`: the approach behind the change currently in flight, replaced when
   the next non-trivial change begins
-- `.agents/skills/`: reusable skills installed into both agents
+- `DECISIONS.md`: closed decisions and the alternatives they rejected
+- `.agents/skills/`: reusable skills installed into both agents. Skills tied to
+  one stack, product, or environment live in the separate `rwgs/ai-skills` pool
+  and are drawn into the repositories that need them
 - `codex-plugins.txt` and `claude-plugins.txt`: opt-in plugin selections, one
   manifest per agent
 - `ai-home/AGENTS.md`: shared global instructions for both agents

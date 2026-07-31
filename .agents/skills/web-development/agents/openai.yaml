@@ -1,4 +1,4 @@
 interface:
   display_name: "Web Development"
   short_description: "Build and debug JavaScript and TypeScript projects"
-  default_prompt: "Use $web-development to fix a type or lint error, configure formatting, or debug behavior in a browser."
+  default_prompt: "Use $web-development to fix a type or lint error, resolve a dependency problem, or configure formatting and tests."

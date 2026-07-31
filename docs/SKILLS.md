@@ -69,8 +69,13 @@ used often enough to justify an always-loaded description, and specific enough
 that its trigger will not misfire.
 
 A skill tied to one product, one environment, or one kind of project does not
-meet that bar. Keep it with the repositories that use it, as a project-local
-skill, rather than installing it on every machine.
+meet that bar. Those live in the `rwgs/ai-skills` pool, described below, and are
+drawn into the repositories that use them.
+
+A skill that reads as broader than it is fails the bar in a way an absent skill
+does not, because it makes a gap look covered. `python-ai` was installed while
+covering only Python AI applications, so general Python work matched nothing;
+`python-scripting` covers that and `python-ai` moved to the pool.
 
 ## Repository skills
 
@@ -81,11 +86,28 @@ Installed into both agents by the installer.
 - `bash-scripting`
 - `powershell-scripting`
 - `pr-readiness`
-- `python-ai`
-- `rust-cli`
+- `python-scripting`
 - `show-codex-reset-expiries`
 - `web-development`
+- `web-verification`
 
 Run `./scripts/validate.sh` after adding, moving, or changing a skill.
 Validation fails when this list and the skill directories drift apart, and
 removing a skill also requires rerunning the installer so its links are pruned.
+
+## The optional pool
+
+`rwgs/ai-skills` holds the skills that fail the bar above: `forgejo-maintainer`,
+`hugo`, `infrastructure`, `linux-sysadmin`, `mdbook`, `podman-operator`,
+`python-ai`, `rust-cli`, and `windows-sysadmin`.
+
+A repository draws one in by copying it to `.agents/skills/<name>`, and
+`.claude/skills/<name>` as well if the repository is used with both agents, then
+recording the pool commit it took. The commit is the point: an installed skill is
+symlinked, so a pull updates every machine at once, while a pool skill is a copy
+and a copy drifts. Without a recorded commit there is nothing to compare an
+adopted copy against.
+
+Moving a skill in either direction changes the installed set, so it needs the list
+above updated, the installer rerun to add or prune links, and a `CHANGELOG.md`
+entry.

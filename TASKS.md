@@ -89,20 +89,41 @@
   new lines. This reverses part of the manifest decision recorded in
   `DECISIONS.md`, so a superseding entry was added rather than editing that one.
 
+## Current phase: A versioned skill pool
+
+- [x] Decide where the optional skill pool lives. It was in an unversioned
+  `~/OneDrive/Development/ai/skills-optional/`, holding nine skills, and nothing
+  recorded that. It is now its own repository, because a pool skill is copied into
+  a repository and only a commit gives drift something to compare against.
+- [x] Build the pool repository locally at `~/Development/ai-skills`, outside
+  OneDrive so no `.git` directory is synced, with a README covering how a
+  repository draws a skill in.
+- [x] Move `python-ai` and `rust-cli` to the pool. `python-ai` reads as a Python
+  skill and covers only Python AI applications.
+- [x] Add `python-scripting` for the general Python work that nothing covered.
+- [x] Split `web-development`, extracting its stack-agnostic browser and
+  local-server rules into `web-verification`. Those rules apply to a site with any
+  backend but fired only on `.js` and `.ts`, and two of the browser-facing
+  repositories here have no `package.json` at all.
+- [x] Keep `web-development` installed after the split rather than moving both
+  halves at once, so the split has something to be judged by.
+- [ ] Create the private `rwgs/ai-skills` remote and push. `gh` is installed in
+  neither Git Bash nor PowerShell here, so the remote is configured and the commit
+  is waiting.
+- [ ] Delete `~/OneDrive/Development/ai/skills-optional/` only after that push,
+  so the pool is never the only copy.
+- [ ] Rerun the installer to link the two new skills and prune the two removed
+  ones.
+
 ## Later phase: Re-appliable repository baseline
 
-- [ ] Decide where the optional skill pool lives. `forgejo-maintainer`, `hugo`,
-  and `mdbook` were moved outside this repository and the location was never
-  recorded. A branch is already rejected in `DECISIONS.md`.
-- [ ] Decide whether `python-ai`, `rust-cli`, and `web-development` move to that
-  pool. They are the installed skills that only apply to repositories of their
-  stack. `bash-scripting` and `powershell-scripting` stay, because this
-  baseline's own installers are Bash and PowerShell.
 - [ ] Record in an adopting repository which baseline commit it took, which
-  documents it adopted, and which pieces it declined.
+  documents it adopted, which pieces it declined, and the pool commit behind any
+  skill copied from `rwgs/ai-skills`.
 - [ ] Add an update mode to `adopt-baseline`, or a sibling skill, that adds
   missing documents and sections and reports drift without overwriting an
-  adopted document.
+  adopted document. It reads both recorded commits, so a copied pool skill is
+  reported alongside a stale document.
 - [ ] Extend adoption to install `.gitattributes`, and offer the validation
   workflow, Dependabot configuration, and pull-request template.
 - [ ] Give a new repository its own entry point instead of a skill named for

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Python Scripting"
+  short_description: "Build and debug Python scripts and projects"
+  default_prompt: "Use $python-scripting to implement, test, or debug Python, manage its environment, or fix an import, type, or lint error."

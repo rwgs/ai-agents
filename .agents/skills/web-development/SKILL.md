@@ -1,16 +1,18 @@
 ---
 name: web-development
-description: Build, test, and debug JavaScript and TypeScript projects, including package managers, TypeScript compilation, ESLint, Prettier and Biome, bundlers, test runners such as Vitest, Jest, and Playwright, local static servers, and browser debugging. Use when working on .js, .ts, .jsx, .tsx, or web assets, fixing type or lint errors, configuring formatting, or debugging behavior in a browser.
+description: Build, test, and debug JavaScript and TypeScript projects, including package managers and lockfiles, TypeScript compilation, ESLint, Prettier and Biome, bundlers, and test runners such as Vitest, Jest, and Playwright. Use when working on .js, .ts, .jsx, or .tsx files, resolving a dependency or module-system problem, fixing type or lint errors, or configuring formatting.
 ---
 
 # web-development
 
 ## Scope
 
-JavaScript and TypeScript project work, from type errors to browser behavior.
-For shell automation around a project use `bash-scripting` or
-`powershell-scripting`. Administering the host or container a site runs on is
-out of scope for this skill.
+JavaScript and TypeScript project tooling, from dependency resolution to type
+errors and test configuration. Serving a site and confirming its behavior in a
+browser is covered by `web-verification`, which applies to any stack. For shell
+automation around a project use `bash-scripting` or `powershell-scripting`.
+Administering the host or container a site runs on is out of scope for this
+skill.
 
 ## Workflow
 
@@ -70,21 +72,11 @@ rtk vitest | rtk jest | rtk playwright test
 rtk pnpm install | rtk pnpm outdated
 ```
 
-## Browser and local server debugging
-
-- Serve a static site over HTTP rather than opening `file://`, because module
-  imports, fetch, and service workers behave differently on `file://`.
-- Stop a background server when finished; an orphaned process holding the port
-  makes the next run fail confusingly.
-- A service worker serves stale assets after a change. Reload bypassing the
-  cache, or unregister it, before concluding a fix did not work.
-- Prefer Playwright's own waiting over fixed sleeps; a timeout that passes
-  locally and fails in CI is usually a race, not a slow machine.
-
 ## Validation
 
 - `tsc --noEmit` reports no new errors.
 - Lint passes, and formatting is checked rather than assumed.
 - Affected tests pass, and a test that should fail without the change does.
 - The lockfile changed only if a dependency intentionally changed.
-- Behavior verified in a browser for anything user-visible, not only in tests.
+- For anything user-visible, follow `web-verification` and confirm the behavior in
+  a browser rather than only in tests.

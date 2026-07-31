@@ -55,7 +55,9 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 - The installer renders `config.toml` with machine-specific exact trust entries,
   merges Claude Code's `settings.json`, and links the other managed files.
 - `.agents/skills/` contains reusable workflows linked into `AGENTS_HOME` and
-  `CLAUDE_CONFIG_DIR`.
+  `CLAUDE_CONFIG_DIR`. Skills tied to one stack, product, or environment live in
+  the separate `rwgs/ai-skills` repository and are copied into the repositories
+  that need them, recording the pool commit taken.
 - `scripts/install.sh` and `scripts/install.ps1` perform user-scoped
   installation.
 - `codex-plugins.txt` and `claude-plugins.txt` record the plugin selectors
@@ -118,12 +120,10 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 
 ## Unresolved questions
 
-- Where the optional skill pool lives and how a repository draws from it.
-  `forgejo-maintainer`, `hugo`, and `mdbook` were moved outside this repository
-  and the location was never recorded.
-- Whether `python-ai`, `rust-cli`, and `web-development` belong in that pool
-  rather than installed on every machine.
+- How an adopting repository is told that a skill it copied from the pool has
+  changed. The pool now has commits to record, so the comparison is possible; the
+  reporting is not built.
 
 Closed decisions and the alternatives they rejected are recorded in
-`DECISIONS.md`, including the resolved question about user-wide Claude Code
-instructions.
+`DECISIONS.md`, including the resolved questions about user-wide Claude Code
+instructions and where the optional skill pool lives.

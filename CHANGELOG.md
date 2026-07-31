@@ -10,6 +10,21 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-07-31
 
+- Changed the composition of the installed skill set. Rerun the installer to add
+  the new links and prune the removed ones.
+  - Added `python-scripting` for general Python work: environment detection, ruff,
+    pytest, type checking, and cross-platform path and encoding handling.
+  - Added `web-verification`, the stack-agnostic half of `web-development`:
+    serving locally, port hygiene, cache and service-worker staleness, and
+    browser evidence for user-visible changes. It applies to a site with any
+    backend, where the rules were previously reachable only behind a JS/TS
+    trigger.
+  - Narrowed `web-development` to JavaScript and TypeScript project tooling.
+  - Removed `python-ai` and `rust-cli`. Both moved to the new optional pool at
+    `rwgs/ai-skills`, which also holds the sysadmin, infrastructure, container,
+    Forgejo, Hugo, and mdBook skills. `python-ai` covered Python AI applications
+    only, so `python-scripting` rather than its removal is what changes general
+    Python coverage.
 - Moved the shared command rules from `ai-home/codex/rules/` to `ai-home/rules/`.
   Installed paths are unchanged: `~/.codex/rules/` still links to the directory
   and Claude Code's `permissions.allow` entries still derive from the same file.

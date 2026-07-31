@@ -1,0 +1,4 @@
+interface:
+  display_name: "Web Verification"
+  short_description: "Serve and verify a web app in a real browser"
+  default_prompt: "Use $web-verification to serve a site locally and confirm a user-visible change in a browser."
