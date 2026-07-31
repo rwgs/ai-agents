@@ -78,12 +78,24 @@
   cannot, and that failure reproduces on a clean tree. WSL passes in full.
 - [ ] Confirm validation passes in CI on Linux, macOS, and Windows. Linux and
   macOS are confirmed by run `30653338945`; Windows waits on the pruning fix above.
-- [ ] Find out why no push has ever triggered the workflow. Actions is enabled,
-  all actions are allowed, `Validate` is registered and active with a
-  `push: branches: [main]` trigger, and commits have been pushed to `main`, yet
-  the repository had zero workflow runs and zero check runs until one was
-  dispatched by hand. Until this is explained, no push-triggered run can be
-  treated as evidence, and every CI confirmation here rests on a manual dispatch.
+- [ ] Make a push to `main` trigger the workflow. It never has. Actions is
+  enabled, all actions are allowed, and `Validate` is active with a
+  `push: branches: [main]` trigger, yet pushing `90073f0` created check suites for
+  the `claude` and `cloudflare-workers-and-pages` apps and none for GitHub Actions,
+  while `workflow_dispatch` runs the same workflow fine. That is the signature of
+  automatic check-suite creation being off for the Actions app, a per-repository
+  per-app setting that defaults to on, has no web UI, and no read endpoint. Run,
+  with a personal access token in `GH_TOKEN`, because the OAuth-app token Git
+  Credential Manager stores is refused with HTTP 403:
+
+  ```
+  gh api --method PATCH repos/rwgs/ai/check-suites/preferences \
+    -f 'auto_trigger_checks[][app_id]=15368' -F 'auto_trigger_checks[][setting]=true'
+  ```
+
+  Confirm `15368` is the GitHub Actions app in the response, then push a trivial
+  commit and check that a run appears. Until this works, every CI confirmation
+  here rests on a manual dispatch, and a push can land unverified.
 
 ## Completed phase: Line endings and manifest ergonomics
 
