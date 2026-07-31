@@ -39,7 +39,37 @@
 - [ ] Confirm the Windows installer integration test passes in CI.
 - [ ] Inspect the final diff and stage only parity changes.
 
-## Next phase: Enforced repository governance
+## Next phase: Line endings and manifest ergonomics
+
+- [ ] Refresh this checkout so the working tree is LF. Committed content is
+  already LF, but the checkout predates `.gitattributes`, so editors keep
+  rewriting files with CRLF and `scripts/validate.sh` cannot run from WSL
+  against them until the files are checked out again.
+- [ ] Fail validation when a tracked file other than `*.ps1` contains a carriage
+  return, so line-ending drift is caught by a check instead of discovered
+  part-way through an unrelated change.
+- [ ] Allow `#` comments and blank lines in `codex-plugins.txt` and
+  `claude-plugins.txt`, so each manifest can explain why a Claude Code entry
+  carries a marketplace URL and a Codex entry does not. Both installers, the
+  validator, and both installer tests read these files and all four must skip
+  the new lines.
+
+## Later phase: MCP server management
+
+- [ ] Add an opt-in MCP server manifest and install it with `codex mcp add` and
+  `claude mcp add`, leaving MCP state untouched without the explicit option.
+- [ ] Choose a manifest format that survives both interfaces: `codex mcp add`
+  and `claude mcp add` take different arguments, and Claude Code also accepts
+  `claude mcp add-json`.
+- [ ] Keep tokens, headers, and credentials out of the repository. Record only
+  the command, arguments, and non-secret configuration.
+- [ ] Decide whether Skill Seekers belongs in the default set. It is a PyPI
+  package that also exposes an MCP server, not a plugin, so it cannot go in
+  either plugin manifest. It would add a Python dependency the installer does
+  not otherwise require, and its server exposes cloud upload and download tools,
+  so review what it can reach before installing it on every machine.
+
+## Later phase: Enforced repository governance
 
 - [ ] Configure a default-branch ruleset after CI check names exist remotely.
 - [ ] Require pull requests, successful validation, and conversation resolution.
