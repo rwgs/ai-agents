@@ -79,10 +79,11 @@ discovery.
 
 ### Install recommended plugins
 
-[Codex plugin](https://learn.chatgpt.com/docs/plugins) installation is opt-in
-because plugins can add instructions, hooks, and connections to external
-services. Preview or install the repository's selected plugins on Linux or
-macOS with:
+Plugin installation is opt-in because plugins can add instructions, hooks, and
+connections to external services. Preview or install the repository's selected
+[Codex](https://learn.chatgpt.com/docs/plugins) and
+[Claude Code](https://code.claude.com/docs/en/discover-plugins) plugins on Linux
+or macOS with:
 
 ```bash
 ./scripts/install.sh --dry-run --plugins
@@ -96,10 +97,29 @@ On Windows:
 .\scripts\install.ps1 -Plugins
 ```
 
-The selected plugin IDs live in `codex-plugins.txt`. The initial selection is
-`superpowers@openai-curated`. Start a new Codex session after installation so
-its skills become available. The managed global instructions tell Codex to
-skip the full Superpowers methodology for trivial, low-risk edits.
+Each agent has its own manifest, because the two publish the same plugin through
+different marketplaces. The initial selection is Superpowers for both:
+
+| Agent | Manifest | Entry |
+| --- | --- | --- |
+| Codex | `codex-plugins.txt` | `superpowers@openai-curated` |
+| Claude Code | `claude-plugins.txt` | `superpowers@claude-plugins-official` and its marketplace URL |
+
+A Codex entry is the selector on its own, because `openai-curated` is one of
+Codex's built-in marketplaces and its name is reserved. A Claude Code entry also
+carries the marketplace source: Claude Code registers no marketplace until its
+first interactive start, so an installer that runs before that has to add it.
+The source is written as a full HTTPS URL because `owner/repo` shorthand
+resolves over SSH. Every command involved is idempotent, so rerunning the
+installer re-clones and reinstalls nothing.
+
+Only the agents actually present are touched. A missing `codex` or `claude`
+command skips that agent's plugins with a warning rather than failing the run,
+so a machine with one agent installed still gets a complete installation.
+
+Start a new session in each agent after installation so the plugin's skills
+become available. The managed global instructions tell both agents to skip the
+full Superpowers methodology for trivial, low-risk edits.
 
 For GitHub-heavy projects, the broader priority order is:
 
@@ -112,11 +132,11 @@ For GitHub-heavy projects, the broader priority order is:
 5. **Codex Security plugin** for vulnerability analysis and remediation.
 6. **Sentry plugin** for production debugging.
 
-Only the entries in `codex-plugins.txt` are installed by `--plugins`. Context7,
+Only the entries in the two manifests are installed by `--plugins`. Context7,
 Playwright, and Chrome DevTools are
 [MCP servers](https://learn.chatgpt.com/docs/extend/mcp) rather than plugins and
 require separate configuration. GitHub, Codex Security, and Sentry remain
-opt-in until they are added to the manifest because they can require service
+opt-in until they are added to a manifest because they can require service
 authorization or project-specific setup. Plugin directories do not provide
 reliable public installation counts, so the ranking is based on fit for this
 workflow rather than unverifiable popularity.
@@ -237,7 +257,8 @@ dependency review for pull requests.
 - `PLAN.md`: the approach behind the change currently in flight, replaced when
   the next non-trivial change begins
 - `.agents/skills/`: reusable skills installed into both agents
-- `codex-plugins.txt`: opt-in Codex plugin selections
+- `codex-plugins.txt` and `claude-plugins.txt`: opt-in plugin selections, one
+  manifest per agent
 - `ai-home/AGENTS.md`: shared global instructions for both agents
 - `ai-home/codex/`: Codex configuration, profiles, and command rules
 - `docs/`: reference documentation loaded only when explicitly requested

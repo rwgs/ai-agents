@@ -32,7 +32,10 @@
 - [x] Add the `web-development` skill and drop product-specific skills from the
   default set.
 - [x] Prune stale managed skill links on every install.
-- [ ] Run repository, shell, installer, and skill validation locally.
+- [x] Install the Superpowers plugin into Claude Code as well as Codex, adding
+  its marketplace first because Claude Code registers none until first use.
+- [x] Skip a missing agent's plugins with a warning instead of failing the run.
+- [x] Run repository, shell, installer, and skill validation locally.
 - [ ] Confirm the Windows installer integration test passes in CI.
 - [ ] Inspect the final diff and stage only parity changes.
 

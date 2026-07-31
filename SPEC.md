@@ -22,8 +22,8 @@ wants the same safe Claude/Codex baseline in multiple repositories.
   the allowlist has a single hand-authored source.
 - Merge managed Claude Code permissions into an existing `settings.json` without
   discarding interactively approved permissions or unrelated settings.
-- Optionally install an explicit list of recommended Codex plugins from
-  configured marketplaces.
+- Optionally install an explicit list of recommended plugins into both agents,
+  registering a marketplace first where the agent requires it.
 - Trust the current user's `~/github` directory and every Git worktree
   discovered recursively beneath it on each installation.
 - Preview installation without changing the target system.
@@ -52,8 +52,9 @@ wants the same safe Claude/Codex baseline in multiple repositories.
   `CLAUDE_CONFIG_DIR`.
 - `scripts/install.sh` and `scripts/install.ps1` perform user-scoped
   installation.
-- `codex-plugins.txt` records plugin selectors installed only through the
-  explicit plugin option.
+- `codex-plugins.txt` and `claude-plugins.txt` record the plugin selectors
+  installed only through the explicit plugin option, one manifest per agent
+  because the two agents publish the same plugin in different marketplaces.
 - `scripts/validate.sh` and installer integration tests provide local and CI
   evidence.
 - `AGENTS.md`, this specification, `ROADMAP.md`, and `TASKS.md` define how the

@@ -73,7 +73,7 @@ This repository manages only:
 - optional local model profiles
 - command permissions
 - reusable skills
-- an opt-in list of recommended plugin selectors
+- opt-in lists of recommended plugin selectors, one per agent
 
 ## How the installer applies each file
 
@@ -149,15 +149,39 @@ Codex only.
 ## Plugins and MCP servers
 
 Run the installer with `--plugins` on Linux or macOS, or `-Plugins` on Windows,
-to install the selectors in `codex-plugins.txt`. Without that option, plugin
-state is untouched. Restart the agent or start a new session after installing a
-plugin so its bundled skills and tools can load.
+to install the selectors in `codex-plugins.txt` and `claude-plugins.txt`.
+Without that option, plugin state is untouched. Restart the agent or start a new
+session after installing a plugin so its bundled skills and tools can load.
+
+Both agents ship the same plugin under different marketplace names, so each has
+its own manifest rather than one shared list:
+
+| Agent | Manifest entry | Installer commands |
+| --- | --- | --- |
+| Codex | `<plugin>@<marketplace>` | `codex plugin add <selector>` |
+| Claude Code | `<plugin>@<marketplace> <marketplace git URL>` | `claude plugin marketplace add <url>` then `claude plugin install <selector>` |
+
+The extra field is not redundancy. Codex ships `openai-curated` as a built-in
+marketplace and reserves the name, so a selector resolves on its own. Claude
+Code reports `No marketplaces configured` until its first interactive start and
+adds the official marketplace then, so an installer that runs before that first
+launch has to add the source itself. That source is written as a full HTTPS URL
+because `owner/repo` shorthand resolves over SSH, which fails on a host with no
+GitHub key in `known_hosts`.
+
+Both agents' commands are idempotent. A second `marketplace add` reports the
+marketplace is already on disk, and a second `install` reports the plugin is
+already installed; neither is an error, so rerunning the installer is safe.
+
+Plugin installation needs the agent's own command-line interface on `PATH`,
+which an editor-embedded installation does not necessarily provide. A missing
+`codex` or `claude` command skips that agent's plugins with a warning instead of
+failing, so one agent's absence cannot block the other's installation.
 
 Plugins can package skills, connectors, MCP servers, hooks, and other assets.
 Standalone services such as Context7, Playwright, and Chrome DevTools are MCP
-servers, not entries managed by this repository's plugin manifest. Configure
-those separately when a project needs them. The manifest is Codex-specific;
-Claude Code plugins are managed separately.
+servers, not entries managed by these manifests. Configure those separately when
+a project needs them.
 
 ## Local model profiles
 
