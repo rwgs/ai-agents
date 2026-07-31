@@ -168,8 +168,6 @@ assumes, and `TASKS.md` carries the work to reconcile them.
 - How an adopting repository is told that a skill it copied from the pool has
   changed. The pool now has commits to record, so the comparison is possible; the
   reporting is not built.
-- How managed Codex config keys, rules, and derived Claude permissions record
-  ownership strongly enough to support both additive updates and safe removals.
 - Whether the portable default remains full access with no approval prompts. The
   current `approval_policy = "never"` plus
   `sandbox_mode = "danger-full-access"` is Codex's unrestricted preset, while
@@ -183,4 +181,5 @@ assumes, and `TASKS.md` carries the work to reconcile them.
 
 Closed decisions and the alternatives they rejected are recorded in
 `DECISIONS.md`, including the resolved questions about user-wide Claude Code
-instructions and where the optional skill pool lives.
+instructions, where the optional skill pool lives, and how managed entries in a
+shared file record their ownership.

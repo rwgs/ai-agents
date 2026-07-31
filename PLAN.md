@@ -1,97 +1,89 @@
-# Repository review and planning reconciliation
+# State-preserving installation
 
-Approach for the review currently in flight. Replaced when the next non-trivial
-change begins, so anything that must outlive this review is promoted first:
-verified product facts to `SPEC.md`, actionable work to `TASKS.md`, and closed
-choices to `DECISIONS.md`.
+Approach for the change currently in flight. Replaced when the next non-trivial
+change begins, so anything that must outlive it is promoted first: verified
+product facts to `SPEC.md`, actionable work to `TASKS.md`, and closed choices to
+`DECISIONS.md`.
 
 ## Problem
 
-The repository's local gate passes, but its planning documents and user guidance
-do not describe one coherent current state:
-
-- Several sections in `TASKS.md` are labeled current although all of their work
-  is complete, while the unsafe installation behavior is filed as later work.
-- Phase 1 claims that installation preserves private Codex state even though the
-  current installer replaces `config.toml` and links a rules directory that
-  Codex writes into.
-- The Claude permission merge only adds entries, so removing a curated rule does
-  not withdraw its derived permission as the documentation promises.
-- Accepted no-branch and no-pull-request workflow decisions conflict with
-  Dependabot, dependency review, the required pull-request template, and an
-  unconditional independent-review step in `pr-readiness`.
-- Adoption and skill-pool guidance disagree about the planning documents to take
-  and whether project-local skills are copied twice or exposed from one source.
+Installation replaces state the agents own. `~/.codex/config.toml` is rendered
+from the repository, discarding marketplace registrations, plugin enablement,
+`mcp_servers`, `shell_environment_policy`, `[desktop]`, `personality`, `notify`,
+`[windows] sandbox`, and every trust entry outside `~/github`. `~/.codex/rules`
+is replaced by a link into this repository, so the machine keeps only the curated
+file and every approval Codex records afterwards lands in this working tree.
+`~/.claude/settings.json` is merged but append-only, so removing a rule from the
+curated source cannot withdraw the permission it granted.
 
 ## Constraints discovered
 
-- The worktree began clean on `main` at
-  `b6591810d3648f716624c12848a3c57c345ab32a`, matching `origin/main`.
-- The complete WSL gate passed before editing:
-  `installer integration test passed` and
-  `validation passed: 8 skills checked`.
-- The installed Codex CLI is `0.146.0-alpha.9.2`. Its strict-config-capable
-  `exec` command accepted the repository's base `config.toml`, and
-  `codex execpolicy check` accepted `default.rules` and allowed `rtk gain`.
-- The current official Codex manual describes
-  `approval_policy = "never"` plus
-  `sandbox_mode = "danger-full-access"` as full access, recommends the
-  workspace-write/on-request pair as the lower-risk local preset, and confirms
-  that TUI approvals are written to
-  `~/.codex/rules/default.rules`.
-- Windows PowerShell `5.1.26100.8875` is present on the reviewed machine, and
-  its `ConvertFrom-Json` has neither `AsHashtable` nor `Depth`. The
-  installer uses both; CI uses PowerShell 7 through `pwsh`.
-- GitHub live status could not be refreshed because the installed connector is
-  not connected and `gh` is unavailable. The automatic-push task therefore
-  remains pending on its recorded evidence instead of being guessed complete.
-- No installer behavior changes in this review. A `CHANGELOG.md` entry would
-  incorrectly imply that pulling this commit makes installation safe.
+- The worktree began clean on `main` at `f0a0c6f`, matching `origin/main`.
+- `~/.codex/rules/default.rules` on this machine holds 48 interactively approved
+  rules, no comments, and none of the curated set. Its first rule,
+  `prefix_rule(pattern=["Get-Content"], decision="allow")`, is a single-token
+  prefix, the same shape the curated file uses.
+- `~/.claude/settings.json` on this machine holds 832 allow entries with no
+  duplicates. Thirty-four are the `Tool(command *)` shape the installer derives,
+  including `Bash(git add *)`. None of the 278 currently derived entries is
+  present, because the installer has never run here.
+- The Codex CLI is on the path in neither PowerShell nor Git Bash nor WSL on this
+  machine. Whether Codex loads every `*.rules` file in its rules directory, and
+  whether it preserves comments when it appends an approval, cannot be verified
+  from here. `scripts/validate.sh` already skips its `codex execpolicy` check
+  when the binary is absent.
+- Both PowerShell editions are present: `pwsh` 7.6.4 and Windows PowerShell
+  5.1.26100.8875. The installer's `ConvertFrom-Json -AsHashtable -Depth 100` runs
+  only under the first.
+- Neither `gh` nor a personal access token is available here, so the Actions
+  check-suite preference cannot be set or read in this session.
+- Python's `tomllib` reads TOML and does not write it, and PowerShell has no TOML
+  support at all. A `config.toml` merge has to be textual on both sides.
 
 ## Approach
 
-- Add an immediate README warning against installing into a populated Codex home.
-- Correct the README and `docs/AGENT_LAYOUT.md` claim that rerunning after a rule
-  removal currently changes both agents.
-- Extend `SPEC.md` with the verified state-ownership, permission-removal, and
-  PowerShell compatibility facts plus acceptance criteria and unresolved
-  decisions.
-- Reconcile `ROADMAP.md`: close the historically completed workflow phases,
-  reopen the false state-preservation claim, and make safe installation plus
-  reliable push validation the single current phase.
-- Reorganize `TASKS.md` so only one phase is current, completed work is not
-  mixed with open tasks, each new defect has an observable acceptance condition,
-  speculative MCP work is not scheduled, and no-PR/adoption contradictions are
-  explicit future decisions.
-- Leave implementation and live GitHub settings unchanged. The ownership model,
-  execution posture, PowerShell support floor, and bot-PR policy each materially
-  change the result and require their own recorded decision before code changes.
-  Claude's unlabelled permission set may make identical managed and independent
-  grants indistinguishable, so the decision must define a conservative reported
-  outcome rather than assume provenance can always be reconstructed.
+- Record the ownership and provenance model first, because every remaining task
+  in the phase depends on it. Done: `DECISIONS.md`, "Shared files are merged
+  against a recorded provenance manifest".
+- Implement the state file, then the three merges against it, in both installers:
+  `config.toml` keys and generated trust tables, curated `prefix_rule` lines, and
+  derived Claude permissions. Keep the write, withdraw, and preserve-and-report
+  rule identical across all three so one behavior is tested three times.
+- Stop linking `ai-home/rules`. Replace an existing link with a real directory and
+  report the approvals recorded through it rather than adopting or discarding
+  them.
+- Decide the execution posture and the minimum PowerShell edition before the code
+  that depends on them: the posture decides what `config.toml` merges, and the
+  edition decides whether the JSON path may use `-AsHashtable`.
+- Close the validation gaps in the same pass, so managed removal and populated
+  state are exercised on both platforms rather than described.
+- Update `README.md`, `docs/AGENT_LAYOUT.md`, `SPEC.md`, and `CHANGELOG.md` last,
+  when the behavior they describe exists.
 
 ## Trade-offs
 
-- The review prioritizes preventing state loss and restoring trustworthy
-  validation over the re-applicable baseline. This delays new adoption features
-  until the baseline being propagated is safe.
-- Historical completed tasks remain visible, including work later superseded.
-  Their wording is clarified where a later audit proved that the original
-  "safe" claim was too broad.
-- The README warning is intentionally stronger than the existing backup claim.
-  Backups make replacement recoverable; they do not make replacement
-  state-preserving.
-- MCP management remains visible as a candidate but is removed from scheduled
-  work until a concrete requirement exists.
+- Merging is more code than rendering, in two languages, with no TOML library on
+  either side. The managed key set is small and fixed, so a textual merge that
+  refuses to guess is preferred to a parser that rewrites the file.
+- An identical grant approved after the installer wrote it is treated as
+  installer-owned and withdrawn. That costs one re-approval prompt and is
+  reported by name; the alternative is that a rule removed from the curated
+  source can never be revoked.
+- The first run after this change adopts nothing on an existing installation,
+  because no state file exists yet. Managed removal only starts working from the
+  run after that.
+- Installing on this machine is deliberately last. It is a first install into a
+  populated Codex home, which is exactly the case the current installer damages.
 
 ## Verification
 
-- Run `./scripts/validate.sh` under WSL after the documentation edits.
-- Inspect the complete diff and confirm that only planning and safety guidance
-  changed.
-- Search for multiple current phases, stale phase numbers, and unqualified
-  populated-home install guidance.
-- Confirm `ROADMAP.md`, `TASKS.md`, and `SPEC.md` agree on the current phase,
-  unresolved decisions, and exit criteria.
-- Do not mark live GitHub settings, a real Windows install, or cross-platform CI
-  as verified; none can be established by this documentation-only change.
+- `./scripts/validate.sh` under WSL, which is the only local environment here
+  that can create symbolic links.
+- Installer tests must cover a populated `config.toml`, a populated rules file,
+  and a populated `settings.json`: machine entries survive, a rerun changes
+  nothing, removing a curated rule withdraws only the recorded managed grants,
+  and a pre-existing identical grant is preserved and reported.
+- A manually dispatched three-platform run on `main`, read directly, before
+  relying on the push trigger that has never fired.
+- A dry run on this machine, inspected against the real `~/.codex` and
+  `~/.claude`, before any real install.

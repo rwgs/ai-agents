@@ -8,6 +8,119 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-07-31 Shared files are merged against a recorded provenance manifest
+
+Status: Accepted. Supersedes in part "Link managed files instead of copying them"
+below, which linked the Codex rules directory. The rest of that entry stands.
+
+### Decision
+
+Every managed target belongs to exactly one of three classes.
+
+- Repository-owned: the machine never writes it. The shared instruction file, the
+  model profiles, and every skill stay symbolic links, unchanged by this entry.
+- Shared: both this repository and the agent write it. `~/.codex/config.toml`,
+  `~/.codex/rules/default.rules`, and `~/.claude/settings.json` are never linked
+  and never replaced. The installer merges its own entries and leaves every other
+  byte of the file as it found it.
+- Machine-owned: any entry of a shared file the installer did not write. It is
+  never edited, reordered, or removed.
+
+Provenance lives outside the shared files, in one per-machine state file at
+`$AGENTS_HOME/ai-install-state.json`, defaulting to
+`~/.agents/ai-install-state.json`. For each shared file it records the entries the
+installer wrote and the exact value it wrote for each. An entry that already
+existed when the installer first merged that file is recorded as pre-existing and
+never becomes managed.
+
+One rule governs all three files:
+
+- Write an entry only when it is absent, or when its current value is
+  byte-identical to the value the state file says the installer last wrote.
+- Withdraw an entry only when the state file records the installer introduced it
+  and the entry is still byte-identical to what was written.
+- Otherwise preserve the entry and report it, including preserving a whole file
+  the installer cannot parse well enough to locate its managed entries in.
+- Treat a missing or unreadable state file as "nothing is managed": add what is
+  absent, change nothing that exists, remove nothing.
+
+### Why
+
+Verified on this machine on 2026-07-31, against the two files as the agents left
+them:
+
+- `~/.codex/rules/default.rules` holds 48 approvals Codex recorded interactively,
+  none of them curated, and no comments. The installer links that directory into
+  this repository, so after installation every approval Codex records is written
+  into this working tree and the machine keeps only the curated file.
+- `~/.claude/settings.json` holds 832 allow entries and no duplicates. Thirty-four
+  of them are the same `Tool(command *)` shape the installer derives, including
+  `Bash(git add *)`, and Codex's own first recorded rule is the single-token
+  prefix `["Get-Content"]`, the shape the curated rules use. Neither format has a
+  provenance field, and in both of them an agent-written entry can be spelled
+  exactly like a managed one, so shape proves nothing.
+
+That leaves an out-of-band record as the only mechanism that fits all three
+files, which is why there is one mechanism rather than one per format. JSON
+cannot carry a marker comment at all, and whether Codex preserves comments and
+block position when it appends an approval could not be verified here, because
+the Codex CLI is installed in neither shell on this machine.
+
+Recording provenance when the entry is written separates the two cases that leave
+evidence: a grant that pre-existed the first merge is machine-owned, and a grant
+the installer introduced and that is still unchanged is installer-owned. One case
+leaves no evidence in any format. A user who approves a permission the installer
+already granted changes nothing, because the agent sees the grant and never
+prompts. That case is treated as installer-owned, so withdrawal costs one
+re-approval prompt, reported by name and recoverable from the backup. The
+alternative costs revocation itself: a rule deliberately removed from the curated
+source would stay granted on every machine that ever installed it.
+
+### Rejected alternatives
+
+- Keeping the rules directory linked: it makes every interactive approval an
+  uncommitted change in this repository, and pushing it would install one
+  machine's approvals everywhere.
+- A marker-delimited managed block inside each file: expressible in TOML and in
+  the rules syntax but not in JSON, so Claude Code would need a second mechanism
+  anyway, and it assumes an append the agent performs leaves the block intact.
+- A file the installer owns outright, so provenance is file-level and no manifest
+  is needed: Claude Code's only such location is the enterprise managed-settings
+  path, which requires administrator rights that `SPEC.md` forbids depending on.
+  Whether Codex loads every `*.rules` file in its rules directory is unverified;
+  if it does, the curated rules move into an installer-owned file and their
+  provenance becomes file-level. That is a better substrate under this model, not
+  a different model.
+- Continuing to replace shared files and relying on the timestamped backup:
+  backups make replacement recoverable, not state-preserving, and nothing tells
+  the user that 48 approvals or an `mcp_servers` block are now only in a backup.
+- Replacing `permissions.allow` with the derived set: discards 832 approvals to
+  save recording what was written.
+- Preserving every stale grant and only ever reporting it: keeps the defect this
+  phase exists to fix, because the curated source could grant but never revoke.
+
+### Consequences
+
+`~/.codex/rules` stops being a link and becomes a real directory the installer
+merges into. On a machine where the link already exists, the approvals Codex
+recorded through it are in this repository's working tree, not in the machine's
+own file, so the migration has to report them for review rather than silently
+adopt or discard them.
+
+`config.toml` is merged key by key instead of rendered, and generated trust tables
+are managed entries keyed by project path, so a trust entry the user added by hand
+is never touched.
+
+The state file is a fourth thing installation creates in a managed home. It is
+per-machine, must never be tracked here, and its absence is safe by construction.
+
+`SPEC.md` already requires that no grant is deleted unless installer ownership is
+provable and that an ambiguous identical grant is reported instead. Under this
+entry an ambiguous identical grant is precisely one that pre-existed the first
+merge. Both installers, both installer tests, `README.md`, and
+`docs/AGENT_LAYOUT.md` change with the implementation; `TASKS.md` carries that
+work.
+
 ## 2026-07-31 No branches and no pull requests in this repository
 
 Status: Accepted.
@@ -530,7 +643,9 @@ there where Codex would never see them.
 
 ## 2026-06-21 Link managed files instead of copying them
 
-Status: Accepted.
+Status: Superseded in part by "Shared files are merged against a recorded
+provenance manifest" above, which stops linking the Codex rules directory because
+Codex writes interactive approvals into it. The rest stands.
 
 ### Decision
 

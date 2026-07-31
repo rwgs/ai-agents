@@ -155,13 +155,16 @@
   push creates a three-platform `Validate` run without manual dispatch. The
   GitHub connector was not connected during the 2026-07-31 review, so current
   live state remains unverified.
-- [ ] Define one ownership and provenance model for `config.toml`, Codex rules,
-  and derived Claude permissions before changing installer code. It must preserve
-  application-written state, support safe managed additions and removals, and
-  either distinguish an installer-owned grant from an independently approved
-  identical grant or define a conservative, visible outcome where the target
-  format makes that distinction impossible. Record the choice in `DECISIONS.md`
-  as a superseding entry to the 2026-06-21 link decision.
+- [x] Define one ownership and provenance model for `config.toml`, Codex rules,
+  and derived Claude permissions before changing installer code. Recorded in
+  `DECISIONS.md` as "Shared files are merged against a recorded provenance
+  manifest", superseding the 2026-06-21 link decision in part. Shared files are
+  merged, never linked or replaced; a per-machine state file records what the
+  installer wrote; an entry is written or withdrawn only when it is absent or
+  byte-identical to that record, and anything else is preserved and reported.
+  Shape carries no provenance in either format: the live `settings.json` holds 34
+  agent-written entries in the derived `Tool(command *)` shape, and Codex's own
+  first recorded rule is a single-token prefix like the curated ones.
 - [ ] Merge portable Codex defaults into `config.toml` instead of replacing the
   file, and generate exact trust entries from configurable or discovered roots
   that include where repositories actually live. Acceptance: seeded marketplace,
