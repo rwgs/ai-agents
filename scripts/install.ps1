@@ -28,18 +28,18 @@ $claudeHome = [System.IO.Path]::GetFullPath($claudeHome)
 $userHome = [System.IO.Path]::GetFullPath($userHome)
 $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $backupRoot = Join-Path $codexHome "backups/ai-$timestamp-$PID"
-$pluginManifest = Join-Path $repoRoot 'codex-plugins.txt'
+$codexPluginManifest = Join-Path $repoRoot 'codex-plugins.txt'
+$claudePluginManifest = Join-Path $repoRoot 'claude-plugins.txt'
 $configSource = Join-Path $repoRoot 'ai-home/codex/config.toml'
 $rulesSource = Join-Path $repoRoot 'ai-home/codex/rules/default.rules'
 $claudeSettings = Join-Path $claudeHome 'settings.json'
 $githubRoot = Join-Path $userHome 'github'
 
 if ($Plugins) {
-    if (-not (Test-Path -LiteralPath $pluginManifest -PathType Leaf)) {
-        throw "Plugin manifest does not exist: $pluginManifest"
-    }
-    if (-not $DryRun -and -not (Get-Command codex -ErrorAction SilentlyContinue)) {
-        throw 'Codex is required when using -Plugins.'
+    foreach ($manifest in @($codexPluginManifest, $claudePluginManifest)) {
+        if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) {
+            throw "Plugin manifest does not exist: $manifest"
+        }
     }
 }
 
@@ -448,22 +448,95 @@ function Remove-StaleManagedSkill {
     }
 }
 
-function Install-RecommendedPlugin {
-    Get-Content -LiteralPath $pluginManifest |
+function Test-AgentAvailable {
+    param(
+        [Parameter(Mandatory)]
+        [string] $Agent
+    )
+
+    # A dry run only prints what it would do, so a missing agent is not a problem.
+    if ($DryRun -or (Get-Command $Agent -ErrorAction SilentlyContinue)) {
+        return $true
+    }
+
+    Write-Warning "$Agent is not installed; skipping its plugins."
+    return $false
+}
+
+function Invoke-AgentPluginCommand {
+    param(
+        [Parameter(Mandatory)]
+        [string] $Agent,
+
+        [Parameter(Mandatory)]
+        [string[]] $CommandArgument,
+
+        [Parameter(Mandatory)]
+        [string] $FailureMessage
+    )
+
+    if ($DryRun) {
+        Write-DryRunCommand "$Agent $($CommandArgument -join ' ')"
+        return
+    }
+
+    $global:LASTEXITCODE = 0
+    & $Agent @CommandArgument
+    if ($LASTEXITCODE -ne 0) {
+        throw $FailureMessage
+    }
+}
+
+function Install-CodexPlugin {
+    if (-not (Test-AgentAvailable 'codex')) {
+        return
+    }
+
+    Get-Content -LiteralPath $codexPluginManifest |
         ForEach-Object {
             $plugin = $_.Trim()
-            if ($plugin) {
-                if ($DryRun) {
-                    Write-DryRunCommand "codex plugin add '$plugin'"
-                }
-                else {
-                    $global:LASTEXITCODE = 0
-                    & codex plugin add $plugin
-                    if ($LASTEXITCODE -ne 0) {
-                        throw "Failed to install Codex plugin: $plugin"
-                    }
-                }
+            if (-not $plugin) {
+                return
             }
+
+            # Codex ships openai-curated as a built-in marketplace, so a plugin
+            # from it needs no registration step.
+            Invoke-AgentPluginCommand -Agent 'codex' `
+                -CommandArgument @('plugin', 'add', $plugin) `
+                -FailureMessage "Failed to install Codex plugin: $plugin"
+        }
+}
+
+function Install-ClaudePlugin {
+    if (-not (Test-AgentAvailable 'claude')) {
+        return
+    }
+
+    Get-Content -LiteralPath $claudePluginManifest |
+        ForEach-Object {
+            $fields = $_.Trim() -split '\s+', 2
+            if (-not $fields[0]) {
+                return
+            }
+
+            if ($fields.Count -lt 2 -or -not $fields[1].Trim()) {
+                throw "Claude Code plugin entry has no marketplace source: $($fields[0])"
+            }
+
+            $selector = $fields[0]
+            $source = $fields[1].Trim()
+
+            # Claude Code registers no marketplace until its first interactive
+            # start, so an installer that runs before that must add the source
+            # itself. The URL is spelled out because owner/repo shorthand
+            # resolves over SSH. Both commands are idempotent, so a rerun
+            # re-clones and reinstalls nothing.
+            Invoke-AgentPluginCommand -Agent 'claude' `
+                -CommandArgument @('plugin', 'marketplace', 'add', $source) `
+                -FailureMessage "Failed to add Claude Code marketplace: $source"
+            Invoke-AgentPluginCommand -Agent 'claude' `
+                -CommandArgument @('plugin', 'install', $selector) `
+                -FailureMessage "Failed to install Claude Code plugin: $selector"
         }
 }
 
@@ -489,7 +562,8 @@ Remove-StaleManagedSkill (Join-Path $agentsHome 'skills')
 Remove-StaleManagedSkill (Join-Path $claudeHome 'skills')
 
 if ($Plugins) {
-    Install-RecommendedPlugin
+    Install-CodexPlugin
+    Install-ClaudePlugin
 }
 
 if ($DryRun) {

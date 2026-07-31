@@ -26,7 +26,8 @@ agents_home="${AGENTS_HOME:-$HOME/.agents}"
 claude_home="${CLAUDE_CONFIG_DIR:-$HOME/.claude}"
 timestamp="$(date +%Y%m%d-%H%M%S)"
 backup_root="$codex_home/backups/ai-$timestamp-$$"
-plugin_manifest="$repo_root/codex-plugins.txt"
+codex_plugin_manifest="$repo_root/codex-plugins.txt"
+claude_plugin_manifest="$repo_root/claude-plugins.txt"
 config_source="$repo_root/ai-home/codex/config.toml"
 rules_source="$repo_root/ai-home/codex/rules/default.rules"
 claude_settings="$claude_home/settings.json"
@@ -38,14 +39,12 @@ claude_rendered=""
 json_tool=""
 
 if "$install_plugins"; then
-  if [[ ! -f "$plugin_manifest" ]]; then
-    printf 'error: plugin manifest does not exist: %s\n' "$plugin_manifest" >&2
-    exit 1
-  fi
-  if ! "$dry_run" && ! command -v codex >/dev/null 2>&1; then
-    printf 'error: codex is required when using --plugins\n' >&2
-    exit 1
-  fi
+  for manifest in "$codex_plugin_manifest" "$claude_plugin_manifest"; do
+    if [[ ! -f "$manifest" ]]; then
+      printf 'error: plugin manifest does not exist: %s\n' "$manifest" >&2
+      exit 1
+    fi
+  done
 fi
 
 run() {
@@ -359,13 +358,52 @@ prune_managed_skills() {
   done
 }
 
-install_recommended_plugins() {
+agent_is_available() {
+  local agent="$1"
+
+  # A dry run only prints what it would do, so a missing agent is not a problem.
+  if "$dry_run" || command -v "$agent" >/dev/null 2>&1; then
+    return 0
+  fi
+
+  printf 'warning: %s is not installed; skipping its plugins\n' "$agent" >&2
+  return 1
+}
+
+install_codex_plugins() {
   local plugin
+
+  agent_is_available codex || return 0
 
   while IFS= read -r plugin || [[ -n "$plugin" ]]; do
     [[ -n "$plugin" ]] || continue
+    # Codex ships openai-curated as a built-in marketplace, so a plugin from it
+    # needs no registration step.
     run codex plugin add "$plugin"
-  done <"$plugin_manifest"
+  done <"$codex_plugin_manifest"
+}
+
+install_claude_plugins() {
+  local selector source
+
+  agent_is_available claude || return 0
+
+  while read -r selector source || [[ -n "$selector" ]]; do
+    [[ -n "$selector" ]] || continue
+
+    if [[ -z "$source" ]]; then
+      printf 'error: Claude Code plugin entry has no marketplace source: %s\n' \
+        "$selector" >&2
+      exit 1
+    fi
+
+    # Claude Code registers no marketplace until its first interactive start, so
+    # an installer that runs before that must add the source itself. The URL is
+    # spelled out because owner/repo shorthand resolves over SSH. Both commands
+    # are idempotent, so a rerun re-clones and reinstalls nothing.
+    run claude plugin marketplace add "$source"
+    run claude plugin install "$selector"
+  done <"$claude_plugin_manifest"
 }
 
 render_managed_config
@@ -391,7 +429,8 @@ prune_managed_skills "$agents_home/skills"
 prune_managed_skills "$claude_home/skills"
 
 if "$install_plugins"; then
-  install_recommended_plugins
+  install_codex_plugins
+  install_claude_plugins
 fi
 
 if "$dry_run"; then

@@ -28,6 +28,7 @@ required_files=(
   "SPEC.md"
   "TASKS.md"
   "codex-plugins.txt"
+  "claude-plugins.txt"
   "ai-home/AGENTS.md"
   "ai-home/codex/config.toml"
   "ai-home/codex/ollama.config.toml"
@@ -50,15 +51,37 @@ for relative in "${required_files[@]}"; do
   [[ -f "$repo_root/$relative" ]] || fail "missing $relative"
 done
 
-if grep -Evq '^[a-z0-9][a-z0-9-]*@[a-z0-9][a-z0-9-]*$' "$repo_root/codex-plugins.txt"; then
-  fail "codex-plugins.txt contains an invalid plugin selector"
-fi
+selector='[a-z0-9][a-z0-9-]*@[a-z0-9][a-z0-9-]*'
 
-plugin_count="$(grep -Ec '^[a-z0-9][a-z0-9-]*@[a-z0-9][a-z0-9-]*$' "$repo_root/codex-plugins.txt" || true)"
-[[ "$plugin_count" -gt 0 ]] || fail "codex-plugins.txt contains no plugins"
+# Codex resolves a selector against its built-in marketplaces, so a Codex entry
+# is the selector alone. Claude Code registers no marketplace until its first
+# interactive start, so a Claude entry also carries the marketplace source the
+# installer must add before installing from it.
+validate_plugin_manifest() {
+  local manifest="$1"
+  local pattern="$2"
+  local count duplicates
 
-duplicate_plugins="$(sort "$repo_root/codex-plugins.txt" | uniq -d)"
-[[ -z "$duplicate_plugins" ]] || fail "codex-plugins.txt contains duplicate plugins"
+  if grep -Evq "$pattern" "$repo_root/$manifest"; then
+    fail "$manifest contains an invalid plugin entry"
+  fi
+
+  count="$(grep -Ec "$pattern" "$repo_root/$manifest" || true)"
+  [[ "$count" -gt 0 ]] || fail "$manifest contains no plugins"
+
+  duplicates="$(sort "$repo_root/$manifest" | uniq -d)"
+  [[ -z "$duplicates" ]] || fail "$manifest contains duplicate plugins"
+}
+
+validate_plugin_manifest codex-plugins.txt "^$selector\$"
+validate_plugin_manifest claude-plugins.txt "^$selector https://[^ ]+\.git\$"
+
+# Superpowers is the one workflow plugin this repository installs, and it has to
+# reach both agents or the two configurations diverge.
+for plugin_manifest in codex-plugins.txt claude-plugins.txt; do
+  grep -Eq "^superpowers@" "$repo_root/$plugin_manifest" ||
+    fail "$plugin_manifest does not select the superpowers plugin"
+done
 
 if [[ -n "$python_tool" ]]; then
   for config_file in "$repo_root"/ai-home/codex/*.toml; do

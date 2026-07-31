@@ -196,17 +196,23 @@ HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_h
 
 fake_bin="$task_test_root/fake bin"
 plugin_log="$task_test_root/plugin-calls.log"
+claude_plugin_log="$task_test_root/claude-plugin-calls.log"
 mkdir -p "$fake_bin"
 cat >"$fake_bin/codex" <<'EOF'
 #!/usr/bin/env bash
 printf '%s\n' "$*" >>"$CODEX_PLUGIN_TEST_LOG"
 EOF
-chmod +x "$fake_bin/codex"
+cat >"$fake_bin/claude" <<'EOF'
+#!/usr/bin/env bash
+printf '%s\n' "$*" >>"$CLAUDE_PLUGIN_TEST_LOG"
+EOF
+chmod +x "$fake_bin/codex" "$fake_bin/claude"
 
 plugin_codex_home="$task_test_root/plugin codex"
 plugin_agents_home="$task_test_root/plugin agents"
 plugin_claude_home="$task_test_root/plugin claude"
 HOME="$test_user_home" PATH="$fake_bin:$PATH" CODEX_PLUGIN_TEST_LOG="$plugin_log" \
+  CLAUDE_PLUGIN_TEST_LOG="$claude_plugin_log" \
   CODEX_HOME="$plugin_codex_home" AGENTS_HOME="$plugin_agents_home" CLAUDE_CONFIG_DIR="$plugin_claude_home" \
   "$repo_root/scripts/install.sh" --plugins >/dev/null
 
@@ -215,11 +221,49 @@ actual_plugin_calls="$(sed -n '1,$p' "$plugin_log")"
 [[ "$actual_plugin_calls" == "$expected_plugin_calls" ]] ||
   fail "installer did not install the expected Codex plugins"
 
+# A Claude Code plugin needs its marketplace registered first, so each manifest
+# entry must produce the marketplace add before the install.
+expected_claude_calls="$(
+  awk 'NF { printf "plugin marketplace add %s\nplugin install %s\n", $2, $1 }' \
+    "$repo_root/claude-plugins.txt"
+)"
+actual_claude_calls="$(sed -n '1,$p' "$claude_plugin_log")"
+[[ "$actual_claude_calls" == "$expected_claude_calls" ]] ||
+  fail "installer did not install the expected Claude Code plugins"
+
+# A machine with only one agent must still install that agent's plugins. The
+# scenario needs Codex genuinely absent, so it is skipped where one is on PATH
+# rather than asserted against an environment that cannot produce it.
+if command -v codex >/dev/null 2>&1; then
+  printf 'note: codex is installed; skipping the missing-agent scenario\n'
+else
+  one_agent_bin="$task_test_root/one agent bin"
+  one_agent_log="$task_test_root/one-agent-plugin-calls.log"
+  unused_codex_log="$task_test_root/unused-codex-calls.log"
+  missing_codex_log="$task_test_root/missing-codex.log"
+  mkdir -p "$one_agent_bin"
+  cp "$fake_bin/claude" "$one_agent_bin/claude"
+
+  HOME="$test_user_home" PATH="$one_agent_bin:$PATH" \
+    CODEX_PLUGIN_TEST_LOG="$unused_codex_log" CLAUDE_PLUGIN_TEST_LOG="$one_agent_log" \
+    CODEX_HOME="$task_test_root/one agent codex" AGENTS_HOME="$task_test_root/one agent agents" \
+    CLAUDE_CONFIG_DIR="$task_test_root/one agent claude" \
+    "$repo_root/scripts/install.sh" --plugins >/dev/null 2>"$missing_codex_log"
+
+  grep -q '^warning: codex is not installed; skipping its plugins$' "$missing_codex_log" ||
+    fail "a missing agent did not report a skip warning"
+  [[ ! -e "$unused_codex_log" ]] || fail "installer invoked a missing agent"
+  [[ "$(sed -n '1,$p' "$one_agent_log")" == "$expected_claude_calls" ]] ||
+    fail "a missing Codex install blocked Claude Code plugin installation"
+fi
+
 dry_run_codex_home="$task_test_root/dry run codex"
 dry_run_agents_home="$task_test_root/dry run agents"
 dry_run_claude_home="$task_test_root/dry run claude"
 dry_run_plugin_log="$task_test_root/dry-run-plugin-calls.log"
+dry_run_claude_plugin_log="$task_test_root/dry-run-claude-plugin-calls.log"
 HOME="$test_user_home" PATH="$fake_bin:$PATH" CODEX_PLUGIN_TEST_LOG="$dry_run_plugin_log" \
+  CLAUDE_PLUGIN_TEST_LOG="$dry_run_claude_plugin_log" \
   CODEX_HOME="$dry_run_codex_home" AGENTS_HOME="$dry_run_agents_home" CLAUDE_CONFIG_DIR="$dry_run_claude_home" \
   "$repo_root/scripts/install.sh" --dry-run --plugins >/dev/null
 [[ ! -e "$dry_run_codex_home" && ! -L "$dry_run_codex_home" ]] ||
@@ -229,6 +273,8 @@ HOME="$test_user_home" PATH="$fake_bin:$PATH" CODEX_PLUGIN_TEST_LOG="$dry_run_pl
 [[ ! -e "$dry_run_claude_home" && ! -L "$dry_run_claude_home" ]] ||
   fail "dry-run created CLAUDE_CONFIG_DIR"
 [[ ! -e "$dry_run_plugin_log" ]] || fail "dry-run invoked Codex plugin installation"
+[[ ! -e "$dry_run_claude_plugin_log" ]] ||
+  fail "dry-run invoked Claude Code plugin installation"
 
 control_user_home="$task_test_root/control user home"
 control_repo="$control_user_home/github/bad"$'\n'"project"

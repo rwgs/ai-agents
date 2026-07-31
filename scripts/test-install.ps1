@@ -15,6 +15,7 @@ $previousCodexHome = [Environment]::GetEnvironmentVariable('CODEX_HOME', 'Proces
 $previousAgentsHome = [Environment]::GetEnvironmentVariable('AGENTS_HOME', 'Process')
 $previousClaudeHome = [Environment]::GetEnvironmentVariable('CLAUDE_CONFIG_DIR', 'Process')
 $previousPluginTestLog = [Environment]::GetEnvironmentVariable('CODEX_PLUGIN_TEST_LOG', 'Process')
+$previousClaudePluginTestLog = [Environment]::GetEnvironmentVariable('CLAUDE_PLUGIN_TEST_LOG', 'Process')
 $previousUserProfile = [Environment]::GetEnvironmentVariable('USERPROFILE', 'Process')
 
 function Assert-Condition {
@@ -179,9 +180,15 @@ try {
     ) 'Pruning followed a link and deleted its target'
 
     $pluginLog = Join-Path $taskTestRoot 'plugin-calls.log'
+    $claudePluginLog = Join-Path $taskTestRoot 'claude-plugin-calls.log'
     $env:CODEX_PLUGIN_TEST_LOG = $pluginLog
+    $env:CLAUDE_PLUGIN_TEST_LOG = $claudePluginLog
     function global:codex {
         Add-Content -LiteralPath $env:CODEX_PLUGIN_TEST_LOG -Value ($args -join ' ')
+        $global:LASTEXITCODE = 0
+    }
+    function global:claude {
+        Add-Content -LiteralPath $env:CLAUDE_PLUGIN_TEST_LOG -Value ($args -join ' ')
         $global:LASTEXITCODE = 0
     }
 
@@ -200,11 +207,67 @@ try {
         (($actualPluginCalls -join "`n") -eq ($expectedPluginCalls -join "`n"))
     ) 'Installer did not install the expected Codex plugins'
 
+    # A Claude Code plugin needs its marketplace registered first, so each
+    # manifest entry must produce the marketplace add before the install.
+    $expectedClaudeCalls = @(
+        Get-Content -LiteralPath (Join-Path $repoRoot 'claude-plugins.txt') |
+            ForEach-Object {
+                $fields = $_.Trim() -split '\s+', 2
+                if ($fields[0]) {
+                    "plugin marketplace add $($fields[1].Trim())"
+                    "plugin install $($fields[0])"
+                }
+            }
+    )
+    $actualClaudeCalls = @(Get-Content -LiteralPath $claudePluginLog)
+    Assert-Condition (
+        ($actualClaudeCalls.Count -eq $expectedClaudeCalls.Count) -and
+        (($actualClaudeCalls -join "`n") -eq ($expectedClaudeCalls -join "`n"))
+    ) 'Installer did not install the expected Claude Code plugins'
+
+    # A machine with only one agent must still install that agent's plugins. The
+    # scenario needs Claude Code genuinely absent, so it is skipped where one is
+    # installed rather than asserted against an environment that cannot produce
+    # it.
+    Remove-Item Function:\claude -ErrorAction SilentlyContinue
+    if (Get-Command claude -ErrorAction SilentlyContinue) {
+        Write-Output 'note: claude is installed; skipping the missing-agent scenario'
+    }
+    else {
+        $missingAgentLog = Join-Path $taskTestRoot 'missing-agent-plugin-calls.log'
+        $unusedClaudeLog = Join-Path $taskTestRoot 'unused-claude-calls.log'
+        $env:CODEX_PLUGIN_TEST_LOG = $missingAgentLog
+        $env:CLAUDE_PLUGIN_TEST_LOG = $unusedClaudeLog
+        $env:CODEX_HOME = Join-Path $taskTestRoot 'one agent codex'
+        $env:AGENTS_HOME = Join-Path $taskTestRoot 'one agent agents'
+        $env:CLAUDE_CONFIG_DIR = Join-Path $taskTestRoot 'one agent claude'
+        $missingAgentWarnings = @()
+        & (Join-Path $repoRoot 'scripts/install.ps1') -Plugins -WarningVariable missingAgentWarnings |
+            Out-Null
+
+        Assert-Condition (
+            ($missingAgentWarnings -join "`n") -match 'claude is not installed'
+        ) 'A missing agent did not report a skip warning'
+        Assert-Condition (
+            -not (Test-Path -LiteralPath $unusedClaudeLog)
+        ) 'Installer invoked a missing agent'
+        Assert-Condition (
+            (@(Get-Content -LiteralPath $missingAgentLog) -join "`n") -eq ($expectedPluginCalls -join "`n")
+        ) 'A missing Claude Code install blocked Codex plugin installation'
+    }
+
+    function global:claude {
+        Add-Content -LiteralPath $env:CLAUDE_PLUGIN_TEST_LOG -Value ($args -join ' ')
+        $global:LASTEXITCODE = 0
+    }
+
     $dryRunCodexHome = Join-Path $taskTestRoot 'dry run codex'
     $dryRunAgentsHome = Join-Path $taskTestRoot 'dry run agents'
     $dryRunClaudeHome = Join-Path $taskTestRoot 'dry run claude'
     $dryRunPluginLog = Join-Path $taskTestRoot 'dry-run-plugin-calls.log'
+    $dryRunClaudePluginLog = Join-Path $taskTestRoot 'dry-run-claude-plugin-calls.log'
     $env:CODEX_PLUGIN_TEST_LOG = $dryRunPluginLog
+    $env:CLAUDE_PLUGIN_TEST_LOG = $dryRunClaudePluginLog
     $env:CODEX_HOME = $dryRunCodexHome
     $env:AGENTS_HOME = $dryRunAgentsHome
     $env:CLAUDE_CONFIG_DIR = $dryRunClaudeHome
@@ -213,6 +276,9 @@ try {
     Assert-Condition (-not (Test-Path -LiteralPath $dryRunAgentsHome)) 'Dry-run created AGENTS_HOME'
     Assert-Condition (-not (Test-Path -LiteralPath $dryRunClaudeHome)) 'Dry-run created CLAUDE_CONFIG_DIR'
     Assert-Condition (-not (Test-Path -LiteralPath $dryRunPluginLog)) 'Dry-run invoked Codex plugin installation'
+    Assert-Condition (
+        -not (Test-Path -LiteralPath $dryRunClaudePluginLog)
+    ) 'Dry-run invoked Claude Code plugin installation'
 
     Write-Output 'installer integration test passed'
 }
@@ -245,6 +311,13 @@ finally {
         $env:CODEX_PLUGIN_TEST_LOG = $previousPluginTestLog
     }
 
+    if ($null -eq $previousClaudePluginTestLog) {
+        Remove-Item Env:CLAUDE_PLUGIN_TEST_LOG -ErrorAction SilentlyContinue
+    }
+    else {
+        $env:CLAUDE_PLUGIN_TEST_LOG = $previousClaudePluginTestLog
+    }
+
     if ($null -eq $previousUserProfile) {
         Remove-Item Env:USERPROFILE -ErrorAction SilentlyContinue
     }
@@ -253,6 +326,7 @@ finally {
     }
 
     Remove-Item Function:\codex -ErrorAction SilentlyContinue
+    Remove-Item Function:\claude -ErrorAction SilentlyContinue
 
     $tempRoot = [System.IO.Path]::GetFullPath([System.IO.Path]::GetTempPath())
     $normalizedTestRoot = [System.IO.Path]::GetFullPath($taskTestRoot)
