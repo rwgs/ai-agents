@@ -113,13 +113,37 @@
   TypeScript.
 - [x] Promote the one rule in `web-development` that matters without the skill
   loaded, detecting the package manager from the lockfile, to `ai-home/AGENTS.md`.
-- [ ] Create the private `rwgs/ai-skills` remote and push. `gh` is installed in
-  neither Git Bash nor PowerShell here, so the remote is configured and the commit
-  is waiting.
-- [ ] Delete `~/OneDrive/Development/ai/skills-optional/` only after that push,
-  so the pool is never the only copy.
-- [ ] Rerun the installer to link `python-scripting` and `web-verification` and
-  prune `python-ai`, `rust-cli`, and `web-development`.
+- [x] Push the pool to the private `rwgs/ai-skills` remote. All ten skills are on
+  `origin/main` at `4c6cf88`. `gh` is installed in neither Git Bash nor PowerShell
+  here, so the repository was created outside this environment.
+- [x] Delete `~/OneDrive/Development/ai/skills-optional/`, after confirming all
+  thirty files were content-identical to the pushed pool and differed only in line
+  endings. The emptied parent directory went with it.
+- [ ] Install on this machine, which needs symbolic links: Developer Mode has never
+  been enabled here, the `AppModelUnlock` key is absent, and the shell is
+  unelevated, so every link fails with an administrator-privilege error. Nothing is
+  installed yet either, so this is a first install and not a rerun: there are no
+  stale `python-ai`, `rust-cli`, or `web-development` links to prune.
+- [ ] Decide what the installer does about the Codex state recorded in the
+  `SPEC.md` "Machine-owned agent state" section before installing here. The
+  additive steps are safe; linking `rules/` and rendering `config.toml` are not.
+
+## Later phase: Reconcile installation with machine-owned Codex state
+
+- [ ] Merge `config.toml` rather than rendering it, preserving every key the
+  machine owns, and generate trust entries for the roots repositories actually
+  live under instead of `~/github` alone.
+- [ ] Settle whether `ai-home/rules/` can be linked at all, given that Codex
+  writes approved prefix rules into `default.rules`. Linking makes this repository
+  the store for one-off session approvals; the alternative is the merge treatment
+  `settings.json` already gets.
+- [ ] Record the outcome in `DECISIONS.md` as a superseding entry. The accepted
+  2026-06-21 entry lists the rules directory as fully repository-owned and
+  justifies rendering `config.toml` by trust entries alone, and both halves of
+  that premise are now known to be wrong.
+- [ ] Cover the new behavior in `scripts/test-install.sh`,
+  `scripts/test-install.ps1`, and `scripts/validate.sh`, and add a `CHANGELOG.md`
+  entry, because this changes what installation does to a machine.
 
 ## Later phase: Re-appliable repository baseline
 

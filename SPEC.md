@@ -68,6 +68,26 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 - `AGENTS.md`, this specification, `ROADMAP.md`, `TASKS.md`, `PLAN.md`, and
   `DECISIONS.md` define how the repository is maintained.
 
+## Machine-owned agent state
+
+Verified on a Windows machine running the Codex desktop application, against
+`~/.codex` as Codex left it. Both facts contradict what the installer currently
+assumes, and `TASKS.md` carries the work to reconcile them.
+
+- `~/.codex/rules/default.rules` accumulates interactively approved prefix rules,
+  exactly as Claude Code's `settings.json` accumulates approved permissions. The
+  observed file held 48 such rules and none of the repository's curated set. The
+  installer links the rules directory, so after installation every approval Codex
+  records is written into this repository's working tree, and the curated file is
+  the only thing the machine keeps.
+- `config.toml` carries machine-owned state well beyond trust entries: marketplace
+  registrations, per-plugin enablement, an `mcp_servers` block holding runtime pipe
+  and executable paths, `shell_environment_policy`, `[desktop]`, `personality`,
+  `notify`, and `[windows] sandbox`. Rendering the file from
+  `ai-home/codex/config.toml` discards all of it. Trust entries are also lost
+  wherever repositories live outside `~/github`, because the render generates
+  entries only from that root.
+
 ## Security and privacy
 
 - Never track authentication files, session history, caches, logs, or runtime
