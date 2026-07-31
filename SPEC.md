@@ -86,7 +86,7 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 - Managing credentials, plugin caches or authentication, sessions, or caches.
 - Installing plugins without an explicit opt-in.
 - Replacing project-specific `AGENTS.md` or requirements.
-- Installing Codex, Claude Code, CodeRabbit, RTK, or local model servers.
+- Installing Codex, Claude Code, RTK, or local model servers.
 - Adding security scanners that do not support the repository's languages.
 
 ## Acceptance criteria
