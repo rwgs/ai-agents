@@ -36,3 +36,6 @@ commands used by this repository.
 - Read `SPEC.md` for requirements and acceptance criteria.
 - Read `ROADMAP.md` for phase order and exit criteria.
 - Read `TASKS.md` for current work and validation status.
+- Read `PLAN.md` for the approach behind the change currently in flight.
+- Read `DECISIONS.md` before changing an area it constrains, and before
+  proposing an approach it already rejected.

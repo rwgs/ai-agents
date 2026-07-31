@@ -1,6 +1,6 @@
 ---
 name: ai-project-manager
-description: Turn repository planning docs into actionable AI-agent implementation plans using AGENTS.md, SPEC.md, ROADMAP.md, TASKS.md, approval checkpoints, validation, and incremental execution. Use when asked to plan a project, create or reconcile project docs, derive tasks, coordinate phases, update task status, or manage an AI-assisted development workflow.
+description: Turn repository planning docs into actionable AI-agent implementation plans using AGENTS.md, SPEC.md, ROADMAP.md, TASKS.md, DECISIONS.md, approval checkpoints, validation, and incremental execution. Use when asked to plan a project, create or reconcile project docs, derive tasks, coordinate phases, update task status, record why an approach was chosen or rejected, or manage an AI-assisted development workflow.
 ---
 
 # ai-project-manager
@@ -9,9 +9,9 @@ description: Turn repository planning docs into actionable AI-agent implementati
 
 1. Inspect repository instructions, current changes, and the active branch.
 2. Identify which planning documents are relevant to the task. Locate each
-   relevant `SPEC.md`, `ROADMAP.md`, or `TASKS.md` at the repository root first,
-   then under `docs/`. If both locations contain a relevant document, read both
-   and surface conflicts.
+   relevant `SPEC.md`, `ROADMAP.md`, `TASKS.md`, or `DECISIONS.md` at the
+   repository root first, then under `docs/`. If both locations contain a
+   relevant document, read both and surface conflicts.
 3. Determine missing requirements, unresolved decisions, dependencies, risks,
    and implementation impact.
 4. Create a phase plan that maps to acceptance criteria and defines automated
@@ -23,7 +23,12 @@ description: Turn repository planning docs into actionable AI-agent implementati
 6. Once implementation is authorized, execute one reviewable phase at a time.
 7. Validate the phase, inspect the diff, summarize evidence, and update task
    status only after the exit criteria pass.
-8. Hand completed implementation to a pull-request readiness workflow when the
+8. Promote what must outlive `PLAN.md` before the next change replaces it:
+   decisions that constrain future work into `DECISIONS.md` together with the
+   alternatives they rejected, and verified facts that change how the project is
+   understood into `AGENTS.md` or `SPEC.md`. Create `DECISIONS.md` only when a
+   decision meets that bar.
+9. Hand completed implementation to a pull-request readiness workflow when the
    user asks to prepare, review, publish, or merge the change.
 
 ## Diagnostics
@@ -31,7 +36,7 @@ description: Turn repository planning docs into actionable AI-agent implementati
 ```bash
 git status --short
 git branch --show-current
-rg --files -g 'AGENTS.md' -g 'AGENTS.override.md' -g 'SPEC.md' -g 'ROADMAP.md' -g 'TASKS.md'
+rg --files -g 'AGENTS.md' -g 'AGENTS.override.md' -g 'SPEC.md' -g 'ROADMAP.md' -g 'TASKS.md' -g 'DECISIONS.md'
 ```
 
 Read every applicable `AGENTS.md` and each planning document relevant to the
@@ -46,6 +51,8 @@ leaving placeholders or inventing requirements.
 - Never rewrite project requirements unless asked.
 - Never mark a task done without validation or a stated reason validation was skipped.
 - Never ignore conflicts between SPEC, ROADMAP, TASKS, and code.
+- Never repropose an approach `DECISIONS.md` rejected without stating what
+  changed.
 - Never cross a user approval or plan-only checkpoint.
 - Never treat an agent's implementation report as validation evidence.
 - Keep project-specific knowledge in project docs, not reusable skills.
@@ -57,5 +64,7 @@ leaving placeholders or inventing requirements.
 - Each task has clear scope and acceptance criteria.
 - Automated and manual validation are defined before implementation.
 - Completed work updates task status when appropriate.
+- Decisions that constrain future work are recorded before `PLAN.md` is
+  replaced.
 - The final diff contains only the intended phase.
 - Final summary lists changed files, checks run, skipped checks, and residual risk.

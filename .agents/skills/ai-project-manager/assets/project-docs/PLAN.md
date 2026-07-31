@@ -1,7 +1,9 @@
 # <Change name>
 
 Approach for the change currently in flight. Replaced when the next non-trivial
-change begins.
+change begins, so anything that must outlive this change is promoted first:
+decisions that constrain future work to `DECISIONS.md`, and verified facts that
+change how the project is understood to `AGENTS.md` or `SPEC.md`.
 
 ## Problem
 
