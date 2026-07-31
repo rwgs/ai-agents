@@ -186,7 +186,7 @@ Invoke a skill explicitly when needed. Codex uses a `$` prefix and Claude Code
 uses a `/` prefix:
 
 ```text
-$linux-sysadmin diagnose this service failure
+$bash-scripting harden this deployment script
 /pr-readiness
 ```
 

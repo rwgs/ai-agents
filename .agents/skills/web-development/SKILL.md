@@ -9,8 +9,8 @@ description: Build, test, and debug JavaScript and TypeScript projects, includin
 
 JavaScript and TypeScript project work, from type errors to browser behavior.
 For shell automation around a project use `bash-scripting` or
-`powershell-scripting`, and for the host or container a site runs on use the
-sysadmin or `infrastructure` skills.
+`powershell-scripting`. Administering the host or container a site runs on is
+out of scope for this skill.
 
 ## Workflow
 

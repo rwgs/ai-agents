@@ -79,16 +79,12 @@ Installed into both agents by the installer.
 - `adopt-baseline`
 - `ai-project-manager`
 - `bash-scripting`
-- `infrastructure`
-- `linux-sysadmin`
-- `podman-operator`
 - `powershell-scripting`
 - `pr-readiness`
 - `python-ai`
 - `rust-cli`
 - `show-codex-reset-expiries`
 - `web-development`
-- `windows-sysadmin`
 
 Run `./scripts/validate.sh` after adding, moving, or changing a skill.
 Validation fails when this list and the skill directories drift apart, and

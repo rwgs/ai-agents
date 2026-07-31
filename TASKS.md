@@ -25,7 +25,7 @@
 - [x] Rename PowerShell functions to approved verbs and singular nouns, and add
   PSScriptAnalyzer to local validation and CI.
 - [x] Add a `PLAN.md` convention, template, and documentation routing.
-- [x] Add the `powershell-scripting` and `windows-sysadmin` skills.
+- [x] Add the `powershell-scripting` skill.
 - [x] Make skill descriptions agent-neutral and separate the host and fleet
   sysadmin triggers.
 - [x] Add the `adopt-baseline` skill for standardising existing repositories.
@@ -35,6 +35,8 @@
 - [x] Install the Superpowers plugin into Claude Code as well as Codex, adding
   its marketplace first because Claude Code registers none until first use.
 - [x] Skip a missing agent's plugins with a warning instead of failing the run.
+- [x] Narrow the default skill set to workflow, language, and project skills by
+  dropping the systems administration, infrastructure, and container skills.
 - [x] Run repository, shell, installer, and skill validation locally.
 - [ ] Confirm the Windows installer integration test passes in CI.
 - [ ] Inspect the final diff and stage only parity changes.
