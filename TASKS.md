@@ -38,14 +38,15 @@
 - [x] Narrow the default skill set to workflow, language, and project skills by
   dropping the systems administration, infrastructure, and container skills.
 - [x] Run repository, shell, installer, and skill validation locally.
-- [ ] Confirm the Windows installer integration test passes in CI. The first run
+- [x] Confirm the Windows installer integration test passes in CI. The first run
   ever to execute, dispatched manually as run `30653338945`, failed on
   `windows-latest` while `ubuntu-latest` and `macos-latest` passed. Stale-link
   pruning called `[System.IO.Directory]::Delete` on a link Windows had recorded as
   a file, because `New-Item -ItemType SymbolicLink` produces a file reparse point
   when the target does not exist, which is how `scripts/test-install.ps1`
-  fabricates the stale link. `install.sh` uses `rm -f` and is unaffected. Fixed by
-  deleting through the entry itself; awaiting a CI run to confirm.
+  fabricates the stale link. `install.sh` uses `rm -f` and is unaffected. Deleting
+  through the entry itself fixed it, confirmed green on `windows-latest` by run
+  `30657841763` on `main`.
 - [x] Inspect the final diff and stage only parity changes.
 
 ## Current phase: Decision records
@@ -76,8 +77,10 @@
 - [x] Run repository, shell, installer, and skill validation on a platform where
   the installer integration test can create symbolic links. Git Bash on Windows
   cannot, and that failure reproduces on a clean tree. WSL passes in full.
-- [ ] Confirm validation passes in CI on Linux, macOS, and Windows. Linux and
-  macOS are confirmed by run `30653338945`; Windows waits on the pruning fix above.
+- [x] Confirm validation passes in CI on Linux, macOS, and Windows. Run
+  `30657841763`, dispatched on `main` at `6ba19e3`, passed `ubuntu-latest`,
+  `macos-latest`, and `windows-latest`. `dependency-review` skipped, as it always
+  will now.
 - [ ] Make a push to `main` trigger the workflow. It never has. Actions is
   enabled, all actions are allowed, and `Validate` is active with a
   `push: branches: [main]` trigger, yet pushing `90073f0` created check suites for
