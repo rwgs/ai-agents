@@ -70,9 +70,24 @@ jobs:
           }
           Write-Output 'PSScriptAnalyzer: no findings'
 
-      - name: Test PowerShell installer
+      # Both supported editions run the complete test. Windows ships 5.1 and
+      # pwsh is a separate installation, so a 7-only feature would otherwise
+      # reach users through a green build.
+      - name: Test PowerShell installer (PowerShell 7)
         shell: pwsh
-        run: ./scripts/test-install.ps1
+        run: |
+          if ($PSVersionTable.PSVersion.Major -lt 7) {
+            throw "Expected PowerShell 7 or later, got $($PSVersionTable.PSVersion)."
+          }
+          ./scripts/test-install.ps1
+
+      - name: Test PowerShell installer (Windows PowerShell 5.1)
+        shell: powershell
+        run: |
+          if ($PSVersionTable.PSVersion.Major -ne 5) {
+            throw "Expected Windows PowerShell 5.1, got $($PSVersionTable.PSVersion)."
+          }
+          ./scripts/test-install.ps1
 
   dependency-review:
     name: Dependency review

@@ -66,7 +66,8 @@ try {
   "model": "opus[1m]",
   "permissions": {
     "allow": [
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(grep -n 'a&b' <c> *)"
     ],
     "additionalDirectories": [
       "/tmp"
@@ -94,6 +95,17 @@ try {
     Assert-Condition (
         $installedConfigContent.Contains("[projects.`"$escapedGitHubRepo`"]")
     ) 'Generated config does not trust a nested Git repository'
+    # The baseline asks before acting. Installing must never escalate a machine
+    # to Codex's unrestricted preset.
+    Assert-Condition (
+        $installedConfigContent.Contains('sandbox_mode = "workspace-write"')
+    ) 'Installed config does not sandbox writes to the workspace'
+    Assert-Condition (
+        $installedConfigContent.Contains('approval_policy = "on-request"')
+    ) 'Installed config does not ask for approval'
+    Assert-Condition (
+        -not $installedConfigContent.Contains('danger-full-access')
+    ) 'Installed config grants unrestricted access'
     Assert-Link (Join-Path $testCodexHome 'rules') (Join-Path $repoRoot 'ai-home/rules')
     Assert-Link (Join-Path $testCodexHome 'ollama.config.toml') (Join-Path $repoRoot 'ai-home/codex/ollama.config.toml')
     Assert-Link (Join-Path $testCodexHome 'llamacpp.config.toml') (Join-Path $repoRoot 'ai-home/codex/llamacpp.config.toml')
@@ -107,20 +119,30 @@ try {
     Assert-Link (Join-Path $testClaudeHome 'CLAUDE.md') (Join-Path $repoRoot 'ai-home/AGENTS.md')
 
     $claudeSettingsPath = Join-Path $testClaudeHome 'settings.json'
-    $mergedSettings = Get-Content -LiteralPath $claudeSettingsPath -Raw |
-        ConvertFrom-Json -AsHashtable -Depth 100
-    $mergedAllow = @($mergedSettings.permissions.allow)
+    # Plain ConvertFrom-Json, because Windows PowerShell 5.1 has no -AsHashtable
+    # and the installer has to run there too.
+    $mergedSettings = Get-Content -LiteralPath $claudeSettingsPath -Raw | ConvertFrom-Json
+    $mergedPermissions = $mergedSettings.permissions
+    $mergedAllow = @($mergedPermissions.allow)
     Assert-Condition ($mergedSettings.model -eq 'opus[1m]') 'Unrelated Claude setting was lost'
     Assert-Condition (
-        $mergedSettings.permissions.additionalDirectories[0] -eq '/tmp'
+        $mergedPermissions.additionalDirectories[0] -eq '/tmp'
     ) 'Claude additionalDirectories changed'
     Assert-Condition (
-        -not $mergedSettings.permissions.ContainsKey('deny') -and
-        -not $mergedSettings.permissions.ContainsKey('ask')
+        ($mergedPermissions.PSObject.Properties.Name -notcontains 'deny') -and
+        ($mergedPermissions.PSObject.Properties.Name -notcontains 'ask')
     ) 'Absent Claude permission keys were invented'
     Assert-Condition (
         $mergedAllow[0] -eq 'Bash(git add *)'
     ) 'Existing Claude allow entry was lost or reordered'
+    # Windows PowerShell 5.1 escapes these characters when it serializes JSON and
+    # PowerShell 7 does not, so an unnormalized merge rewrites approved commands.
+    Assert-Condition (
+        $mergedAllow -contains "Bash(grep -n 'a&b' <c> *)"
+    ) 'Claude allow entry with escapable characters was rewritten'
+    Assert-Condition (
+        (Get-Content -LiteralPath $claudeSettingsPath -Raw).Contains("'a&b' <c>")
+    ) 'Merged Claude settings escaped characters the source file wrote literally'
     Assert-Condition (
         $mergedAllow -contains 'Bash(rtk *)' -and $mergedAllow -contains 'PowerShell(rtk *)'
     ) 'Derived Claude allow entries missing'

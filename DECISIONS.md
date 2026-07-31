@@ -8,6 +8,122 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-07-31 Windows PowerShell 5.1 is the supported floor
+
+Status: Accepted.
+
+### Decision
+
+`scripts/install.ps1` and `scripts/test-install.ps1` run under Windows
+PowerShell 5.1 and under PowerShell 7. Neither uses a parameter, cmdlet, or
+syntax that 5.1 lacks, and CI runs the complete installer integration test under
+both editions.
+
+### Why
+
+5.1 is the edition Windows ships. `pwsh` is a separate installation, so the
+`.\scripts\install.ps1` line in `README.md` is read by most Windows users as an
+instruction for the shell they already have.
+
+Verified on this machine on 2026-07-31: Windows PowerShell 5.1.26100.8875
+rejects `ConvertFrom-Json -AsHashtable` outright, and the installer uses it to
+merge `settings.json`. CI runs only `pwsh` 7, so the documented Windows install
+fails in the default shell while the Windows job stays green.
+
+The compatibility cost is small and bounded. Plain `ConvertFrom-Json` behaves the
+same in both editions, returning a `PSCustomObject` that preserves the order of
+the keys in the file, which `-AsHashtable` does not. The one real difference is
+serialization: 5.1 writes `<`, `>`, `&`, and `'` as six-character Unicode
+escapes, where PowerShell 7 writes the characters themselves. Of the 832 approved
+entries in the live `settings.json`, 278 contain `'` and 193 contain `&`, so this
+is not hypothetical. The merged JSON has to be normalized before it is written,
+or changing edition would rewrite characters inside permissions the user
+approved. Both editions escape `"` and `\` identically.
+
+Also verified: symbolic-link creation fails identically in both editions on a
+machine without Developer Mode or elevation, so this floor neither adds nor
+removes the existing prerequisite.
+
+### Rejected alternatives
+
+- PowerShell 7 as the minimum, with a version guard that fails fast: cheaper, one
+  Windows CI job, and honest. Rejected because it makes the documented Windows
+  install fail in the shell Windows provides, to avoid replacing one cmdlet
+  parameter.
+- Keeping `-AsHashtable` and warning when it is unavailable: the same failure,
+  reached less clearly, and it leaves the merge unperformed on the edition most
+  likely to run it.
+- Relying on PSScriptAnalyzer's compatibility rules instead of a second CI job:
+  they check known cmdlet and syntax surfaces, not whether the installer's own
+  merge works. Running the real integration test under 5.1 subsumes them.
+
+### Consequences
+
+The Windows CI job runs the installer test twice, once per edition, and each run
+asserts the edition it is on. Any future use of a 7-only feature has to be caught
+there, so the test must exercise the populated merge paths rather than only a
+clean home. `scripts/validate.sh` keeps analysing the scripts with whichever
+`pwsh` is present, because that step checks syntax rather than runtime edition.
+
+The two editions indent JSON differently, so alternating between them rewrites
+the whitespace of `settings.json` once per switch and backs the previous file up.
+The content is identical, which is what the merge compares.
+
+## 2026-07-31 The portable Codex default asks before acting
+
+Status: Accepted. Resolves the `SPEC.md` question about whether the baseline is
+Codex's unrestricted preset.
+
+### Decision
+
+`ai-home/codex/config.toml` sets `sandbox_mode = "workspace-write"` and
+`approval_policy = "on-request"`, replacing `danger-full-access` and `never`. It
+sets no `[sandbox_workspace_write]` overrides, so Codex's own defaults apply
+inside the sandbox and the agent asks when it needs to leave it.
+
+### Why
+
+The reviewed machine has never had either key set: its `~/.codex/config.toml`
+carries a model, trust entries, marketplaces, plugins, MCP servers, and a
+`[desktop]` block, and no execution posture at all. Codex has therefore been
+running on its own defaults there and has recorded 48 interactive approvals.
+Installing the previous baseline would have silently replaced that with
+unrestricted execution and no prompts, which is the opposite of what a user
+installing a "safe baseline" expects, and `SPEC.md` separately requires explicit
+authorization for destructive work.
+
+The approval stream is also what this repository's permission model is built on.
+`~/.codex/rules/default.rules` accumulates approvals, and the curated file is
+derived into Claude Code's allowlist from the same vocabulary. Under
+`approval_policy = "never"` Codex never asks, so nothing is ever approved and the
+mechanism the baseline documents has nothing to record.
+
+### Rejected alternatives
+
+- Keeping the unrestricted preset and rewriting the documentation to match: it is
+  a real posture some users want, but it escalates every machine that installs
+  the baseline, and the escalation is invisible afterwards because the keys look
+  like ordinary configuration.
+- Managing neither key and leaving the posture to each machine: the baseline
+  would have no opinion on the one setting that decides what an agent may do
+  without asking, and an upstream default change would move every machine with no
+  diff here.
+- Adding `[sandbox_workspace_write] network_access = true` so package managers
+  keep working inside the sandbox: plausible, but unverifiable in this session
+  because the Codex CLI is installed nowhere on this machine, and
+  `on-request` already lets the agent ask to escalate rather than fail.
+
+### Consequences
+
+A machine that installs the baseline now gets approval prompts where the previous
+config would have run everything unattended. That is the intended change.
+
+A machine that installed the previous baseline already has
+`approval_policy = "never"` in its rendered `config.toml`. Under the provenance
+model no state file records those keys, so the installer will not rewrite them.
+It reports them as unmanaged values that differ from the baseline, and the user
+decides. This is the general preserve-and-report rule, not an exception to it.
+
 ## 2026-07-31 Shared files are merged against a recorded provenance manifest
 
 Status: Accepted. Supersedes in part "Link managed files instead of copying them"

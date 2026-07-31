@@ -175,17 +175,26 @@
   Codex keeps interactive approvals out of this working tree, removing one
   curated rule removes only provably managed Bash and PowerShell grants, and an
   ambiguous identical grant survives with an actionable report.
-- [ ] Decide whether the portable Codex default intentionally uses the
+- [x] Decide whether the portable Codex default intentionally uses the
   unrestricted `approval_policy = "never"` plus
   `sandbox_mode = "danger-full-access"` preset or changes to an
-  approval-capable sandbox. Align `SPEC.md`, `ai-home/AGENTS.md`, README guidance,
-  and tests with the decision; do not leave a "safe baseline" claim paired with
-  an undocumented unrestricted execution posture.
+  approval-capable sandbox. It changes: `ai-home/codex/config.toml` now sets
+  `sandbox_mode = "workspace-write"` and `approval_policy = "on-request"`,
+  recorded in `DECISIONS.md` as "The portable Codex default asks before acting".
+  `SPEC.md` and `README.md` state it, both installer tests assert it and reject
+  `danger-full-access`, and `ai-home/AGENTS.md` needed no change because nothing
+  in it claimed a posture.
 - [ ] State the minimum supported PowerShell edition and make implementation and
-  CI match it. Windows PowerShell 5.1 on the reviewed machine lacks both
-  `ConvertFrom-Json -AsHashtable` and `-Depth`, while the installer uses both and
-  CI tests only `pwsh`. Acceptance: every documented edition runs the populated
-  `settings.json` merge and the complete installer integration test.
+  CI match it. Decided: Windows PowerShell 5.1 is the floor, recorded in
+  `DECISIONS.md`. `install.ps1` and `test-install.ps1` no longer use
+  `ConvertFrom-Json -AsHashtable -Depth`, and the merge normalises the Unicode
+  escapes 5.1 emits for `<`, `>`, `&`, and `'`, which 278 and 193 of this
+  machine's 832 approved entries contain. Verified locally by running the
+  installer's own merge functions under 5.1.26100.8875 and 7.6.4: same entries,
+  same key order, idempotent, characters intact. The Windows CI job now runs the
+  complete installer test under both editions; that run is the remaining
+  evidence, because symbolic-link creation needs Developer Mode or elevation and
+  fails here in both editions.
 - [ ] Close executable validation gaps while changing the installers. CI must
   reject malformed `default.rules` without relying on a developer-local Codex
   binary, exercise managed permission removal and populated Codex state on both

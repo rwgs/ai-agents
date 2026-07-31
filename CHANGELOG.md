@@ -10,6 +10,17 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-07-31
 
+- Changed the Codex execution posture the installer writes. `config.toml` now
+  carries `sandbox_mode = "workspace-write"` and `approval_policy = "on-request"`
+  instead of `danger-full-access` and `never`, so Codex works inside the project
+  directory and asks before acting outside it. A machine that installed an
+  earlier version keeps the unrestricted pair until it reinstalls, because the
+  keys sit in the machine's own `config.toml`.
+- Made the Windows installer run under Windows PowerShell 5.1, the edition
+  Windows ships, as well as PowerShell 7. The Claude permission merge previously
+  used a parameter 5.1 does not have and failed there. The merge also keeps
+  `<`, `>`, `&`, and `'` as written, which 5.1 would otherwise rewrite as escape
+  sequences throughout `settings.json`.
 - Fixed stale skill-link pruning on Windows. Pruning a link whose target no
   longer exists could fail with "The directory name is invalid", aborting the
   installer after it had linked the current skills but before it finished

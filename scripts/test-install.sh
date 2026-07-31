@@ -52,7 +52,8 @@ cat >"$test_claude_home/settings.json" <<'EOF'
   "model": "opus[1m]",
   "permissions": {
     "allow": [
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(grep -n 'a&b' <c> *)"
     ],
     "additionalDirectories": [
       "/tmp"
@@ -71,6 +72,14 @@ grep -Fqx "[projects.\"$test_user_home/github\"]" "$test_codex_home/config.toml"
   fail "generated config does not trust the user GitHub root"
 grep -Fqx "[projects.\"$test_github_repo\"]" "$test_codex_home/config.toml" ||
   fail "generated config does not trust a nested Git repository"
+# The baseline asks before acting. Installing must never escalate a machine to
+# Codex's unrestricted preset.
+grep -Fqx 'sandbox_mode = "workspace-write"' "$test_codex_home/config.toml" ||
+  fail "installed config does not sandbox writes to the workspace"
+grep -Fqx 'approval_policy = "on-request"' "$test_codex_home/config.toml" ||
+  fail "installed config does not ask for approval"
+! grep -Fq 'danger-full-access' "$test_codex_home/config.toml" ||
+  fail "installed config grants unrestricted access"
 assert_link "$test_codex_home/rules" "$repo_root/ai-home/rules"
 assert_link "$test_codex_home/ollama.config.toml" "$repo_root/ai-home/codex/ollama.config.toml"
 assert_link "$test_codex_home/llamacpp.config.toml" "$repo_root/ai-home/codex/llamacpp.config.toml"
@@ -100,6 +109,11 @@ assert settings["model"] == "opus[1m]", "unrelated setting was lost"
 assert permissions["additionalDirectories"] == ["/tmp"], "additionalDirectories changed"
 assert "deny" not in permissions and "ask" not in permissions, "absent keys were invented"
 assert allow[0] == "Bash(git add *)", "existing allow entry was lost or reordered"
+# The PowerShell installer has to normalise these characters, because Windows
+# PowerShell 5.1 escapes them when it serializes JSON. Both platforms assert the
+# same thing so the two installers cannot drift on it.
+assert "Bash(grep -n 'a&b' <c> *)" in allow, "entry with escapable characters was rewritten"
+assert "'a&b' <c>" in pathlib.Path(sys.argv[1]).read_text(), "merged file escaped literal characters"
 assert "Bash(rtk *)" in allow, "derived Bash rule missing"
 assert "PowerShell(rtk *)" in allow, "derived PowerShell rule missing"
 assert len(allow) == len(set(allow)), "merge introduced duplicates"

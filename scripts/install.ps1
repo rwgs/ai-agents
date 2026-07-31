@@ -322,31 +322,99 @@ function Get-DerivedClaudeRule {
     return $rules
 }
 
+function Test-JsonProperty {
+    param(
+        [Parameter(Mandatory)]
+        [psobject] $Object,
+
+        [Parameter(Mandatory)]
+        [string] $Name
+    )
+
+    return [bool] ($Object.PSObject.Properties.Name -contains $Name)
+}
+
+function Set-JsonProperty {
+    param(
+        [Parameter(Mandatory)]
+        [psobject] $Object,
+
+        [Parameter(Mandatory)]
+        [string] $Name,
+
+        [AllowNull()]
+        $Value
+    )
+
+    if (Test-JsonProperty -Object $Object -Name $Name) {
+        $Object.$Name = $Value
+    }
+    else {
+        Add-Member -InputObject $Object -NotePropertyName $Name -NotePropertyValue $Value
+    }
+}
+
+function ConvertTo-PortableJson {
+    param(
+        [Parameter(Mandatory)]
+        [psobject] $Value
+    )
+
+    $json = ConvertTo-Json -InputObject $Value -Depth 100
+
+    # Windows PowerShell 5.1 writes <, >, & and ' as Unicode escapes where
+    # PowerShell 7 writes the characters, and hundreds of approved commands
+    # contain them, so an edition change would otherwise rewrite permissions the
+    # user approved. Each key below is a regular expression; the leading group
+    # consumes complete backslash pairs so an already escaped backslash followed
+    # by the letter u is left alone.
+    $portableEscape = [ordered] @{
+        '\\u003c' = '<'
+        '\\u003e' = '>'
+        '\\u0026' = '&'
+        '\\u0027' = "'"
+    }
+
+    foreach ($escape in $portableEscape.Keys) {
+        $json = [regex]::Replace(
+            $json,
+            '(?<!\\)((?:\\\\)*)' + $escape,
+            '${1}' + $portableEscape[$escape]
+        )
+    }
+
+    return $json
+}
+
 function Get-MergedClaudeSettingsContent {
     $rules = Get-DerivedClaudeRule
     if ($rules.Count -eq 0) {
         throw "No allow rules derived from $rulesSource"
     }
 
+    # Plain ConvertFrom-Json is the only form both supported editions accept, and
+    # the PSCustomObject it returns keeps the key order the file already has.
     $settings = if (
         (Test-Path -LiteralPath $claudeSettings -PathType Leaf) -and
         [System.IO.File]::ReadAllText($claudeSettings).Trim()
     ) {
-        [System.IO.File]::ReadAllText($claudeSettings) | ConvertFrom-Json -AsHashtable -Depth 100
+        [System.IO.File]::ReadAllText($claudeSettings) | ConvertFrom-Json
     }
     else {
-        @{}
+        [pscustomobject] @{}
     }
 
-    if (-not $settings.ContainsKey('permissions')) {
-        $settings['permissions'] = @{}
+    if (-not (Test-JsonProperty -Object $settings -Name 'permissions')) {
+        Set-JsonProperty -Object $settings -Name 'permissions' -Value ([pscustomobject] @{})
     }
-    if (-not $settings['permissions'].ContainsKey('allow')) {
-        $settings['permissions']['allow'] = @()
+
+    $permissions = $settings.permissions
+    if (-not (Test-JsonProperty -Object $permissions -Name 'allow')) {
+        Set-JsonProperty -Object $permissions -Name 'allow' -Value @()
     }
 
     $allow = [System.Collections.Generic.List[string]]::new()
-    foreach ($entry in $settings['permissions']['allow']) {
+    foreach ($entry in @($permissions.allow)) {
         $allow.Add([string] $entry)
     }
 
@@ -360,8 +428,8 @@ function Get-MergedClaudeSettingsContent {
         }
     }
 
-    $settings['permissions']['allow'] = [string[]] $allow
-    return ($settings | ConvertTo-Json -Depth 100)
+    Set-JsonProperty -Object $permissions -Name 'allow' -Value ([string[]] $allow)
+    return (ConvertTo-PortableJson -Value $settings)
 }
 
 function Install-ClaudeSettingsFile {

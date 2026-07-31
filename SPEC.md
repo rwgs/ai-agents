@@ -30,6 +30,8 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 - Preserve existing managed targets in timestamped backups before replacement.
 - Preserve machine-owned Codex configuration and interactively approved rules
   while applying repository-owned defaults.
+- Default Codex to a workspace-write sandbox that asks before acting outside it,
+  so the baseline never escalates a machine's execution posture silently.
 - Leave credentials, sessions, history, caches, plugin state, and runtime
   databases untouched unless plugin installation is explicitly requested.
 - Support repeated installation without replacing already-correct links.
@@ -116,8 +118,9 @@ assumes, and `TASKS.md` carries the work to reconcile them.
 ## Compatibility
 
 - The shell installer targets Bash on Linux and macOS.
-- The PowerShell installer targets supported Windows PowerShell environments
-  capable of creating symbolic links.
+- The PowerShell installer targets Windows PowerShell 5.1 and PowerShell 7, in
+  an environment capable of creating symbolic links. Symbolic-link creation
+  requires Developer Mode or elevation in both editions.
 - Optional tools may add validation but must not make ordinary installation
   depend on unrelated developer tooling.
 - The Claude permission merge uses `python3` or `python` when present and is
@@ -168,13 +171,6 @@ assumes, and `TASKS.md` carries the work to reconcile them.
 - How an adopting repository is told that a skill it copied from the pool has
   changed. The pool now has commits to record, so the comparison is possible; the
   reporting is not built.
-- Whether the portable default remains full access with no approval prompts. The
-  current `approval_policy = "never"` plus
-  `sandbox_mode = "danger-full-access"` is Codex's unrestricted preset, while
-  this specification describes a safe baseline and requires explicit
-  authorization for destructive work.
-- Whether PowerShell 7 is the documented minimum or the installer must also run
-  under Windows PowerShell 5.1.
 - How dependency updates and dependency review work after the accepted decision
   to create no branches or pull requests. Dependabot and the current dependency
   review action both deliver through pull requests.

@@ -74,6 +74,16 @@ would change.
 See [docs/AGENT_LAYOUT.md](docs/AGENT_LAYOUT.md) for the complete discovery
 tables.
 
+### Codex execution posture
+
+`ai-home/codex/config.toml` sets `sandbox_mode = "workspace-write"` and
+`approval_policy = "on-request"`. Codex works inside the project directory and
+asks before acting outside it, which is also what fills
+`~/.codex/rules/default.rules` with the approvals this repository's allowlist is
+written in terms of. The baseline deliberately does not ship Codex's
+unrestricted `danger-full-access` and `never` pair; choose that per machine if
+you want it.
+
 ### Trust GitHub projects
 
 Every installation renders `~/.codex/config.toml` with trusted-project entries
