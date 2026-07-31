@@ -24,8 +24,9 @@ wants the same safe Claude/Codex baseline in multiple repositories.
   discarding interactively approved permissions or unrelated settings.
 - Optionally install an explicit list of recommended plugins into both agents,
   registering a marketplace first where the agent requires it.
-- Trust the current user's `~/github` directory and every Git worktree
-  discovered recursively beneath it on each installation.
+- Trust each configured root and every Git worktree discovered recursively
+  beneath it on each installation, defaulting to the current user's `~/github`
+  and configurable through `AI_TRUST_ROOTS`.
 - Preview installation without changing the target system.
 - Preserve existing managed targets in timestamped backups before replacement.
 - Preserve machine-owned Codex configuration and interactively approved rules
@@ -53,14 +54,19 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 - `ai-home/AGENTS.md` is the shared global instruction file, linked to
   `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`.
 - `ai-home/rules/default.rules` is the single source for both permission
-  systems; the installer derives Claude Code's `permissions.allow` entries from
-  it and links the directory into `CODEX_HOME`. It sits outside `ai-home/codex/`
-  because both agents depend on it.
+  systems; the installer merges it into `CODEX_HOME/rules/default.rules` and
+  derives Claude Code's `permissions.allow` entries from it. It sits outside
+  `ai-home/codex/` because both agents depend on it.
 - `ai-home/codex/` contains the Codex-only files installed into `CODEX_HOME`.
   Claude Code has no counterpart directory, because its `settings.json` is
   merged rather than linked.
-- The installer renders `config.toml` with machine-specific exact trust entries,
-  merges Claude Code's `settings.json`, and links the other managed files.
+- `config.toml`, the Codex rule file, and Claude Code's `settings.json` are
+  shared with the agents, so they are merged entry by entry and never linked or
+  replaced. `AGENTS_HOME/ai-install-state.json` records what the installer
+  wrote, and that record is what allows a later run to update or withdraw an
+  entry. Everything else managed is a symbolic link.
+- `scripts/merge-agent-state.py` implements the merge for the shell installer;
+  `scripts/install.ps1` implements the same rules natively for Windows.
 - `.agents/skills/` contains reusable workflows linked into `AGENTS_HOME` and
   `CLAUDE_CONFIG_DIR`. Skills tied to one stack, product, or environment live in
   the separate `rwgs/ai-skills` repository and are copied into the repositories
@@ -78,32 +84,29 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 ## Machine-owned agent state
 
 Verified on a Windows machine running the Codex desktop application, against
-`~/.codex` as Codex left it. These facts contradict what the installer currently
-assumes, and `TASKS.md` carries the work to reconcile them.
+`~/.codex` and `~/.claude` as the agents left them. These facts define what the
+installer must preserve.
 
 - `~/.codex/rules/default.rules` accumulates interactively approved prefix rules,
   exactly as Claude Code's `settings.json` accumulates approved permissions. The
   observed file held 48 such rules and none of the repository's curated set. The
-  installer links the rules directory, so after installation every approval Codex
-  records is written into this repository's working tree, and the curated file is
-  the only thing the machine keeps.
+  rules directory is therefore the machine's and is never a link into this
+  repository.
 - `config.toml` carries machine-owned state well beyond trust entries: marketplace
   registrations, per-plugin enablement, an `mcp_servers` block holding runtime pipe
   and executable paths, `shell_environment_policy`, `[desktop]`, `personality`,
-  `notify`, and `[windows] sandbox`. Rendering the file from
-  `ai-home/codex/config.toml` discards all of it. Trust entries are also lost
-  wherever repositories live outside `~/github`, because the render generates
-  entries only from that root.
-- Claude Code's permission merge is append-only. Removing a rule from
-  `ai-home/rules/default.rules` leaves its derived `Bash(...)` and
-  `PowerShell(...)` entries in `settings.json`, so the documented single source
-  can grant a permission but cannot currently withdraw one. The file also holds
-  independently approved entries, so set replacement is not safe without
-  provenance.
-- The PowerShell installer uses `ConvertFrom-Json -AsHashtable -Depth 100`.
-  Windows PowerShell 5.1 on the reviewed machine supports neither parameter,
-  while CI exercises PowerShell 7 through `pwsh`. The supported edition is not
-  currently stated.
+  `notify`, and `[windows] sandbox`. It also carries trust entries Codex wrote
+  itself, in literal-string form and lower case, for repositories outside
+  `~/github`.
+- Neither file format records who wrote an entry, and both agents can write an
+  entry spelled exactly like a curated one: the observed `settings.json` held 34
+  agent-written entries in the derived `Tool(command *)` shape, and Codex's own
+  first rule was a single-token prefix like the curated ones. Provenance
+  therefore has to be recorded outside the files.
+- Windows PowerShell 5.1 rejects `ConvertFrom-Json -AsHashtable` and serializes
+  `<`, `>`, `&`, and `'` as Unicode escapes where PowerShell 7 writes the
+  characters. Both editions are supported, so the installer avoids the first and
+  normalizes the second.
 
 ## Security and privacy
 
@@ -123,9 +126,10 @@ assumes, and `TASKS.md` carries the work to reconcile them.
   requires Developer Mode or elevation in both editions.
 - Optional tools may add validation but must not make ordinary installation
   depend on unrelated developer tooling.
-- The Claude permission merge uses `python3` or `python` when present and is
-  skipped with a warning otherwise, so installation never fails for lack of a
-  JSON tool.
+- The shell installer's merges into `config.toml`, the Codex rule file, and
+  `settings.json` use `python3` or `python` when present and are skipped
+  together with a warning otherwise, so installation never fails for lack of an
+  interpreter. The PowerShell installer implements the same merges natively.
 - Claude Code registers no plugin marketplace until it is first started
   interactively, so the installer adds one before installing from it. The
   `owner/repo` shorthand resolves over SSH and fails without a GitHub host key,

@@ -21,14 +21,6 @@ On Windows, run the PowerShell installer from the repository root:
 .\scripts\install.ps1
 ```
 
-> [!WARNING]
-> On a populated Codex home, use `--dry-run` / `-DryRun` or isolated
-> `CODEX_HOME` and `CLAUDE_CONFIG_DIR` values for now. The current installer
-> renders `config.toml` and replaces `rules/` with a repository link, while
-> current Codex versions store machine-owned configuration and interactively
-> approved rules in those locations. The state-preserving replacement is the
-> current phase in `TASKS.md`.
-
 Restart Codex and Claude Code after installation. Existing managed files are
 backed up under `~/.codex/backups/`. Credentials, sessions, history, caches, and
 plugins are not changed by default.
@@ -38,9 +30,22 @@ The installer manages:
 | Source | Codex | Claude Code |
 | --- | --- | --- |
 | `ai-home/AGENTS.md` | `~/.codex/AGENTS.md` | `~/.claude/CLAUDE.md` |
-| `ai-home/codex/` | `~/.codex/` configuration and model profiles | not applicable |
-| `ai-home/rules/default.rules` | `~/.codex/rules/` | derived into `~/.claude/settings.json` |
+| `ai-home/codex/config.toml` | merged into `~/.codex/config.toml` | not applicable |
+| `ai-home/codex/*.config.toml` | `~/.codex/` model profiles | not applicable |
+| `ai-home/rules/default.rules` | merged into `~/.codex/rules/default.rules` | derived into `~/.claude/settings.json` |
 | `.agents/skills/` | `~/.agents/skills/` | `~/.claude/skills/` |
+
+The three merged files are the ones the agents write to themselves, so they are
+never replaced: the installer adds its own entries and leaves everything else
+alone. It records what it wrote in `~/.agents/ai-install-state.json` and uses
+that record to decide what it may change or withdraw later. See
+[docs/AGENT_LAYOUT.md](docs/AGENT_LAYOUT.md#shared-files-and-how-ownership-is-proved)
+for the exact rules.
+
+On Linux and macOS those merges run through `scripts/merge-agent-state.py` and
+need `python3` or `python`. Without one, the merges are skipped with a warning
+and the links are still installed. The PowerShell installer needs no extra
+tooling.
 
 Set `CODEX_HOME` or `CLAUDE_CONFIG_DIR` to install somewhere other than the
 defaults.
@@ -57,19 +62,21 @@ shared:
   both agents' skill locations. Claude Code cannot see `.agents/skills/`, so the
   second link is required.
 - **The command allowlist has one source.** `ai-home/rules/default.rules`
-  is hand-authored for Codex; the installer derives Claude Code's
-  `permissions.allow` entries from the same file. Edit that file and rerun the
-  installer to add entries to both. Removing a rule does not yet withdraw the
-  previously derived Claude entry; that ownership defect is in the current
-  phase.
+  is hand-authored for Codex; the installer merges it into the machine's own
+  rule file and derives Claude Code's `permissions.allow` entries from it. Edit
+  that file and rerun the installer to add entries to both. Removing a rule
+  withdraws the entries the installer added and left unchanged, and preserves
+  and reports anything that was already approved before the first install.
 - **Nothing else is shared.** The two `rules/` directories mean unrelated things,
   and the configuration formats have no overlap.
 
-`~/.claude/settings.json` is merged, not replaced. Claude Code writes to that
-file itself and it accumulates permissions you approve interactively, so the
-installer adds only missing entries, preserves everything else, and backs the
-file up before its first write. Rerunning reports `already current` when nothing
-would change.
+`~/.codex/config.toml`, `~/.codex/rules/default.rules`, and
+`~/.claude/settings.json` are merged, not replaced. Each agent writes to its own
+file: Codex records the approvals you grant interactively and its marketplaces,
+plugins, MCP servers, and trust entries, and Claude Code appends approved
+permissions. The installer adds only what is missing, preserves everything else,
+backs each file up before its first write, and reports `already current` when a
+rerun would change nothing.
 
 See [docs/AGENT_LAYOUT.md](docs/AGENT_LAYOUT.md) for the complete discovery
 tables.
@@ -86,16 +93,28 @@ you want it.
 
 ### Trust GitHub projects
 
-Every installation renders `~/.codex/config.toml` with trusted-project entries
-for that user's `~/github` directory and every Git worktree found recursively
-beneath it. This includes repositories inside organization or grouping
-subdirectories.
+Every installation adds trusted-project entries to `~/.codex/config.toml` for
+each searched root and every Git worktree found recursively beneath it. This
+includes repositories inside organization or grouping subdirectories.
+
+The roots default to that user's `~/github`. Set `AI_TRUST_ROOTS` to search
+somewhere else, colon-separated on Linux and macOS and semicolon-separated on
+Windows:
+
+```bash
+AI_TRUST_ROOTS="$HOME/github:$HOME/Development" ./scripts/install.sh
+```
+
+```powershell
+$env:AI_TRUST_ROOTS = "$env:USERPROFILE\github;$env:USERPROFILE\Development"
+.\scripts\install.ps1
+```
 
 Codex trust entries match exact project roots rather than directory globs, so
 the installer discovers each repository instead of relying on a parent or `*`
-entry. Rerun the installer after creating or cloning repositories so new
-worktrees are added. Common dependency and build directories are skipped during
-discovery.
+entry. A project Codex already trusts is left as Codex wrote it. Rerun the
+installer after creating or cloning repositories so new worktrees are added.
+Common dependency and build directories are skipped during discovery.
 
 ### Install recommended plugins
 
@@ -289,6 +308,8 @@ repository's accepted no-pull-request flow; `TASKS.md` carries the resolution.
 - `ai-home/AGENTS.md`: shared global instructions for both agents
 - `ai-home/rules/default.rules`: the command allowlist both agents derive from
 - `ai-home/codex/`: Codex configuration and local model profiles
+- `scripts/merge-agent-state.py`: the shell installer's merge into the files the
+  agents also write
 - `docs/`: reference documentation loaded only when explicitly requested
 - `scripts/`: installation and validation
 

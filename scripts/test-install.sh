@@ -2,6 +2,9 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Codex used to write approvals into this file through a link. Nothing the
+# installer does may touch it now, so its contents are checked at the end.
+repo_rules_checksum="$(cksum <"$repo_root/ai-home/rules/default.rules")"
 task_test_root="$(mktemp -d "${TMPDIR:-/tmp}/ai-install-test.XXXXXX")"
 test_codex_home="$task_test_root/codex home"
 test_agents_home="$task_test_root/agents home"
@@ -42,9 +45,39 @@ for python_candidate in python3 python; do
 done
 
 mkdir -p "$test_codex_home"
+mkdir -p "$test_codex_home/rules"
 mkdir -p "$test_claude_home"
 mkdir -p "$test_github_repo/.git"
 printf 'original global instructions\n' >"$test_codex_home/AGENTS.md"
+
+# Seed the Codex state a real machine has: marketplaces, plugin enablement, MCP
+# servers, a desktop block, a trust entry outside the searched roots, and a
+# setting whose value disagrees with the baseline. None of it may be lost.
+cat >"$test_codex_home/config.toml" <<'EOF'
+model = "gpt-5.6-sol"
+model_verbosity = "medium"
+
+[features]
+js_repl = false
+
+[marketplaces.openai-bundled]
+enabled = true
+
+[mcp_servers.node_repl]
+command = 'node_repl.exe'
+
+[projects.'/elsewhere/machine project']
+trust_level = "trusted"
+
+[desktop]
+conversationDetailMode = "STEPS_PROSE"
+EOF
+
+# Codex records interactive approvals here, so the file is the machine's own.
+cat >"$test_codex_home/rules/default.rules" <<'EOF'
+prefix_rule(pattern=["git", "status"], decision="allow")
+prefix_rule(pattern=["sed"], decision="allow")
+EOF
 
 # Seed real-looking Claude state so the merge is proven non-destructive.
 cat >"$test_claude_home/settings.json" <<'EOF'
@@ -62,25 +95,59 @@ cat >"$test_claude_home/settings.json" <<'EOF'
 }
 EOF
 
+install_log="$task_test_root/install.log"
 HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" CLAUDE_CONFIG_DIR="$test_claude_home" \
-  "$repo_root/scripts/install.sh" >/dev/null
+  "$repo_root/scripts/install.sh" >"$install_log"
 
 assert_link "$test_codex_home/AGENTS.md" "$repo_root/ai-home/AGENTS.md"
 [[ -f "$test_codex_home/config.toml" && ! -L "$test_codex_home/config.toml" ]] ||
-  fail "expected generated config file: $test_codex_home/config.toml"
+  fail "expected merged config file: $test_codex_home/config.toml"
 grep -Fqx "[projects.\"$test_user_home/github\"]" "$test_codex_home/config.toml" ||
-  fail "generated config does not trust the user GitHub root"
+  fail "merged config does not trust the user GitHub root"
 grep -Fqx "[projects.\"$test_github_repo\"]" "$test_codex_home/config.toml" ||
-  fail "generated config does not trust a nested Git repository"
+  fail "merged config does not trust a nested Git repository"
 # The baseline asks before acting. Installing must never escalate a machine to
 # Codex's unrestricted preset.
 grep -Fqx 'sandbox_mode = "workspace-write"' "$test_codex_home/config.toml" ||
-  fail "installed config does not sandbox writes to the workspace"
+  fail "merged config does not sandbox writes to the workspace"
 grep -Fqx 'approval_policy = "on-request"' "$test_codex_home/config.toml" ||
-  fail "installed config does not ask for approval"
+  fail "merged config does not ask for approval"
 ! grep -Fq 'danger-full-access' "$test_codex_home/config.toml" ||
-  fail "installed config grants unrestricted access"
-assert_link "$test_codex_home/rules" "$repo_root/ai-home/rules"
+  fail "merged config grants unrestricted access"
+
+# Machine-owned Codex state survives the merge.
+for machine_entry in \
+  '[marketplaces.openai-bundled]' \
+  '[mcp_servers.node_repl]' \
+  '[desktop]' \
+  "[projects.'/elsewhere/machine project']" \
+  'js_repl = false'; do
+  grep -Fqx "$machine_entry" "$test_codex_home/config.toml" ||
+    fail "merge lost machine-owned config state: $machine_entry"
+done
+# A managed key the machine already sets differently is left alone and reported,
+# because nothing proves this installer wrote it.
+grep -Fqx 'model_verbosity = "medium"' "$test_codex_home/config.toml" ||
+  fail "merge overwrote a machine-owned value"
+grep -q '^preserved: .*model_verbosity = "medium"' "$install_log" ||
+  fail "merge did not report the preserved machine-owned value"
+# A managed key inside a table the machine already has joins that table.
+grep -Fqx 'memories = true' "$test_codex_home/config.toml" ||
+  fail "merge did not add a managed key to an existing table"
+
+# Codex writes approvals into its rules directory, so the directory is the
+# machine's and the curated rules are merged into its file.
+[[ -d "$test_codex_home/rules" && ! -L "$test_codex_home/rules" ]] ||
+  fail "expected a real rules directory: $test_codex_home/rules"
+grep -Fqx 'prefix_rule(pattern=["git", "status"], decision="allow")' \
+  "$test_codex_home/rules/default.rules" ||
+  fail "merge lost an interactively approved rule"
+grep -Fqx 'prefix_rule(pattern=["rtk"], decision="allow")' \
+  "$test_codex_home/rules/default.rules" ||
+  fail "merge did not add the curated rules"
+[[ -f "$test_agents_home/ai-install-state.json" ]] ||
+  fail "installer recorded no provenance state"
+
 assert_link "$test_codex_home/ollama.config.toml" "$repo_root/ai-home/codex/ollama.config.toml"
 assert_link "$test_codex_home/llamacpp.config.toml" "$repo_root/ai-home/codex/llamacpp.config.toml"
 
@@ -123,6 +190,11 @@ PYTHON
   cp "$test_claude_home/settings.json" "$claude_settings_before"
 fi
 
+config_before="$task_test_root/config-before.toml"
+rules_before="$task_test_root/rules-before.rules"
+cp "$test_codex_home/config.toml" "$config_before"
+cp "$test_codex_home/rules/default.rules" "$rules_before"
+
 shopt -s nullglob
 instruction_backups=("$test_codex_home"/backups/ai-*/AGENTS.md)
 shopt -u nullglob
@@ -154,13 +226,37 @@ if [[ -n "$test_python" ]]; then
     fail "idempotent install changed the merged Claude settings"
 fi
 
-rm -- "$test_codex_home/rules"
-ln -s "$repo_root/ai-home/rules/." "$test_codex_home/rules"
-raw_rules_target="$(readlink "$test_codex_home/rules")"
+cmp -s "$config_before" "$test_codex_home/config.toml" ||
+  fail "idempotent install changed the merged Codex configuration"
+cmp -s "$rules_before" "$test_codex_home/rules/default.rules" ||
+  fail "idempotent install changed the merged Codex rules"
+
+first_skill="$(basename "$(find "$repo_root/.agents/skills" -mindepth 1 -maxdepth 1 -type d | sort | head -n 1)")"
+rm -- "$test_agents_home/skills/$first_skill"
+ln -s "$repo_root/.agents/skills/$first_skill/." "$test_agents_home/skills/$first_skill"
+raw_skill_target="$(readlink "$test_agents_home/skills/$first_skill")"
 HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" CLAUDE_CONFIG_DIR="$test_claude_home" \
   "$repo_root/scripts/install.sh" >/dev/null
-[[ "$(readlink "$test_codex_home/rules")" == "$raw_rules_target" ]] ||
+[[ "$(readlink "$test_agents_home/skills/$first_skill")" == "$raw_skill_target" ]] ||
   fail "idempotent install replaced an equivalent normalized link"
+
+# A previous installation linked the rules directory into this repository, and
+# Codex then wrote its approvals there. Installing must undo that link and say
+# where those approvals went, rather than adopting or discarding them.
+rm -rf -- "$test_codex_home/rules"
+ln -s "$repo_root/ai-home/rules" "$test_codex_home/rules"
+migration_log="$task_test_root/migration.log"
+HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" CLAUDE_CONFIG_DIR="$test_claude_home" \
+  "$repo_root/scripts/install.sh" >"$migration_log"
+[[ -d "$test_codex_home/rules" && ! -L "$test_codex_home/rules" ]] ||
+  fail "installer left the rules directory linked into this repository"
+grep -q "^unlinked: $test_codex_home/rules -> " "$migration_log" ||
+  fail "installer did not report unlinking the rules directory"
+grep -q '^note: approvals recorded through that link are in ' "$migration_log" ||
+  fail "installer did not report where approvals recorded through the link are"
+grep -Fqx 'prefix_rule(pattern=["rtk"], decision="allow")' \
+  "$test_codex_home/rules/default.rules" ||
+  fail "the replacement rules file does not carry the curated rules"
 
 cycle_fixture_dir="$task_test_root/cycle fixtures"
 mkdir -p "$cycle_fixture_dir"
@@ -310,5 +406,93 @@ grep -q '^error: project path contains unsupported control characters:' "$contro
   fail "installer did not report the invalid project path"
 [[ ! -e "$control_codex_home" && ! -L "$control_codex_home" ]] ||
   fail "invalid project path changed CODEX_HOME"
+
+if [[ -n "$test_python" ]]; then
+  # Withdrawal and preservation are the ownership model's hard cases. They are
+  # driven against the merge program directly, because reaching them through the
+  # installer would mean editing this repository's own curated files while it
+  # runs.
+  provenance_root="$task_test_root/provenance"
+  provenance_state="$provenance_root/state.json"
+  provenance_config="$provenance_root/config.toml"
+  provenance_rules="$provenance_root/default.rules"
+  provenance_claude="$provenance_root/settings.json"
+  curated_all="$provenance_root/curated-all.rules"
+  curated_reduced="$provenance_root/curated-reduced.rules"
+  mkdir -p "$provenance_root"
+
+  cp "$repo_root/ai-home/rules/default.rules" "$curated_all"
+  grep -v '^prefix_rule(pattern=\["\(jq\|sed\)"\], decision="allow")$' \
+    "$curated_all" >"$curated_reduced"
+
+  # sed is approved before the first merge, so the grant is the machine's even
+  # though the curated set spells it identically. git status is never curated.
+  cat >"$provenance_rules" <<'EOF'
+prefix_rule(pattern=["git", "status"], decision="allow")
+prefix_rule(pattern=["sed"], decision="allow")
+EOF
+  cat >"$provenance_claude" <<'EOF'
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed *)"
+    ]
+  }
+}
+EOF
+
+  merge_state() {
+    "$test_python" "$repo_root/scripts/merge-agent-state.py" \
+      --state "$provenance_state" \
+      --config-source "$repo_root/ai-home/codex/config.toml" \
+      --config-target "$provenance_config" \
+      --rules-source "$1" \
+      --rules-target "$provenance_rules" \
+      --claude-target "$provenance_claude" \
+      --trust-root "$provenance_root/github"
+  }
+
+  merge_state "$curated_all" >"$provenance_root/first.log"
+  grep -Fqx 'prefix_rule(pattern=["jq"], decision="allow")' "$provenance_rules" ||
+    fail "first merge did not add a curated rule"
+  grep -Fq '"Bash(jq *)"' "$provenance_claude" ||
+    fail "first merge did not add a derived permission"
+
+  merge_state "$curated_reduced" >"$provenance_root/second.log"
+  ! grep -Fqx 'prefix_rule(pattern=["jq"], decision="allow")' "$provenance_rules" ||
+    fail "an uncurated rule this program added was not withdrawn"
+  ! grep -Fq '"Bash(jq *)"' "$provenance_claude" ||
+    fail "an uncurated permission this program added was not withdrawn"
+  ! grep -Fq '"PowerShell(jq *)"' "$provenance_claude" ||
+    fail "an uncurated permission this program added was not withdrawn"
+  grep -Fqx 'prefix_rule(pattern=["sed"], decision="allow")' "$provenance_rules" ||
+    fail "a rule approved before installation was withdrawn"
+  grep -Fq '"Bash(sed *)"' "$provenance_claude" ||
+    fail "a permission approved before installation was withdrawn"
+  grep -q '^preserved: Bash(sed \*) is no longer curated' "$provenance_root/second.log" ||
+    fail "the preserved identical permission was not reported"
+  grep -Fqx 'prefix_rule(pattern=["git", "status"], decision="allow")' "$provenance_rules" ||
+    fail "withdrawal removed a rule the machine wrote"
+
+  # A managed key the machine has since changed is left as the machine set it.
+  sed -i.bak 's/^approval_policy = "on-request"$/approval_policy = "never"/' "$provenance_config"
+  rm -f -- "$provenance_config.bak"
+  merge_state "$curated_all" >"$provenance_root/third.log"
+  grep -Fqx 'approval_policy = "never"' "$provenance_config" ||
+    fail "merge overwrote a managed key the machine changed"
+  grep -q '^preserved: .*approval_policy changed since installation' \
+    "$provenance_root/third.log" ||
+    fail "merge did not report the managed key the machine changed"
+
+  # Reverting to the recorded value hands the key back, so management resumes.
+  sed -i.bak 's/^approval_policy = "never"$/approval_policy = "on-request"/' "$provenance_config"
+  rm -f -- "$provenance_config.bak"
+  merge_state "$curated_reduced" >"$provenance_root/fourth.log"
+  grep -Fqx 'approval_policy = "on-request"' "$provenance_config" ||
+    fail "merge lost a managed key after the machine reverted it"
+fi
+
+[[ "$(cksum <"$repo_root/ai-home/rules/default.rules")" == "$repo_rules_checksum" ]] ||
+  fail "the installer wrote into this repository's curated rule file"
 
 printf 'installer integration test passed\n'

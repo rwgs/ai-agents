@@ -165,16 +165,26 @@
   Shape carries no provenance in either format: the live `settings.json` holds 34
   agent-written entries in the derived `Tool(command *)` shape, and Codex's own
   first recorded rule is a single-token prefix like the curated ones.
-- [ ] Merge portable Codex defaults into `config.toml` instead of replacing the
+- [x] Merge portable Codex defaults into `config.toml` instead of replacing the
   file, and generate exact trust entries from configurable or discovered roots
-  that include where repositories actually live. Acceptance: seeded marketplace,
-  plugin, MCP, desktop, notification, sandbox, and out-of-`~/github` trust state
-  survives install and an idempotent rerun.
-- [ ] Reconcile `ai-home/rules/default.rules` and Claude's derived
-  `permissions.allow` entries using the recorded ownership model. Acceptance:
-  Codex keeps interactive approvals out of this working tree, removing one
-  curated rule removes only provably managed Bash and PowerShell grants, and an
-  ambiguous identical grant survives with an actionable report.
+  that include where repositories actually live. Both installers merge key by
+  key against the state file; `AI_TRUST_ROOTS` sets the searched roots. A trust
+  table Codex wrote itself is matched whatever its quoting or case, so no
+  duplicate is added. Verified on copies of this machine's real `~/.codex` and
+  `~/.claude`: the merge adds only the baseline keys and seven trust entries,
+  leaves marketplaces, plugins, `mcp_servers`, `[desktop]`, and the existing
+  trust entries untouched, and reports `already current` on a rerun. Both
+  installer tests seed that state and assert it survives.
+- [x] Reconcile `ai-home/rules/default.rules` and Claude's derived
+  `permissions.allow` entries using the recorded ownership model. `~/.codex/rules`
+  is no longer a link, so approvals stay on the machine; an existing link is
+  removed and reported. Removing a curated rule withdraws the Codex rule and both
+  derived grants when the state file records the installer added them unchanged,
+  and preserves and reports a grant that predates the install. Both installer
+  tests cover withdrawal, preservation, a machine-changed managed key, and the
+  handback when the machine reverts it. The Python and PowerShell merges were
+  checked against identical real inputs and produce byte-identical `config.toml`
+  and rule files, equal JSON, and equal state records.
 - [x] Decide whether the portable Codex default intentionally uses the
   unrestricted `approval_policy = "never"` plus
   `sandbox_mode = "danger-full-access"` preset or changes to an
@@ -195,15 +205,22 @@
   complete installer test under both editions; that run is the remaining
   evidence, because symbolic-link creation needs Developer Mode or elevation and
   fails here in both editions.
-- [ ] Close executable validation gaps while changing the installers. CI must
-  reject malformed `default.rules` without relying on a developer-local Codex
-  binary, exercise managed permission removal and populated Codex state on both
-  platforms, and at minimum syntax-check the bundled
-  `show-reset-expiries.mjs` script.
+- [x] Close executable validation gaps while changing the installers.
+  `scripts/validate.sh` now rejects any `default.rules` line that is not one
+  `prefix_rule` with a non-empty quoted pattern list and a known decision, which
+  needs no Codex binary; the `codex execpolicy` check stays as the stronger one
+  where Codex exists. It compiles `scripts/merge-agent-state.py` and runs
+  `node --check` over the skills' `.mjs` and `.js` files where Node is present.
+  Managed removal and populated Codex state are exercised by both installer
+  tests. Checked that the new rule check flags a malformed line and that
+  `show-reset-expiries.mjs` passes `node --check`.
 - [ ] Update `README.md`, `docs/AGENT_LAYOUT.md`, `SPEC.md`, tests, and
   `CHANGELOG.md` with the implemented behavior, then run the complete local gate
   and a manually dispatched three-platform workflow before relying on the fixed
-  push trigger.
+  push trigger. The documents, tests, and changelog are updated and the local WSL
+  gate passes. The dispatched run is outstanding: it needs a push, and it is the
+  only evidence available for the Windows installer, because this machine cannot
+  create symbolic links without Developer Mode or elevation.
 - [ ] Install on this machine only after the state-preserving behavior passes.
   This is a first install, and symbolic links still require enabling Developer
   Mode or using an elevated shell. Acceptance: dry-run reports the intended

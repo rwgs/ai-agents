@@ -45,6 +45,7 @@ required_files=(
   ".github/workflows/validate.yml"
   "scripts/install.ps1"
   "scripts/install.sh"
+  "scripts/merge-agent-state.py"
   "scripts/test-install.ps1"
   "scripts/test-install.sh"
 )
@@ -98,6 +99,12 @@ for plugin_manifest in codex-plugins.txt claude-plugins.txt; do
 done
 
 if [[ -n "$python_tool" ]]; then
+  # The Bash installer's merge is a Python program, so a syntax error in it
+  # would only surface when someone installs.
+  "$python_tool" -m py_compile "$repo_root/scripts/merge-agent-state.py" ||
+    fail "scripts/merge-agent-state.py does not compile"
+  rm -rf -- "$repo_root/scripts/__pycache__"
+
   for config_file in "$repo_root"/ai-home/codex/*.toml; do
     "$python_tool" -c 'import pathlib, sys, tomllib; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' "$config_file" ||
       fail "invalid TOML in ${config_file#"$repo_root"/}"
@@ -119,6 +126,19 @@ grep -qE '^[[:space:]]*@AGENTS\.md[[:space:]]*$' "$repo_root/CLAUDE.md" ||
 claude_md_lines="$(grep -cv '^[[:space:]]*$' "$repo_root/CLAUDE.md")"
 [[ "$claude_md_lines" -le 15 ]] ||
   fail "CLAUDE.md has $claude_md_lines lines; put instructions in AGENTS.md instead"
+
+# Codex rejects the whole file when one line is malformed, and `codex execpolicy`
+# is only available where Codex is installed, so the structure is checked here
+# too. Every entry is one prefix_rule with a non-empty quoted pattern list and a
+# known decision.
+while IFS= read -r rule_line; do
+  [[ -n "$rule_line" ]] || continue
+  fail "malformed rule in ai-home/rules/default.rules: $rule_line"
+done <<<"$(
+  grep -Ev '^[[:space:]]*(#|$)' "$repo_root/ai-home/rules/default.rules" |
+    grep -Ev '^prefix_rule\(pattern=\["[^"]+"(, "[^"]+")*\], decision="(allow|deny|ask)"\)$' ||
+    true
+)"
 
 derived_rules="$(
   sed -n 's/^prefix_rule(pattern=\["\([^"]*\)"\], decision="allow")$/\1/p' \
@@ -212,6 +232,16 @@ if ! bash -n \
   "$repo_root/scripts/test-install.sh" \
   "$repo_root/scripts/validate.sh"; then
   fail "Bash syntax validation failed"
+fi
+
+# A skill can ship an executable, and a broken one only fails when a user runs
+# the skill. Node is not required to install this repository, so the check runs
+# where it is available; CI always has it.
+if command -v node >/dev/null 2>&1; then
+  while IFS= read -r script_file; do
+    node --check "$script_file" ||
+      fail "JavaScript syntax validation failed for ${script_file#"$repo_root"/}"
+  done < <(find "$repo_root/.agents/skills" -name '*.mjs' -o -name '*.js' -type f)
 fi
 
 if command -v shellcheck >/dev/null 2>&1; then

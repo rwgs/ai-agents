@@ -81,8 +81,8 @@ This repository manages only:
 | --- | --- | --- |
 | `ai-home/AGENTS.md` | `~/.codex/AGENTS.md` | symbolic link |
 | `ai-home/AGENTS.md` | `~/.claude/CLAUDE.md` | symbolic link |
-| `ai-home/codex/config.toml` | `~/.codex/config.toml` | rendered file with trust entries |
-| `ai-home/rules/` | `~/.codex/rules/` | symbolic link |
+| `ai-home/codex/config.toml` | `~/.codex/config.toml` | merged key by key, plus generated trust entries |
+| `ai-home/rules/default.rules` | `~/.codex/rules/default.rules` | merged rule by rule |
 | `ai-home/codex/*.config.toml` | `~/.codex/<name>.config.toml` | symbolic link |
 | `ai-home/rules/default.rules` | `permissions.allow` in `~/.claude/settings.json` | derived and merged |
 | `.agents/skills/<name>/` | `~/.agents/skills/<name>/` | symbolic link |
@@ -95,20 +95,44 @@ link behind. Real directories, and links pointing anywhere else, are never
 touched, and the prune reports what it would remove during a dry run without
 removing it.
 
-`~/.codex/config.toml` is rendered rather than linked so the installer can add
-machine-specific trust entries.
+## Shared files and how ownership is proved
 
-`~/.claude/settings.json` is **merged rather than linked** because Claude Code
-writes to it itself and it accumulates permissions approved interactively. The
-installer parses the existing file with a real JSON library, appends only the
-derived entries that are not already present, and leaves every other key
-untouched. It backs the file up before the first write, and reports
-`already current` when a rerun would change nothing.
+`~/.codex/config.toml`, `~/.codex/rules/default.rules`, and
+`~/.claude/settings.json` are **shared**: this repository owns some of their
+entries and the agent owns the rest. Codex records interactive approvals in the
+rules file and writes marketplaces, plugin enablement, MCP servers, and its own
+trust entries into `config.toml`; Claude Code appends approved permissions to
+`settings.json`. None of the three is linked or replaced. The installer merges
+its own entries and leaves every other byte alone.
 
-The merge needs `python3` or `python` on Linux and macOS. If neither is available
-the step is skipped with a warning so the rest of the installation still
-succeeds. The PowerShell installer uses built-in JSON support and needs no extra
-tooling.
+Provenance is recorded outside those files, in `~/.agents/ai-install-state.json`
+(`AGENTS_HOME`), which lists what the installer wrote and the exact value it
+wrote for each entry. That record decides what a later run may do:
+
+- an entry is written only when it is absent, or when its current value is
+  byte-identical to the recorded value;
+- an entry is withdrawn only when the record shows the installer introduced it
+  and it is still byte-identical;
+- anything else is preserved and reported, including a file that cannot be
+  parsed;
+- with no state file nothing is managed, so the run adds what is absent, changes
+  nothing that exists, and removes nothing.
+
+An entry that already existed when the installer first merged a file is recorded
+as pre-existing and never becomes managed, which is how an independently
+approved grant that happens to be spelled like a curated one survives. It is
+reported when it leaves the curated set, because nothing in either file format
+can distinguish the two. `DECISIONS.md` records why provenance lives outside the
+files.
+
+Each merged file is backed up under `~/.codex/backups/` before its first change
+in a run, and a rerun that would change nothing reports `already current`.
+
+The Codex config, rule, and Claude permission merges need `python3` or `python`
+on Linux and macOS, where they run through `scripts/merge-agent-state.py`. If
+neither interpreter is available all three are skipped with a warning and the
+links are still installed. The PowerShell installer implements the same merge
+natively and needs no extra tooling.
 
 ## Deriving Claude permissions
 
@@ -128,10 +152,10 @@ permission namespaces and a rule for one does not cover the other:
 
 The trailing ` *` is the prefix wildcard for command tools, so one entry per
 namespace covers the bare command and every argument list. Adding a rule and
-rerunning the installer adds it for both agents. Removing a rule does not yet
-withdraw the previously derived Claude entry because `settings.json` also holds
-independently approved permissions; the state-preserving phase in `TASKS.md`
-owns that provenance defect.
+rerunning the installer adds it for both agents. Removing a rule withdraws the
+Codex rule and both derived Claude entries on the next run, provided the state
+file records that this installer added them and they are unchanged. A grant that
+was already there before the first install is preserved and reported instead.
 
 This grants Claude Code the same latitude the Codex configuration already
 assumes, including system-affecting commands such as `systemctl` and `pkexec`.
@@ -141,9 +165,16 @@ Remove a `prefix_rule` line to withdraw a command from both agents.
 
 Codex project trust uses exact absolute project paths. A parent project entry
 and wildcard entries do not automatically trust nested repositories. On each
-run, the installer adds the current user's `~/github` path plus every Git
-worktree found recursively below it to the generated config. Rerun the
-installer after adding repositories to refresh those entries.
+run, the installer adds each searched root plus every Git worktree found
+recursively below it. The roots default to the current user's `~/github` and are
+set with `AI_TRUST_ROOTS`, colon-separated on Linux and macOS and
+semicolon-separated on Windows, because repositories do not all live in one
+place. Rerun the installer after adding repositories to refresh those entries.
+
+A trust entry Codex wrote itself is recognised whatever quoting or letter case it
+used, so the merge never adds a second table for a project that is already
+trusted. An entry the installer added is withdrawn when its worktree is gone from
+the searched roots; an entry it did not add is left alone.
 
 Claude Code has no equivalent per-project trust list, so this step applies to
 Codex only.

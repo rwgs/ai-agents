@@ -10,6 +10,27 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-07-31
 
+- Stopped replacing the files the agents write. `~/.codex/config.toml` is merged
+  key by key instead of rendered, so marketplaces, plugin enablement, MCP
+  servers, `[desktop]`, `shell_environment_policy`, and trust entries Codex wrote
+  itself all survive. `~/.codex/rules/` is no longer a link into this repository:
+  the curated rules are merged into the machine's own `default.rules`, and an
+  existing link is removed on the next install with a note saying that the
+  approvals recorded through it are in this repository's working tree.
+  `~/.claude/settings.json` is merged as before.
+- Started withdrawing what a removed rule granted. The installer records what it
+  wrote in `~/.agents/ai-install-state.json`; deleting a rule from
+  `ai-home/rules/default.rules` now removes the Codex rule and both derived
+  Claude entries on the next run, as long as they are unchanged since the
+  installer wrote them. A grant that was already approved before the first
+  install is kept and reported instead. The first run after upgrading records
+  state and withdraws nothing, because nothing was recorded before it.
+- Made the searched trust roots configurable with `AI_TRUST_ROOTS`, colon
+  separated on Linux and macOS and semicolon separated on Windows. It still
+  defaults to `~/github`.
+- The shell installer's merges now need `python3` or `python`, and are all
+  skipped with a warning when neither is present. Previously only the Claude
+  permission merge did.
 - Changed the Codex execution posture the installer writes. `config.toml` now
   carries `sandbox_mode = "workspace-write"` and `approval_policy = "on-request"`
   instead of `danger-full-access` and `never`, so Codex works inside the project

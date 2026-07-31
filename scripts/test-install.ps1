@@ -5,6 +5,9 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+# Codex used to write approvals into this file through a link. Nothing the
+# installer does may touch it now, so its contents are checked at the end.
+$repoRulesHash = (Get-FileHash -LiteralPath (Join-Path $repoRoot 'ai-home/rules/default.rules') -Algorithm SHA256).Hash
 $taskTestRoot = Join-Path ([System.IO.Path]::GetTempPath()) "ai-install-test-$([guid]::NewGuid())"
 $testCodexHome = Join-Path $taskTestRoot 'codex home'
 $testAgentsHome = Join-Path $taskTestRoot 'agents home'
@@ -56,9 +59,39 @@ function Assert-Link {
 
 try {
     New-Item -ItemType Directory -Path $testCodexHome -Force | Out-Null
+    New-Item -ItemType Directory -Path (Join-Path $testCodexHome 'rules') -Force | Out-Null
     New-Item -ItemType Directory -Path $testClaudeHome -Force | Out-Null
     New-Item -ItemType Directory -Path (Join-Path $testGitHubRepo '.git') -Force | Out-Null
     Set-Content -LiteralPath (Join-Path $testCodexHome 'AGENTS.md') -Value 'original global instructions'
+
+    # Seed the Codex state a real machine has: marketplaces, MCP servers, a
+    # desktop block, a trust entry outside the searched roots, and a setting
+    # whose value disagrees with the baseline. None of it may be lost.
+    Set-Content -LiteralPath (Join-Path $testCodexHome 'config.toml') -Value @'
+model = "gpt-5.6-sol"
+model_verbosity = "medium"
+
+[features]
+js_repl = false
+
+[marketplaces.openai-bundled]
+enabled = true
+
+[mcp_servers.node_repl]
+command = 'node_repl.exe'
+
+[projects.'C:\elsewhere\machine project']
+trust_level = "trusted"
+
+[desktop]
+conversationDetailMode = "STEPS_PROSE"
+'@
+
+    # Codex records interactive approvals here, so the file is the machine's own.
+    Set-Content -LiteralPath (Join-Path $testCodexHome 'rules/default.rules') -Value @'
+prefix_rule(pattern=["git", "status"], decision="allow")
+prefix_rule(pattern=["sed"], decision="allow")
+'@
 
     # Seed real-looking Claude state so the merge is proven non-destructive.
     Set-Content -LiteralPath (Join-Path $testClaudeHome 'settings.json') -Value @'
@@ -80,12 +113,12 @@ try {
     $env:CODEX_HOME = $testCodexHome
     $env:AGENTS_HOME = $testAgentsHome
     $env:CLAUDE_CONFIG_DIR = $testClaudeHome
-    & (Join-Path $repoRoot 'scripts/install.ps1') | Out-Null
+    $installLog = @(& (Join-Path $repoRoot 'scripts/install.ps1'))
 
     Assert-Link (Join-Path $testCodexHome 'AGENTS.md') (Join-Path $repoRoot 'ai-home/AGENTS.md')
     $installedConfigPath = Join-Path $testCodexHome 'config.toml'
     $installedConfig = Get-Item -LiteralPath $installedConfigPath -Force
-    Assert-Condition ($installedConfig.LinkType -ne 'SymbolicLink') "Expected generated config file: $installedConfigPath"
+    Assert-Condition ($installedConfig.LinkType -ne 'SymbolicLink') "Expected merged config file: $installedConfigPath"
     $installedConfigContent = [System.IO.File]::ReadAllText($installedConfigPath)
     $escapedGitHubRoot = (Join-Path $testUserHome 'github').Replace('\', '\\')
     $escapedGitHubRepo = $testGitHubRepo.Replace('\', '\\')
@@ -106,7 +139,50 @@ try {
     Assert-Condition (
         -not $installedConfigContent.Contains('danger-full-access')
     ) 'Installed config grants unrestricted access'
-    Assert-Link (Join-Path $testCodexHome 'rules') (Join-Path $repoRoot 'ai-home/rules')
+
+    # Machine-owned Codex state survives the merge.
+    foreach ($machineEntry in @(
+            '[marketplaces.openai-bundled]',
+            '[mcp_servers.node_repl]',
+            '[desktop]',
+            "[projects.'C:\elsewhere\machine project']",
+            'js_repl = false'
+        )) {
+        Assert-Condition (
+            $installedConfigContent.Contains($machineEntry)
+        ) "Merge lost machine-owned config state: $machineEntry"
+    }
+
+    # A managed key the machine already sets differently is left alone and
+    # reported, because nothing proves this installer wrote it.
+    Assert-Condition (
+        $installedConfigContent.Contains('model_verbosity = "medium"')
+    ) 'Merge overwrote a machine-owned value'
+    Assert-Condition (
+        ($installLog -join "`n") -match '(?m)^preserved: .*model_verbosity = "medium"'
+    ) 'Merge did not report the preserved machine-owned value'
+    # A managed key inside a table the machine already has joins that table.
+    Assert-Condition (
+        $installedConfigContent.Contains('memories = true')
+    ) 'Merge did not add a managed key to an existing table'
+
+    # Codex writes approvals into its rules directory, so the directory is the
+    # machine's and the curated rules are merged into its file.
+    $rulesDirectory = Get-Item -LiteralPath (Join-Path $testCodexHome 'rules') -Force
+    Assert-Condition (
+        $rulesDirectory.PSIsContainer -and $rulesDirectory.LinkType -ne 'SymbolicLink'
+    ) 'Expected a real rules directory'
+    $installedRulesPath = Join-Path $testCodexHome 'rules/default.rules'
+    $installedRules = [System.IO.File]::ReadAllText($installedRulesPath)
+    Assert-Condition (
+        $installedRules.Contains('prefix_rule(pattern=["git", "status"], decision="allow")')
+    ) 'Merge lost an interactively approved rule'
+    Assert-Condition (
+        $installedRules.Contains('prefix_rule(pattern=["rtk"], decision="allow")')
+    ) 'Merge did not add the curated rules'
+    Assert-Condition (
+        Test-Path -LiteralPath (Join-Path $testAgentsHome 'ai-install-state.json') -PathType Leaf
+    ) 'Installer recorded no provenance state'
     Assert-Link (Join-Path $testCodexHome 'ollama.config.toml') (Join-Path $repoRoot 'ai-home/codex/ollama.config.toml')
     Assert-Link (Join-Path $testCodexHome 'llamacpp.config.toml') (Join-Path $repoRoot 'ai-home/codex/llamacpp.config.toml')
 
@@ -150,6 +226,8 @@ try {
         $mergedAllow.Count -eq ($mergedAllow | Select-Object -Unique).Count
     ) 'Claude merge introduced duplicates'
     $claudeSettingsBefore = Get-Content -LiteralPath $claudeSettingsPath -Raw
+    $configBefore = [System.IO.File]::ReadAllText($installedConfigPath)
+    $rulesBefore = [System.IO.File]::ReadAllText($installedRulesPath)
 
     $instructionBackups = @(
         Get-ChildItem -LiteralPath (Join-Path $testCodexHome 'backups') -Filter 'AGENTS.md' -File -Recurse
@@ -167,6 +245,35 @@ try {
     Assert-Condition (
         (Get-Content -LiteralPath $claudeSettingsPath -Raw) -ceq $claudeSettingsBefore
     ) 'Idempotent install changed the merged Claude settings'
+    Assert-Condition (
+        [System.IO.File]::ReadAllText($installedConfigPath) -ceq $configBefore
+    ) 'Idempotent install changed the merged Codex configuration'
+    Assert-Condition (
+        [System.IO.File]::ReadAllText($installedRulesPath) -ceq $rulesBefore
+    ) 'Idempotent install changed the merged Codex rules'
+
+    # A previous installation linked the rules directory into this repository,
+    # and Codex then wrote its approvals there. Installing must undo that link
+    # and say where those approvals went.
+    Remove-Item -LiteralPath (Join-Path $testCodexHome 'rules') -Recurse -Force
+    New-Item -ItemType SymbolicLink -Force `
+        -Path (Join-Path $testCodexHome 'rules') `
+        -Target (Join-Path $repoRoot 'ai-home/rules') | Out-Null
+    $migrationLog = @(& (Join-Path $repoRoot 'scripts/install.ps1'))
+    $migratedRules = Get-Item -LiteralPath (Join-Path $testCodexHome 'rules') -Force
+    Assert-Condition (
+        $migratedRules.PSIsContainer -and $migratedRules.LinkType -ne 'SymbolicLink'
+    ) 'Installer left the rules directory linked into this repository'
+    Assert-Condition (
+        ($migrationLog -join "`n") -match '(?m)^unlinked: '
+    ) 'Installer did not report unlinking the rules directory'
+    Assert-Condition (
+        ($migrationLog -join "`n") -match '(?m)^note: approvals recorded through that link are in '
+    ) 'Installer did not report where approvals recorded through the link are'
+    Assert-Condition (
+        [System.IO.File]::ReadAllText($installedRulesPath).Contains(
+            'prefix_rule(pattern=["rtk"], decision="allow")')
+    ) 'The replacement rules file does not carry the curated rules'
 
     # Pruning: a link into this repository whose source is gone must be removed,
     # while anything the installer did not create must survive. The stale link is
@@ -303,6 +410,138 @@ try {
     Assert-Condition (
         -not (Test-Path -LiteralPath $dryRunClaudePluginLog)
     ) 'Dry-run invoked Claude Code plugin installation'
+
+    # Withdrawal and preservation are the ownership model's hard cases. They are
+    # driven against the installer's own merge functions with temporary curated
+    # sources, because reaching them through the installer itself would mean
+    # editing this repository's curated files while it runs.
+    $provenanceRoot = Join-Path $taskTestRoot 'provenance'
+    New-Item -ItemType Directory -Path (Join-Path $provenanceRoot 'rules') -Force | Out-Null
+    $curatedAll = Join-Path $provenanceRoot 'curated-all.rules'
+    $curatedReduced = Join-Path $provenanceRoot 'curated-reduced.rules'
+    Copy-Item -LiteralPath (Join-Path $repoRoot 'ai-home/rules/default.rules') -Destination $curatedAll
+    Set-Content -LiteralPath $curatedReduced -Value (
+        Get-Content -LiteralPath $curatedAll |
+            Where-Object { $_ -notmatch '^prefix_rule\(pattern=\["(jq|sed)"\], decision="allow"\)$' }
+    )
+
+    # sed is approved before the first merge, so the grant is the machine's even
+    # though the curated set spells it identically. git status is never curated.
+    $provenanceRules = Join-Path $provenanceRoot 'rules/default.rules'
+    Set-Content -LiteralPath $provenanceRules -Value @'
+prefix_rule(pattern=["git", "status"], decision="allow")
+prefix_rule(pattern=["sed"], decision="allow")
+'@
+    $provenanceClaude = Join-Path $provenanceRoot 'settings.json'
+    Set-Content -LiteralPath $provenanceClaude -Value @'
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed *)"
+    ]
+  }
+}
+'@
+
+    $parseErrors = $null
+    $installerAst = [System.Management.Automation.Language.Parser]::ParseFile(
+        (Join-Path $repoRoot 'scripts/install.ps1'), [ref] $null, [ref] $parseErrors)
+    Assert-Condition ($parseErrors.Count -eq 0) 'install.ps1 does not parse'
+    foreach ($node in $installerAst.FindAll(
+            { param($item) $item -is [System.Management.Automation.Language.FunctionDefinitionAst] },
+            $true)) {
+        . ([scriptblock]::Create($node.Extent.Text))
+    }
+
+    # The dot-sourced functions read the installer's own script variables by
+    # name, so they are set rather than passed.
+    $provenanceConfig = Join-Path $provenanceRoot 'config.toml'
+    $mergeContext = @{
+        DryRun         = $false
+        codexHome      = $provenanceRoot
+        claudeSettings = $provenanceClaude
+        configSource   = Join-Path $repoRoot 'ai-home/codex/config.toml'
+        stateFile      = Join-Path $provenanceRoot 'state.json'
+        stateVersion   = 1
+        backupRoot     = Join-Path $provenanceRoot 'backups'
+        trustRoots     = @((Join-Path $provenanceRoot 'github'))
+    }
+    foreach ($name in $mergeContext.Keys) {
+        Set-Variable -Name $name -Value $mergeContext[$name] -Scope Script
+    }
+
+    function Invoke-ProvenanceMerge {
+        param(
+            [Parameter(Mandatory)]
+            [string] $Source
+        )
+
+        $script:rulesSource = $Source
+        $script:mergeReport = [System.Collections.Generic.List[string]]::new()
+        return @(Invoke-AgentStateMerge)
+    }
+
+    [void] (Invoke-ProvenanceMerge -Source $curatedAll)
+    Assert-Condition (
+        [System.IO.File]::ReadAllText($provenanceRules).Contains(
+            'prefix_rule(pattern=["jq"], decision="allow")')
+    ) 'First merge did not add a curated rule'
+    Assert-Condition (
+        [System.IO.File]::ReadAllText($provenanceClaude).Contains('"Bash(jq *)"')
+    ) 'First merge did not add a derived permission'
+
+    $secondLog = Invoke-ProvenanceMerge -Source $curatedReduced
+    $mergedRules = [System.IO.File]::ReadAllText($provenanceRules)
+    $mergedClaude = [System.IO.File]::ReadAllText($provenanceClaude)
+    Assert-Condition (
+        -not $mergedRules.Contains('prefix_rule(pattern=["jq"], decision="allow")')
+    ) 'An uncurated rule this installer added was not withdrawn'
+    Assert-Condition (
+        -not $mergedClaude.Contains('"Bash(jq *)"') -and
+        -not $mergedClaude.Contains('"PowerShell(jq *)"')
+    ) 'An uncurated permission this installer added was not withdrawn'
+    Assert-Condition (
+        $mergedRules.Contains('prefix_rule(pattern=["sed"], decision="allow")')
+    ) 'A rule approved before installation was withdrawn'
+    Assert-Condition (
+        $mergedClaude.Contains('"Bash(sed *)"')
+    ) 'A permission approved before installation was withdrawn'
+    Assert-Condition (
+        ($secondLog -join "`n") -match '(?m)^preserved: Bash\(sed \*\) is no longer curated'
+    ) 'The preserved identical permission was not reported'
+    Assert-Condition (
+        $mergedRules.Contains('prefix_rule(pattern=["git", "status"], decision="allow")')
+    ) 'Withdrawal removed a rule the machine wrote'
+
+    # A managed key the machine has since changed is left as the machine set it.
+    [System.IO.File]::WriteAllText(
+        $provenanceConfig,
+        [System.IO.File]::ReadAllText($provenanceConfig).Replace(
+            'approval_policy = "on-request"', 'approval_policy = "never"'),
+        [System.Text.UTF8Encoding]::new($false))
+    $thirdLog = Invoke-ProvenanceMerge -Source $curatedAll
+    Assert-Condition (
+        [System.IO.File]::ReadAllText($provenanceConfig).Contains('approval_policy = "never"')
+    ) 'Merge overwrote a managed key the machine changed'
+    Assert-Condition (
+        ($thirdLog -join "`n") -match '(?m)^preserved: .*approval_policy changed since installation'
+    ) 'Merge did not report the managed key the machine changed'
+
+    # Reverting to the recorded value hands the key back, so management resumes.
+    [System.IO.File]::WriteAllText(
+        $provenanceConfig,
+        [System.IO.File]::ReadAllText($provenanceConfig).Replace(
+            'approval_policy = "never"', 'approval_policy = "on-request"'),
+        [System.Text.UTF8Encoding]::new($false))
+    [void] (Invoke-ProvenanceMerge -Source $curatedReduced)
+    Assert-Condition (
+        [System.IO.File]::ReadAllText($provenanceConfig).Contains('approval_policy = "on-request"')
+    ) 'Merge lost a managed key after the machine reverted it'
+
+    Assert-Condition (
+        (Get-FileHash -LiteralPath (Join-Path $repoRoot 'ai-home/rules/default.rules') -Algorithm SHA256).Hash -eq
+        $repoRulesHash
+    ) "The installer wrote into this repository's curated rule file"
 
     Write-Output 'installer integration test passed'
 }
