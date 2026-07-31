@@ -5,7 +5,10 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Codex used to write approvals into this file through a link. Nothing the
 # installer does may touch it now, so its contents are checked at the end.
 repo_rules_checksum="$(cksum <"$repo_root/ai-home/rules/default.rules")"
-task_test_root="$(mktemp -d "${TMPDIR:-/tmp}/ai-install-test.XXXXXX")"
+# macOS sets TMPDIR with a trailing slash, so mktemp returns a path holding a
+# doubled separator and the merge writes the collapsed form. Canonicalising here
+# keeps the paths this test asserts on identical to the ones it installs with.
+task_test_root="$(cd "$(mktemp -d "${TMPDIR:-/tmp}/ai-install-test.XXXXXX")" && pwd -P)"
 test_codex_home="$task_test_root/codex home"
 test_agents_home="$task_test_root/agents home"
 test_claude_home="$task_test_root/claude home"

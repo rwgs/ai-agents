@@ -666,7 +666,16 @@ function Test-JsonProperty {
         [string] $Name
     )
 
-    return [bool] ($Object.PSObject.Properties.Name -contains $Name)
+    # Iterating avoids reading .Name off the property collection, which throws
+    # under PowerShell 7 strict mode when the object has no properties at all,
+    # as an empty settings.json does.
+    foreach ($property in $Object.PSObject.Properties) {
+        if ($property.Name -ceq $Name) {
+            return $true
+        }
+    }
+
+    return $false
 }
 
 function Set-JsonProperty {
