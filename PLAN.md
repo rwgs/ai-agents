@@ -52,6 +52,10 @@ Two questions left open in `SPEC.md` and one gap found while answering them:
 - Extract the browser and local-server rules from `web-development` into
   `web-verification`, installed and stack-agnostic. Cross-reference both ways, as
   `docs/SKILLS.md` requires for adjacent skills.
+- Move the remaining `web-development` tooling to the pool as well, and promote its
+  one destructive-mistake rule, detecting the package manager from the lockfile, to
+  `ai-home/AGENTS.md`. Record the criterion that decides this, so the next language
+  skill does not need a fresh argument.
 - Update `docs/SKILLS.md`, `SPEC.md` (both unresolved questions close),
   `README.md`, `CHANGELOG.md`, and `TASKS.md` in the same change.
 
@@ -61,12 +65,16 @@ Two questions left open in `SPEC.md` and one gap found while answering them:
   pins a commit without extra machinery but forces a fixed path in every adopting
   repository, and the recorded-commit approach reuses the drift reporting already
   planned for the baseline documents.
-- `web-development` stays installed after the split rather than following
-  `rust-cli` into the pool. Its reach is now two of eight repositories, which
-  argues for the pool, but the split is untested and moving both halves at once
-  would leave nothing to observe.
-- The installed count is unchanged at nine, so this is a change of composition
-  rather than a reduction. Two stack skills leave and two broader ones arrive.
+- `web-development` was kept installed at first, on the grounds that the split
+  needed something to be judged by. That was a reach argument, and reach has no
+  threshold; the criterion recorded instead is whether an agent reaches for the
+  language as a tool or works in it because it is the stack. The first attempt is
+  left visible in `DECISIONS.md` as a superseded entry rather than rewritten.
+- Promoting the lockfile rule to global instructions rather than leaving it in the
+  pooled skill trades one always-loaded line for coverage that no longer depends on
+  a `.js` or `.ts` trigger. The rest of the skill is genuinely stack-bound.
+- The installed set falls from nine to eight, and every language skill in it is now
+  one an agent reaches for in any repository.
 - `show-codex-reset-expiries` stays installed although it is tied to one product,
   because it was considered and kept.
 

@@ -8,6 +8,62 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-07-31 A language skill is installed when the language is a tool
+
+Status: Accepted. Supersedes "Installed skills cover tooling, not stacks or
+domains" below, whose stated principle contradicted the set it produced. The four
+placements that entry made stand; its reason for keeping `web-development` does
+not, and `web-development` moves to the pool.
+
+### Decision
+
+A language skill is installed when an agent reaches for that language as a tool in
+any repository. It goes to the pool when the language is the project's stack.
+
+Installed: `bash-scripting`, `powershell-scripting`, `python-scripting`. Pooled:
+`rust-cli`, `web-development`.
+
+### Why
+
+The superseded entry was titled "not stacks or domains" while leaving four stack
+skills installed, so it could not be applied to a fifth case without inventing a
+reason. It kept `web-development` on reach, two of eight local repositories, which
+is a frequency test with no threshold and no stopping rule.
+
+The distinction that actually separates the set is what the language is being used
+for. An agent writes shell or Python to get something done in a repository of any
+kind, including one that contains neither. It writes TypeScript or Rust only when
+the project is written in TypeScript or Rust, which is the definition of the pool.
+This also explains why `python-scripting` is installed while `web-development` is
+not, which the superseded entry made look arbitrary.
+
+`web-development` held one rule worth having without the skill loaded: detect the
+package manager from the lockfile, because running the wrong one rewrites it. That
+is a destructive-mistake rule, one sentence long, and it now sits in
+`ai-home/AGENTS.md` beside the existing destructive-operations rule. It applies
+without a `.js` or `.ts` trigger, which also covers a repository carrying a
+lockfile for tooling without being a JS/TS project.
+
+### Rejected alternatives
+
+- Keeping the reach test and recording a threshold: any threshold is arbitrary,
+  and reach changes as repositories come and go, so the set would need revisiting
+  on no principled trigger.
+- Moving `bash-scripting` and `powershell-scripting` out for consistency with a
+  literal no-stacks rule: it is the rule that was wrong, not those placements.
+  This baseline's own installers are Bash and PowerShell, and both are reached for
+  in repositories that contain neither.
+- Leaving the whole skill installed for the sake of the lockfile rule: a skill
+  loaded on a stack trigger to deliver one always-relevant sentence, which is what
+  the global instruction file is for.
+
+### Consequences
+
+The installed set is eight: three workflow skills, three tool-language skills,
+`web-verification`, and `show-codex-reset-expiries`. A new language skill is
+placed by asking whether an agent reaches for the language or works in it, so the
+question has an answer before the skill is written.
+
 ## 2026-07-31 The optional skill pool is its own repository
 
 Status: Accepted. Resolves the open question left by "Which skills are installed

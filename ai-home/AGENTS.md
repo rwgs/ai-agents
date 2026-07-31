@@ -41,6 +41,10 @@ Git passthrough covers every subcommand. Run `rtk --help` for the full catalog.
 - Prefer small, reviewable changes with relevant validation.
 - Do not expose credentials, tokens, private keys, or secret file contents.
 - Do not perform destructive operations without explicit authorization.
+- Detect a project's package manager from its lockfile before installing
+  anything. Running the wrong one rewrites the lockfile: `package-lock.json`
+  means npm, `pnpm-lock.yaml` pnpm, `yarn.lock` Yarn, `bun.lockb` Bun,
+  `uv.lock` uv, and `poetry.lock` Poetry.
 - Use subagents only when the user or applicable `AGENTS.md` or skill
   instructions explicitly request subagents, delegation, or parallel agent
   work.

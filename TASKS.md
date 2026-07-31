@@ -105,15 +105,21 @@
   local-server rules into `web-verification`. Those rules apply to a site with any
   backend but fired only on `.js` and `.ts`, and two of the browser-facing
   repositories here have no `package.json` at all.
-- [x] Keep `web-development` installed after the split rather than moving both
-  halves at once, so the split has something to be judged by.
+- [x] Move `web-development` to the pool as well, and record why. It was kept
+  installed at first on reach, two of eight local repositories, which is a
+  frequency test with no threshold. The criterion recorded instead is whether an
+  agent reaches for the language as a tool in any repository or works in it because
+  it is the project's stack, which keeps shell and Python and pools Rust and
+  TypeScript.
+- [x] Promote the one rule in `web-development` that matters without the skill
+  loaded, detecting the package manager from the lockfile, to `ai-home/AGENTS.md`.
 - [ ] Create the private `rwgs/ai-skills` remote and push. `gh` is installed in
   neither Git Bash nor PowerShell here, so the remote is configured and the commit
   is waiting.
 - [ ] Delete `~/OneDrive/Development/ai/skills-optional/` only after that push,
   so the pool is never the only copy.
-- [ ] Rerun the installer to link the two new skills and prune the two removed
-  ones.
+- [ ] Rerun the installer to link `python-scripting` and `web-verification` and
+  prune `python-ai`, `rust-cli`, and `web-development`.
 
 ## Later phase: Re-appliable repository baseline
 

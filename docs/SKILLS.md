@@ -72,10 +72,20 @@ A skill tied to one product, one environment, or one kind of project does not
 meet that bar. Those live in the `rwgs/ai-skills` pool, described below, and are
 drawn into the repositories that use them.
 
+For a language skill, the test is what the language is used for. Install it when
+an agent reaches for that language as a tool in a repository of any kind,
+including one containing none of it, which is true of shell and Python. Pool it
+when the language is the project's stack and the skill only applies to projects
+written in it, which is true of Rust and TypeScript.
+
 A skill that reads as broader than it is fails the bar in a way an absent skill
 does not, because it makes a gap look covered. `python-ai` was installed while
 covering only Python AI applications, so general Python work matched nothing;
 `python-scripting` covers that and `python-ai` moved to the pool.
+
+When a pooled skill holds one rule that matters without the skill loaded, put
+that rule in `ai-home/AGENTS.md` rather than keeping the skill installed for it.
+Detecting a package manager from its lockfile got there that way.
 
 ## Repository skills
 
@@ -88,7 +98,6 @@ Installed into both agents by the installer.
 - `pr-readiness`
 - `python-scripting`
 - `show-codex-reset-expiries`
-- `web-development`
 - `web-verification`
 
 Run `./scripts/validate.sh` after adding, moving, or changing a skill.
@@ -99,7 +108,7 @@ removing a skill also requires rerunning the installer so its links are pruned.
 
 `rwgs/ai-skills` holds the skills that fail the bar above: `forgejo-maintainer`,
 `hugo`, `infrastructure`, `linux-sysadmin`, `mdbook`, `podman-operator`,
-`python-ai`, `rust-cli`, and `windows-sysadmin`.
+`python-ai`, `rust-cli`, `web-development`, and `windows-sysadmin`.
 
 A repository draws one in by copying it to `.agents/skills/<name>`, and
 `.claude/skills/<name>` as well if the repository is used with both agents, then

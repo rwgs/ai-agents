@@ -10,10 +10,10 @@ description: Serve and verify a web application in a real browser, covering loca
 Serving a site or application locally and confirming its behavior in a browser.
 Stack-agnostic: it applies whether the backend is JavaScript, Python, Rust, Go, or
 a static generator. JavaScript and TypeScript project tooling, meaning package
-managers, type checking, linting, and test runner configuration, is covered by
-`web-development`. Scripting the commands around a server belongs to
-`bash-scripting` or `powershell-scripting`. Administering the host or container
-the site runs on is out of scope.
+managers, type checking, linting, and test runner configuration, is covered by the
+`web-development` skill in the optional pool. Scripting the commands around a
+server belongs to `bash-scripting` or `powershell-scripting`. Administering the
+host or container the site runs on is out of scope.
 
 ## Workflow
 

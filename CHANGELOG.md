@@ -19,12 +19,18 @@ newest first. Version headings replace the dates if tagging begins.
     browser evidence for user-visible changes. It applies to a site with any
     backend, where the rules were previously reachable only behind a JS/TS
     trigger.
-  - Narrowed `web-development` to JavaScript and TypeScript project tooling.
-  - Removed `python-ai` and `rust-cli`. Both moved to the new optional pool at
-    `rwgs/ai-skills`, which also holds the sysadmin, infrastructure, container,
-    Forgejo, Hugo, and mdBook skills. `python-ai` covered Python AI applications
-    only, so `python-scripting` rather than its removal is what changes general
-    Python coverage.
+  - Removed `python-ai`, `rust-cli`, and `web-development`. All three moved to the
+    new optional pool at `rwgs/ai-skills`, which also holds the sysadmin,
+    infrastructure, container, Forgejo, Hugo, and mdBook skills. A language skill
+    is installed when an agent reaches for that language as a tool in any
+    repository, and pooled when the language is the project's stack.
+    `python-ai` covered Python AI applications only, so `python-scripting` rather
+    than its removal is what changes general Python coverage.
+- Added one rule to the shared global instructions: detect a project's package
+  manager from its lockfile before installing, because running the wrong one
+  rewrites it. This was the only rule in `web-development` that mattered without
+  the skill loaded, and it now also covers a repository carrying a lockfile
+  without being a JavaScript or TypeScript project.
 - Moved the shared command rules from `ai-home/codex/rules/` to `ai-home/rules/`.
   Installed paths are unchanged: `~/.codex/rules/` still links to the directory
   and Claude Code's `permissions.allow` entries still derive from the same file.
