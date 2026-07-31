@@ -190,9 +190,14 @@
 
 ## Later phase: Enforced repository governance
 
-- [ ] Configure a default-branch ruleset after CI check names exist remotely.
-- [ ] Require pull requests, successful validation, and conversation resolution.
-- [ ] Require an independent approval when repository ownership permits it.
+- [ ] Confirm secret scanning, push protection, and Dependabot are enabled.
+- [ ] Decide what replaces dependency review. It is gated on
+  `github.event_name == 'pull_request'`, so with no pull requests it never runs.
+  Either trigger it another way or drop the job rather than leave a check that
+  reads as covered.
+- [ ] Decide whether a default-branch ruleset is worth configuring at all. Every
+  gate previously planned here required a pull request or a second reviewer, and
+  neither exists in a single-maintainer flow.
 
 ## Completion rule
 

@@ -35,21 +35,19 @@
 11. Promote what must outlive `PLAN.md`: decisions that constrain future work
     into `DECISIONS.md` with the alternatives they rejected, and verified facts
     into `SPEC.md` or `AGENTS.md`.
-12. Use `$pr-readiness` to inspect the final diff, confirm the local gate, and
-    check merge readiness.
+12. Use `$pr-readiness` to inspect the final diff and confirm the local gate. This
+    repository has one maintainer, so use the skill's no-pull-request path and
+    stop at local readiness.
 13. Fix actionable findings, rerun validation, and repeat until clean or every
     remaining item has a documented reason.
-14. Commit the focused change once its verification passes. Push it and open a
-    draft pull request when the change needs review evidence this environment
-    cannot produce, and only when authorized.
-15. Require CI validation, applicable security checks, and a fresh independent
-    review on the latest commit.
-16. Fix or explain every review item, resolve completed threads, and repeat the
-    checks after every push.
+14. Commit the focused change to `main` once its verification passes. Neither a
+    branch nor a pull request is part of this flow.
+15. When a change needs evidence only CI can produce, ask to push, then dispatch
+    the validation workflow and read the run. Apply the same security checks that
+    the security baseline below establishes for the repository.
+16. Fix or explain every finding and repeat the checks after every push.
 17. Complete and document required manual testing on the real target
     environment.
-18. Merge only after the final diff, planning documents, CI, security checks,
-    reviews, threads, and manual tests are clean.
 
 ## Security baseline
 
@@ -62,11 +60,12 @@ irrelevant gates:
 - Configure CodeQL for every language in the repository that CodeQL supports.
 - Document accepted exceptions with a reason, owner, and review date.
 
-## Required pull request evidence
+## Required change evidence
 
 Record the problem, approach, important decisions, exact automated checks,
 manual tests, screenshots for visible changes, limitations, skipped validation,
-and follow-up work.
+and follow-up work. With no pull request to hold it, this belongs in the commit
+message, and in `DECISIONS.md` when it constrains future work.
 
 ## Documentation rule
 

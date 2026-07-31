@@ -137,19 +137,20 @@ Status: Planned
 
 ### Outcome
 
-GitHub settings enforce the review and validation gates documented by the
-repository.
+GitHub settings enforce the validation and scanning the repository documents,
+without gates a single maintainer committing to `main` cannot satisfy.
 
 ### Included work
 
-- Require pull requests and successful validation checks.
-- Require conversation resolution.
-- Require an independent approval when repository ownership makes that
-  practical.
-- Confirm secret scanning, push protection, Dependabot, and dependency review.
+- Make a push to `main` trigger validation reliably, which it does not currently
+  do.
+- Confirm secret scanning, push protection, and Dependabot.
+- Decide what replaces dependency review, which only runs on pull requests and
+  is therefore now unreachable.
 
 ### Exit criteria
 
-- The repository ruleset protects the default branch.
-- Required checks run against the latest pull-request commit.
-- The documented merge gate matches GitHub settings.
+- Every push to `main` produces a validation run, and its conclusion is visible
+  without a manual dispatch.
+- Secret scanning, push protection, and Dependabot are confirmed enabled.
+- No documented gate depends on a pull request or a second reviewer.

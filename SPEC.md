@@ -38,8 +38,8 @@ wants the same safe Claude/Codex baseline in multiple repositories.
   customised.
 - Validate repository structure, configuration syntax, skill metadata,
   documentation consistency, and installer behavior.
-- Run Linux, macOS, and Windows validation for pull requests and default-branch
-  pushes.
+- Run Linux, macOS, and Windows validation on every push to the default branch,
+  and on manual dispatch. There is no pull-request flow to gate.
 
 ## Architecture
 
@@ -134,9 +134,11 @@ assumes, and `TASKS.md` carries the work to reconcile them.
   the actual directories.
 - Installer tests verify that a Claude permission merge preserves existing
   settings and pre-existing allow entries, and that rerunning adds nothing.
-- Pull requests run validation and dependency review on the latest commit.
-- Workflow documentation covers planning, implementation, review, manual
-  testing, and merge gates.
+- A dispatched run validates the latest commit on all three platforms. The
+  `dependency-review` job is gated on `pull_request` and so never runs; `TASKS.md`
+  carries the decision on what replaces it.
+- Workflow documentation covers planning, implementation, local review, manual
+  testing, and the CI evidence a single maintainer can produce.
 
 ## Unresolved questions
 

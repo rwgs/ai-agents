@@ -107,12 +107,13 @@ Read only the documents needed for the task:
 ## Version control
 
 - Commit each completed change to `main` once its verification passes, without
-  waiting to be asked. Do not create a branch only because `main` is the default
-  branch.
+  waiting to be asked. This repository has one maintainer: do not create a branch
+  or a pull request, and do not propose either as a review step.
 - Push only when asked.
-- Propose a branch and a pull request when the change needs review evidence this
-  environment cannot produce, such as installer or workflow behavior that only
-  Linux, macOS, and Windows CI can verify.
+- When a change needs evidence only CI can produce, such as installer behavior on
+  a platform this environment cannot exercise, say so and ask to push. Confirm it
+  by dispatching the validation workflow on `main` and reading the run, not by
+  opening a pull request.
 
 ## Maintenance
 

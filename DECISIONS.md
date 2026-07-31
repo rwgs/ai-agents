@@ -8,6 +8,54 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-07-31 No branches and no pull requests in this repository
+
+Status: Accepted.
+
+### Decision
+
+Work is committed straight to `main`. This repository creates no branches and
+opens no pull requests, and an agent must not propose either, including as a way
+to obtain review evidence. Evidence that only CI can produce comes from
+dispatching the validation workflow and reading the run.
+
+### Why
+
+There is one maintainer. Every gate a pull request exists to enforce -- review by
+someone else, conversation resolution, approval before merge -- has no second
+party to satisfy it, so requiring one produced ceremony that the same person
+performed on both sides.
+
+The rule it replaces asked for a branch and a pull request whenever a change
+needed evidence this environment cannot produce. That reason does not survive:
+`workflow_dispatch` runs the same three-platform validation on any ref, so the
+evidence never depended on a pull request. It was obtained that way once, for the
+Windows pruning fix, before this entry was written.
+
+### Rejected alternatives
+
+- Keeping pull requests for installer changes only: installer changes are the most
+  common kind of change here, so the exception would be the rule.
+- Keeping a branch without a pull request: a branch that is never reviewed and
+  always fast-forwarded is a rename of `main` with an extra push and delete.
+- Requiring a self-approval to preserve the shape of a review gate: records an
+  approval that carries no independent judgment, which is worse than no gate
+  because it reads like one.
+
+### Consequences
+
+`AGENTS.md`, `docs/WORKFLOW.md`, `ROADMAP.md`, `SPEC.md`, and `TASKS.md` no longer
+describe a merge gate. Two things are left stranded and are recorded as tasks
+rather than removed here: the `dependency-review` job, which is gated on
+`pull_request` and therefore unreachable, and `.github/pull_request_template.md`,
+which is now only a template for a flow nobody uses. The `pr-readiness` skill
+stays installed, because it is installed into every repository and has a
+documented path for when no pull request exists.
+
+Because a dispatch is manual, a push that silently fails to trigger validation is
+now the only way a change reaches `main` unverified. That makes the open question
+of why no push has ever triggered a run a correctness issue, not a curiosity.
+
 ## 2026-07-31 A language skill is installed when the language is a tool
 
 Status: Accepted. Supersedes "Installed skills cover tooling, not stacks or
