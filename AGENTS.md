@@ -59,8 +59,10 @@ for tools that load it automatically.
 - Put reusable workflows in `.agents/skills/<name>/SKILL.md`.
 - Put instructions that apply to every repository in `ai-home/AGENTS.md`; it is
   installed as the global instructions for both agents.
-- Put agent-specific portable configuration in `ai-home/codex/` or
-  `ai-home/claude/`.
+- Put configuration shared by both agents in `ai-home/`, and Codex-specific
+  portable configuration in `ai-home/codex/`. Claude Code has no equivalent
+  directory: its `settings.json` is rendered and merged by the installer rather
+  than linked, because it accumulates interactively approved permissions.
 - Put project maintenance instructions in this file.
 - Do not assume files in `docs/` are loaded automatically.
 - Use the minimum code or documentation change that solves the stated problem.
@@ -78,6 +80,8 @@ Read only the documents needed for the task:
 - `ROADMAP.md` for ordered outcomes, risks, and phase exit criteria.
 - `TASKS.md` for the current phase, validation status, and remaining work.
 - `PLAN.md` for the approach behind the change currently in flight.
+- `DECISIONS.md` before changing an area it constrains, and before proposing an
+  approach it already rejected.
 - `docs/AGENT_LAYOUT.md` for Claude and Codex discovery and installation
   boundaries.
 - `docs/RTK.md` for the full RTK command catalog.
@@ -97,9 +101,24 @@ Read only the documents needed for the task:
   installer behavior. Windows installer behavior is covered by
   `./scripts/test-install.ps1` in CI.
 
+## Version control
+
+- Commit each completed change to `main` once its verification passes, without
+  waiting to be asked. Do not create a branch only because `main` is the default
+  branch.
+- Push only when asked.
+- Propose a branch and a pull request when the change needs review evidence this
+  environment cannot produce, such as installer or workflow behavior that only
+  Linux, macOS, and Windows CI can verify.
+
 ## Maintenance
 
 - Keep this file short enough to follow. Add rules only when they prevent a real
   repeat mistake or document durable project behavior.
 - When the user corrects an approach, tighten the relevant rule instead of
   appending a vague warning.
+- Before replacing `PLAN.md`, promote the decisions that constrain future work
+  into `DECISIONS.md` with the alternatives they rejected, and the verified facts
+  that change how the project is understood into `SPEC.md` or this file.
+- Add a `CHANGELOG.md` entry when a change alters what installation does to a
+  machine. Repository-internal changes stay in the commit history.

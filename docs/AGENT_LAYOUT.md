@@ -47,7 +47,7 @@ file only when a project needs something the machine-wide baseline lacks.
 
 **Permissions have no shared runtime format.** Codex reads its own DSL; Claude
 Code reads `permissions.allow` strings inside `settings.json`. There is no file
-both can parse, so `ai-home/codex/rules/default.rules` is the single
+both can parse, so `ai-home/rules/default.rules` is the single
 hand-authored source and the installer derives the Claude form from it.
 
 ## Why this repository is not a full home-directory mirror
@@ -82,9 +82,9 @@ This repository manages only:
 | `ai-home/AGENTS.md` | `~/.codex/AGENTS.md` | symbolic link |
 | `ai-home/AGENTS.md` | `~/.claude/CLAUDE.md` | symbolic link |
 | `ai-home/codex/config.toml` | `~/.codex/config.toml` | rendered file with trust entries |
-| `ai-home/codex/rules/` | `~/.codex/rules/` | symbolic link |
+| `ai-home/rules/` | `~/.codex/rules/` | symbolic link |
 | `ai-home/codex/*.config.toml` | `~/.codex/<name>.config.toml` | symbolic link |
-| `ai-home/codex/rules/default.rules` | `permissions.allow` in `~/.claude/settings.json` | derived and merged |
+| `ai-home/rules/default.rules` | `permissions.allow` in `~/.claude/settings.json` | derived and merged |
 | `.agents/skills/<name>/` | `~/.agents/skills/<name>/` | symbolic link |
 | `.agents/skills/<name>/` | `~/.claude/skills/<name>/` | symbolic link |
 
@@ -128,7 +128,7 @@ permission namespaces and a rule for one does not cover the other:
 
 The trailing ` *` is the prefix wildcard for command tools, so one entry per
 namespace covers the bare command and every argument list. Edit
-`ai-home/codex/rules/default.rules` and rerun the installer to change the
+`ai-home/rules/default.rules` and rerun the installer to change the
 allowlist for both agents.
 
 This grants Claude Code the same latitude the Codex configuration already

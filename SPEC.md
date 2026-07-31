@@ -33,6 +33,9 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 - Support repeated installation without replacing already-correct links.
 - Provide project-planning templates and separate planning from pull-request
   readiness.
+- Adopt the baseline into a repository, and bring an already-adopted repository
+  up to date when the baseline changes, without overwriting what that repository
+  customised.
 - Validate repository structure, configuration syntax, skill metadata,
   documentation consistency, and installer behavior.
 - Run Linux, macOS, and Windows validation for pull requests and default-branch
@@ -42,10 +45,13 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 
 - `ai-home/AGENTS.md` is the shared global instruction file, linked to
   `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`.
-- `ai-home/codex/` contains portable files installed into `CODEX_HOME`.
-- `ai-home/codex/rules/default.rules` is the single source for both permission
+- `ai-home/rules/default.rules` is the single source for both permission
   systems; the installer derives Claude Code's `permissions.allow` entries from
-  it.
+  it and links the directory into `CODEX_HOME`. It sits outside `ai-home/codex/`
+  because both agents depend on it.
+- `ai-home/codex/` contains the Codex-only files installed into `CODEX_HOME`.
+  Claude Code has no counterpart directory, because its `settings.json` is
+  merged rather than linked.
 - The installer renders `config.toml` with machine-specific exact trust entries,
   merges Claude Code's `settings.json`, and links the other managed files.
 - `.agents/skills/` contains reusable workflows linked into `AGENTS_HOME` and
@@ -57,8 +63,8 @@ wants the same safe Claude/Codex baseline in multiple repositories.
   because the two agents publish the same plugin in different marketplaces.
 - `scripts/validate.sh` and installer integration tests provide local and CI
   evidence.
-- `AGENTS.md`, this specification, `ROADMAP.md`, and `TASKS.md` define how the
-  repository is maintained.
+- `AGENTS.md`, this specification, `ROADMAP.md`, `TASKS.md`, `PLAN.md`, and
+  `DECISIONS.md` define how the repository is maintained.
 
 ## Security and privacy
 
@@ -79,6 +85,10 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 - The Claude permission merge uses `python3` or `python` when present and is
   skipped with a warning otherwise, so installation never fails for lack of a
   JSON tool.
+- Claude Code registers no plugin marketplace until it is first started
+  interactively, so the installer adds one before installing from it. The
+  `owner/repo` shorthand resolves over SSH and fails without a GitHub host key,
+  so `claude-plugins.txt` carries the full HTTPS URL.
 
 ## Non-goals
 
@@ -108,7 +118,12 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 
 ## Unresolved questions
 
-None currently open. The previous question about user-wide Claude Code
-instructions is resolved: the installer links the shared `ai-home/AGENTS.md` to
-`~/.claude/CLAUDE.md`, and the repository-local `CLAUDE.md` is a one-line
-`@AGENTS.md` import.
+- Where the optional skill pool lives and how a repository draws from it.
+  `forgejo-maintainer`, `hugo`, and `mdbook` were moved outside this repository
+  and the location was never recorded.
+- Whether `python-ai`, `rust-cli`, and `web-development` belong in that pool
+  rather than installed on every machine.
+
+Closed decisions and the alternatives they rejected are recorded in
+`DECISIONS.md`, including the resolved question about user-wide Claude Code
+instructions.

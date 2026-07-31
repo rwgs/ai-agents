@@ -71,7 +71,7 @@ grep -Fqx "[projects.\"$test_user_home/github\"]" "$test_codex_home/config.toml"
   fail "generated config does not trust the user GitHub root"
 grep -Fqx "[projects.\"$test_github_repo\"]" "$test_codex_home/config.toml" ||
   fail "generated config does not trust a nested Git repository"
-assert_link "$test_codex_home/rules" "$repo_root/ai-home/codex/rules"
+assert_link "$test_codex_home/rules" "$repo_root/ai-home/rules"
 assert_link "$test_codex_home/ollama.config.toml" "$repo_root/ai-home/codex/ollama.config.toml"
 assert_link "$test_codex_home/llamacpp.config.toml" "$repo_root/ai-home/codex/llamacpp.config.toml"
 
@@ -141,7 +141,7 @@ if [[ -n "$test_python" ]]; then
 fi
 
 rm -- "$test_codex_home/rules"
-ln -s "$repo_root/ai-home/codex/rules/." "$test_codex_home/rules"
+ln -s "$repo_root/ai-home/rules/." "$test_codex_home/rules"
 raw_rules_target="$(readlink "$test_codex_home/rules")"
 HOME="$test_user_home" CODEX_HOME="$test_codex_home" AGENTS_HOME="$test_agents_home" CLAUDE_CONFIG_DIR="$test_claude_home" \
   "$repo_root/scripts/install.sh" >/dev/null

@@ -41,6 +41,36 @@
 - [ ] Confirm the Windows installer integration test passes in CI.
 - [ ] Inspect the final diff and stage only parity changes.
 
+## Current phase: Decision records
+
+- [x] Add `DECISIONS.md`, register it in the validator's required-file list, the
+  `AGENTS.md` routing list, and the `docs/WORKFLOW.md` role table.
+- [x] Record the first four decisions: the closed planning set, promotion out of
+  `PLAN.md`, one plugin manifest per agent, and one shared instruction file.
+- [x] Add the promotion trigger to `AGENTS.md` maintenance and the
+  `docs/WORKFLOW.md` lifecycle, so the log has a write step rather than only a
+  read route.
+- [x] Add the `DECISIONS.md` template to `ai-project-manager` and wire it into
+  the skill's discovery, promotion step, safety rules, and validation.
+- [x] Promote the Claude Code marketplace registration finding from `PLAN.md`
+  into `SPEC.md`, and move the resolved instruction-link question out of the
+  `SPEC.md` "Unresolved questions" section.
+- [x] Record the commit-to-`main` rule in `AGENTS.md` so it binds both agents
+  rather than living in Claude Code's memory store.
+- [x] Add `CHANGELOG.md`, backfill the installer-visible history, and add the
+  conditional template and skill step to `ai-project-manager`. Record the
+  superseding decision, because an earlier entry rejected the file.
+- [x] Remove the untracked-by-purpose `.serena/` configuration and ignore it. It
+  named a different project, declared TypeScript for a repository that has none,
+  and nothing here referenced it.
+- [x] Move `default.rules` out of `ai-home/codex/` to `ai-home/rules/` so the
+  shared permission source is not filed under one agent, and correct the
+  `AGENTS.md` claim that `ai-home/claude/` exists.
+- [ ] Run repository, shell, installer, and skill validation on a platform where
+  the installer integration test can create symbolic links. Git Bash on Windows
+  cannot, and that failure reproduces on a clean tree.
+- [ ] Confirm validation passes in CI on Linux, macOS, and Windows.
+
 ## Next phase: Line endings and manifest ergonomics
 
 - [x] Refresh this checkout so the working tree matches `.gitattributes`. It
@@ -54,7 +84,32 @@
   `claude-plugins.txt`, so each manifest can explain why a Claude Code entry
   carries a marketplace URL and a Codex entry does not. Both installers, the
   validator, and both installer tests read these files and all four must skip
-  the new lines.
+  the new lines. This reverses part of the manifest decision recorded in
+  `DECISIONS.md`, so add a superseding entry rather than editing that one.
+
+## Later phase: Re-appliable repository baseline
+
+- [ ] Decide where the optional skill pool lives. `forgejo-maintainer`, `hugo`,
+  and `mdbook` were moved outside this repository and the location was never
+  recorded. A branch is already rejected in `DECISIONS.md`.
+- [ ] Decide whether `python-ai`, `rust-cli`, and `web-development` move to that
+  pool. They are the installed skills that only apply to repositories of their
+  stack. `bash-scripting` and `powershell-scripting` stay, because this
+  baseline's own installers are Bash and PowerShell.
+- [ ] Record in an adopting repository which baseline commit it took, which
+  documents it adopted, and which pieces it declined.
+- [ ] Add an update mode to `adopt-baseline`, or a sibling skill, that adds
+  missing documents and sections and reports drift without overwriting an
+  adopted document.
+- [ ] Extend adoption to install `.gitattributes`, and offer the validation
+  workflow, Dependabot configuration, and pull-request template.
+- [ ] Give a new repository its own entry point instead of a skill named for
+  adopting an existing one.
+- [ ] Prove the loop on a scratch repository: adopt, change the baseline,
+  re-apply, and confirm no customisation is lost and a second re-apply reports
+  nothing to do.
+- [ ] Remove the empty `skills-optional/` directory left on disk by the commit
+  that dropped the optional tree.
 
 ## Later phase: MCP server management
 

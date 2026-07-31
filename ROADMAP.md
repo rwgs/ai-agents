@@ -35,6 +35,8 @@ review, manual-testing, and merge workflow.
   without making ordinary installs mutate plugin state.
 - Render exact trusted-project entries for every Git worktree beneath the
   current user's `~/github` directory.
+- Record closed decisions and the alternatives they rejected in `DECISIONS.md`,
+  and promote them out of `PLAN.md` before it is replaced.
 
 ### Risks
 
@@ -85,7 +87,51 @@ each agent actually reads.
 - A merge into a populated `settings.json` preserves every existing key and
   allow entry, and reruns report no change.
 
-## Phase 4: Enforced repository governance
+## Phase 4: Re-appliable repository baseline
+
+Status: Planned
+
+### Outcome
+
+A repository can adopt the baseline and later be brought up to date with it. The
+same path serves a new project, a project already written, and one cloned or
+forked and since developed further.
+
+### Included work
+
+- Record what a repository adopted: the baseline commit, the documents taken,
+  and the pieces declined. Without a marker an update cannot tell customisation
+  from drift.
+- Add an update mode, separate from first adoption, with additive semantics. It
+  adds documents and sections that are missing and reports convention drift for
+  a human to apply. It never overwrites an adopted document.
+- Propagate the development infrastructure that adoption currently skips:
+  `.gitattributes`, and optionally the validation workflow, Dependabot
+  configuration, and pull-request template.
+- Name a location for optional skills and document how a repository draws from
+  it, so a stack-specific skill can be added per project rather than installed
+  everywhere.
+- Give a new repository an entry point of its own, rather than reaching for a
+  skill named for adopting an existing one.
+
+### Dependencies and risks
+
+- Adopted documents are customised after they land, so an update that overwrites
+  destroys work. Additive-only semantics are a correctness requirement, not a
+  preference.
+- A marker that drifts from what is actually in the repository is worse than no
+  marker, because it would report an update as applied when it was not.
+- `.gitattributes` is the highest-value item: without it CRLF makes Bash fail
+  outright, which this repository hit in its own checkout.
+
+### Exit criteria
+
+- A scratch repository adopts the baseline, the baseline then changes, and
+  re-applying brings the repository up to date without losing any customisation.
+- Re-applying a second time with no baseline change reports nothing to do.
+- Adoption and update are covered by the same validation the installer has.
+
+## Phase 5: Enforced repository governance
 
 Status: Planned
 

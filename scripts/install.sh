@@ -29,7 +29,7 @@ backup_root="$codex_home/backups/ai-$timestamp-$$"
 codex_plugin_manifest="$repo_root/codex-plugins.txt"
 claude_plugin_manifest="$repo_root/claude-plugins.txt"
 config_source="$repo_root/ai-home/codex/config.toml"
-rules_source="$repo_root/ai-home/codex/rules/default.rules"
+rules_source="$repo_root/ai-home/rules/default.rules"
 claude_settings="$claude_home/settings.json"
 github_root="$HOME/github"
 rendered_config=""
@@ -409,7 +409,7 @@ install_claude_plugins() {
 render_managed_config
 link_managed_path "$repo_root/ai-home/AGENTS.md" "$codex_home/AGENTS.md"
 install_managed_config "$codex_home/config.toml"
-link_managed_path "$repo_root/ai-home/codex/rules" "$codex_home/rules"
+link_managed_path "$repo_root/ai-home/rules" "$codex_home/rules"
 
 for profile in "$repo_root"/ai-home/codex/*.config.toml; do
   [[ -f "$profile" ]] || continue

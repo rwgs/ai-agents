@@ -21,7 +21,9 @@ fail() {
 
 required_files=(
   "AGENTS.md"
+  "CHANGELOG.md"
   "CLAUDE.md"
+  "DECISIONS.md"
   "PLAN.md"
   "README.md"
   "ROADMAP.md"
@@ -33,7 +35,7 @@ required_files=(
   "ai-home/codex/config.toml"
   "ai-home/codex/ollama.config.toml"
   "ai-home/codex/llamacpp.config.toml"
-  "ai-home/codex/rules/default.rules"
+  "ai-home/rules/default.rules"
   "docs/AGENT_LAYOUT.md"
   "docs/RTK.md"
   "docs/SKILLS.md"
@@ -108,12 +110,12 @@ claude_md_lines="$(grep -cv '^[[:space:]]*$' "$repo_root/CLAUDE.md")"
 
 derived_rules="$(
   sed -n 's/^prefix_rule(pattern=\["\([^"]*\)"\], decision="allow")$/\1/p' \
-    "$repo_root/ai-home/codex/rules/default.rules"
+    "$repo_root/ai-home/rules/default.rules"
 )"
 derived_count="$(printf '%s\n' "$derived_rules" | grep -c . || true)"
 
 [[ "$derived_count" -gt 0 ]] ||
-  fail "no Claude allow rules derive from ai-home/codex/rules/default.rules"
+  fail "no Claude allow rules derive from ai-home/rules/default.rules"
 
 printf '%s\n' "$derived_rules" | grep -Fqx rtk ||
   fail "derived Claude rules must include rtk"
@@ -196,9 +198,9 @@ fi
 if command -v codex >/dev/null 2>&1; then
   policy_result="$(
     codex execpolicy check \
-      --rules "$repo_root/ai-home/codex/rules/default.rules" \
+      --rules "$repo_root/ai-home/rules/default.rules" \
       rtk gain
-  )" || fail "invalid ai-home/codex/rules/default.rules"
+  )" || fail "invalid ai-home/rules/default.rules"
 
   if [[ -n "${policy_result:-}" && -n "$python_tool" ]]; then
     "$python_tool" -c 'import json, sys; raise SystemExit(json.loads(sys.argv[1]).get("decision") != "allow")' \

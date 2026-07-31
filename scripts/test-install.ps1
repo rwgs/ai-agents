@@ -94,7 +94,7 @@ try {
     Assert-Condition (
         $installedConfigContent.Contains("[projects.`"$escapedGitHubRepo`"]")
     ) 'Generated config does not trust a nested Git repository'
-    Assert-Link (Join-Path $testCodexHome 'rules') (Join-Path $repoRoot 'ai-home/codex/rules')
+    Assert-Link (Join-Path $testCodexHome 'rules') (Join-Path $repoRoot 'ai-home/rules')
     Assert-Link (Join-Path $testCodexHome 'ollama.config.toml') (Join-Path $repoRoot 'ai-home/codex/ollama.config.toml')
     Assert-Link (Join-Path $testCodexHome 'llamacpp.config.toml') (Join-Path $repoRoot 'ai-home/codex/llamacpp.config.toml')
 

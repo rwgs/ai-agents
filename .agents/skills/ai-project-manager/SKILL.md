@@ -27,7 +27,8 @@ description: Turn repository planning docs into actionable AI-agent implementati
    decisions that constrain future work into `DECISIONS.md` together with the
    alternatives they rejected, and verified facts that change how the project is
    understood into `AGENTS.md` or `SPEC.md`. Create `DECISIONS.md` only when a
-   decision meets that bar.
+   decision meets that bar. Record consumer-visible changes in `CHANGELOG.md`
+   when the project has one.
 9. Hand completed implementation to a pull-request readiness workflow when the
    user asks to prepare, review, publish, or merge the change.
 

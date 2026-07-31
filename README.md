@@ -30,8 +30,8 @@ The installer manages:
 | Source | Codex | Claude Code |
 | --- | --- | --- |
 | `ai-home/AGENTS.md` | `~/.codex/AGENTS.md` | `~/.claude/CLAUDE.md` |
-| `ai-home/codex/` | `~/.codex/` configuration, profiles, and rules | not applicable |
-| `ai-home/codex/rules/default.rules` | `~/.codex/rules/` | derived into `~/.claude/settings.json` |
+| `ai-home/codex/` | `~/.codex/` configuration and model profiles | not applicable |
+| `ai-home/rules/default.rules` | `~/.codex/rules/` | derived into `~/.claude/settings.json` |
 | `.agents/skills/` | `~/.agents/skills/` | `~/.claude/skills/` |
 
 Set `CODEX_HOME` or `CLAUDE_CONFIG_DIR` to install somewhere other than the
@@ -48,7 +48,7 @@ shared:
 - **Skills are shared.** One directory under `.agents/skills/` is linked into
   both agents' skill locations. Claude Code cannot see `.agents/skills/`, so the
   second link is required.
-- **The command allowlist has one source.** `ai-home/codex/rules/default.rules`
+- **The command allowlist has one source.** `ai-home/rules/default.rules`
   is hand-authored for Codex; the installer derives Claude Code's
   `permissions.allow` entries from the same file. Edit that file and rerun the
   installer to change both.
@@ -260,7 +260,8 @@ dependency review for pull requests.
 - `codex-plugins.txt` and `claude-plugins.txt`: opt-in plugin selections, one
   manifest per agent
 - `ai-home/AGENTS.md`: shared global instructions for both agents
-- `ai-home/codex/`: Codex configuration, profiles, and command rules
+- `ai-home/rules/default.rules`: the command allowlist both agents derive from
+- `ai-home/codex/`: Codex configuration and local model profiles
 - `docs/`: reference documentation loaded only when explicitly requested
 - `scripts/`: installation and validation
 

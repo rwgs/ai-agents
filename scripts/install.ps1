@@ -31,7 +31,7 @@ $backupRoot = Join-Path $codexHome "backups/ai-$timestamp-$PID"
 $codexPluginManifest = Join-Path $repoRoot 'codex-plugins.txt'
 $claudePluginManifest = Join-Path $repoRoot 'claude-plugins.txt'
 $configSource = Join-Path $repoRoot 'ai-home/codex/config.toml'
-$rulesSource = Join-Path $repoRoot 'ai-home/codex/rules/default.rules'
+$rulesSource = Join-Path $repoRoot 'ai-home/rules/default.rules'
 $claudeSettings = Join-Path $claudeHome 'settings.json'
 $githubRoot = Join-Path $userHome 'github'
 
@@ -542,7 +542,7 @@ function Install-ClaudePlugin {
 
 Set-ManagedLink (Join-Path $repoRoot 'ai-home/AGENTS.md') (Join-Path $codexHome 'AGENTS.md')
 Install-ManagedConfig -Content (Get-ManagedConfigContent) -Target (Join-Path $codexHome 'config.toml')
-Set-ManagedLink (Join-Path $repoRoot 'ai-home/codex/rules') (Join-Path $codexHome 'rules')
+Set-ManagedLink (Join-Path $repoRoot 'ai-home/rules') (Join-Path $codexHome 'rules')
 
 Get-ChildItem -LiteralPath (Join-Path $repoRoot 'ai-home/codex') -Filter '*.config.toml' -File |
     ForEach-Object {

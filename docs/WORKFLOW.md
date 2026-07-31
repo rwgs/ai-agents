@@ -10,6 +10,8 @@
 | `ROADMAP.md` | Ordered outcomes, dependencies, risks, and exit criteria |
 | `TASKS.md` | Current actionable work and validated status |
 | `PLAN.md` | How the change in flight is being implemented, and why |
+| `DECISIONS.md` | Closed decisions that constrain future changes, and what they rejected |
+| `CHANGELOG.md` | What changed for anyone installing this repository |
 | `.agents/skills/` | Reusable workflows Codex can invoke |
 | `docs/` | Reference material loaded only when requested or linked |
 
@@ -30,19 +32,23 @@
 8. Stop for plan approval when the user reserved that checkpoint.
 9. Implement one approved phase, run focused checks, and inspect the diff.
 10. Run the complete local gate and update task status only after it passes.
-11. Use `$pr-readiness` to inspect the final diff, confirm the local gate, and
+11. Promote what must outlive `PLAN.md`: decisions that constrain future work
+    into `DECISIONS.md` with the alternatives they rejected, and verified facts
+    into `SPEC.md` or `AGENTS.md`.
+12. Use `$pr-readiness` to inspect the final diff, confirm the local gate, and
     check merge readiness.
-12. Fix actionable findings, rerun validation, and repeat until clean or every
+13. Fix actionable findings, rerun validation, and repeat until clean or every
     remaining item has a documented reason.
-13. Commit the focused change, push it, and open a draft pull request only when
-    authorized.
-14. Require CI validation, applicable security checks, and a fresh independent
+14. Commit the focused change once its verification passes. Push it and open a
+    draft pull request when the change needs review evidence this environment
+    cannot produce, and only when authorized.
+15. Require CI validation, applicable security checks, and a fresh independent
     review on the latest commit.
-15. Fix or explain every review item, resolve completed threads, and repeat the
+16. Fix or explain every review item, resolve completed threads, and repeat the
     checks after every push.
-16. Complete and document required manual testing on the real target
+17. Complete and document required manual testing on the real target
     environment.
-17. Merge only after the final diff, planning documents, CI, security checks,
+18. Merge only after the final diff, planning documents, CI, security checks,
     reviews, threads, and manual tests are clean.
 
 ## Security baseline
