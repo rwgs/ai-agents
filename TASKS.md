@@ -43,10 +43,10 @@
 
 ## Next phase: Line endings and manifest ergonomics
 
-- [ ] Refresh this checkout so the working tree is LF. Committed content is
-  already LF, but the checkout predates `.gitattributes`, so editors keep
-  rewriting files with CRLF and `scripts/validate.sh` cannot run from WSL
-  against them until the files are checked out again.
+- [x] Refresh this checkout so the working tree matches `.gitattributes`. It
+  predated that file and carried CRLF throughout, so `scripts/validate.sh` could
+  not run from WSL. Re-checking the tree out also cleared stale index stat data
+  that reported thirteen byte-identical files as modified.
 - [ ] Fail validation when a tracked file other than `*.ps1` contains a carriage
   return, so line-ending drift is caught by a check instead of discovered
   part-way through an unrelated change.
