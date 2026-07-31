@@ -124,10 +124,10 @@ prefix_rule(pattern=["sed"], decision="allow")
     $escapedGitHubRepo = $testGitHubRepo.Replace('\', '\\')
     Assert-Condition (
         $installedConfigContent.Contains("[projects.`"$escapedGitHubRoot`"]")
-    ) 'Generated config does not trust the user GitHub root'
+    ) 'Merged config does not trust the user GitHub root'
     Assert-Condition (
         $installedConfigContent.Contains("[projects.`"$escapedGitHubRepo`"]")
-    ) 'Generated config does not trust a nested Git repository'
+    ) 'Merged config does not trust a nested Git repository'
     # The baseline asks before acting. Installing must never escalate a machine
     # to Codex's unrestricted preset.
     Assert-Condition (

@@ -61,8 +61,8 @@ for tools that load it automatically.
   installed as the global instructions for both agents.
 - Put configuration shared by both agents in `ai-home/`, and Codex-specific
   portable configuration in `ai-home/codex/`. Claude Code has no equivalent
-  directory: its `settings.json` is rendered and merged by the installer rather
-  than linked, because it accumulates interactively approved permissions.
+  directory: its `settings.json` is merged by the installer rather than linked,
+  because it accumulates interactively approved permissions.
 - Put project maintenance instructions in this file.
 - Do not assume files in `docs/` are loaded automatically.
 - Use the minimum code or documentation change that solves the stated problem.

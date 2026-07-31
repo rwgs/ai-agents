@@ -35,8 +35,9 @@ review, manual-testing, and merge workflow.
 - Align Claude routing and workflow documentation.
 - Add explicit, cross-platform installation for selected plugins in both agents
   without making ordinary installs mutate plugin state.
-- Render exact trusted-project entries for every Git worktree beneath the
-  current user's `~/github` directory.
+- Generate exact trusted-project entries for every Git worktree beneath the
+  current user's `~/github` directory. Phase 4 replaced the rendered file with a
+  merge and made the searched roots configurable.
 - Record closed decisions and the alternatives they rejected in `DECISIONS.md`,
   and promote them out of `PLAN.md` before it is replaced.
 
