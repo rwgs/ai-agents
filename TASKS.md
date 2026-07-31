@@ -63,11 +63,6 @@
   `claude mcp add-json`.
 - [ ] Keep tokens, headers, and credentials out of the repository. Record only
   the command, arguments, and non-secret configuration.
-- [ ] Decide whether Skill Seekers belongs in the default set. It is a PyPI
-  package that also exposes an MCP server, not a plugin, so it cannot go in
-  either plugin manifest. It would add a Python dependency the installer does
-  not otherwise require, and its server exposes cloud upload and download tools,
-  so review what it can reach before installing it on every machine.
 
 ## Later phase: Enforced repository governance
 
