@@ -67,6 +67,10 @@ target/
 # Claude Code creates it on demand; it must never be committed.
 .claude/settings.local.json
 
+# Serena project state
+# Serena regenerates .serena/ on demand and this repository does not manage it.
+.serena/
+
 # Codex runtime state and credentials
 auth.json
 history.jsonl
