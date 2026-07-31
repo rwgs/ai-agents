@@ -110,8 +110,8 @@
 - [ ] Prove the loop on a scratch repository: adopt, change the baseline,
   re-apply, and confirm no customisation is lost and a second re-apply reports
   nothing to do.
-- [ ] Remove the empty `skills-optional/` directory left on disk by the commit
-  that dropped the optional tree.
+- [x] Remove the empty `skills-optional/` directory left on disk by the commit
+  that dropped the optional tree. Nothing tracked, ignored, or referenced it.
 
 ## Later phase: MCP server management
 
