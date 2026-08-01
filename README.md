@@ -21,6 +21,44 @@ On Windows, run the PowerShell installer from the repository root:
 .\scripts\install.ps1
 ```
 
+### Install on a machine with no clone
+
+`scripts/bootstrap.sh` and `scripts/bootstrap.ps1` clone this repository and then
+run the installer from the clone. Fetch and run one of them directly:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/rwgs/ai/main/scripts/bootstrap.sh | bash -s -- --dry-run
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/rwgs/ai/main/scripts/bootstrap.ps1))) -DryRun
+```
+
+While the repository is private, both the fetch and the clone need a token with
+read access:
+
+```bash
+export AI_GIT_TOKEN=...
+curl -fsSL -H "Authorization: Bearer $AI_GIT_TOKEN" \
+  https://raw.githubusercontent.com/rwgs/ai/main/scripts/bootstrap.sh | bash
+```
+
+```powershell
+$env:AI_GIT_TOKEN = '...'
+$headers = @{ Authorization = "Bearer $env:AI_GIT_TOKEN" }
+& ([scriptblock]::Create((irm -Headers $headers https://raw.githubusercontent.com/rwgs/ai/main/scripts/bootstrap.ps1)))
+```
+
+The token is passed to `git` per command and never written into the clone's
+remote URL. Set `AI_REPO_URL` to an SSH remote instead to use an existing key.
+
+**The clone is not temporary.** The installer links into it, so it is where the
+managed instructions, rules, and skills live afterwards; moving or deleting it
+breaks every link. It goes to `~/.local/share/ai` on Linux and macOS and
+`%USERPROFILE%\Development\ai` on Windows unless `AI_INSTALL_DIR` says otherwise.
+Rerunning the bootstrap fast-forwards that clone and installs again, which is
+also how you update.
+
 Restart Codex and Claude Code after installation. Existing managed files are
 backed up under `~/.codex/backups/`. Credentials, sessions, history, caches, and
 plugins are not changed by default.
@@ -312,6 +350,8 @@ PSScriptAnalyzer instead, because CodeQL does not support them.
 - `ai-home/codex/`: Codex configuration and local model profiles
 - `scripts/merge-agent-state.py`: the shell installer's merge into the files the
   agents also write
+- `scripts/bootstrap.sh` and `scripts/bootstrap.ps1`: clone this repository on a
+  machine that has no copy of it, then install from that clone
 - `docs/`: reference documentation loaded only when explicitly requested
 - `scripts/`: installation and validation
 

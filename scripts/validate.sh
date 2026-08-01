@@ -43,6 +43,8 @@ required_files=(
   ".github/dependabot.yml"
   ".github/workflows/codeql.yml"
   ".github/workflows/validate.yml"
+  "scripts/bootstrap.ps1"
+  "scripts/bootstrap.sh"
   "scripts/install.ps1"
   "scripts/install.sh"
   "scripts/merge-agent-state.py"
@@ -228,6 +230,7 @@ if command -v git >/dev/null 2>&1 &&
 fi
 
 if ! bash -n \
+  "$repo_root/scripts/bootstrap.sh" \
   "$repo_root/scripts/install.sh" \
   "$repo_root/scripts/test-install.sh" \
   "$repo_root/scripts/validate.sh"; then
@@ -246,6 +249,7 @@ fi
 
 if command -v shellcheck >/dev/null 2>&1; then
   shellcheck \
+    "$repo_root/scripts/bootstrap.sh" \
     "$repo_root/scripts/install.sh" \
     "$repo_root/scripts/test-install.sh" \
     "$repo_root/scripts/validate.sh" ||

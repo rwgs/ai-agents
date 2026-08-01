@@ -27,6 +27,9 @@ wants the same safe Claude/Codex baseline in multiple repositories.
 - Trust each configured root and every Git worktree discovered recursively
   beneath it on each installation, defaulting to the current user's `~/github`
   and configurable through `AI_TRUST_ROOTS`.
+- Install on a machine with no copy of the repository by cloning it to a fixed
+  location and installing from that clone, with optional token authentication
+  while the repository is private. The same command updates an existing clone.
 - Preview installation without changing the target system.
 - Preserve existing managed targets in timestamped backups before replacement.
 - Preserve machine-owned Codex configuration and interactively approved rules
@@ -73,7 +76,10 @@ wants the same safe Claude/Codex baseline in multiple repositories.
   the separate `rwgs/ai-skills` repository and are copied into the repositories
   that need them, recording the pool commit taken.
 - `scripts/install.sh` and `scripts/install.ps1` perform user-scoped
-  installation.
+  installation. `scripts/bootstrap.sh` and `scripts/bootstrap.ps1` obtain the
+  clone they install from, so a machine with nothing checked out can run one
+  command. Because the installer links into the clone, the bootstrap keeps it at
+  a fixed location and fast-forwards it on a rerun rather than cloning again.
 - `codex-plugins.txt` and `claude-plugins.txt` record the plugin selectors
   installed only through the explicit plugin option, one manifest per agent
   because the two agents publish the same plugin in different marketplaces.
@@ -154,6 +160,9 @@ installer must preserve.
 - Windows CI verifies the equivalent PowerShell installer behavior.
 - Installer tests verify plugin opt-in and dry-run behavior without contacting
   a live marketplace.
+- Installer tests verify that the bootstrap clones, installs from the clone, and
+  fast-forwards an existing clone on a rerun, using a local copy of the
+  repository so the test needs no network.
 - Every skill has valid front matter and the documented skill inventory matches
   the actual directories.
 - Installer tests verify that a Claude permission merge preserves existing

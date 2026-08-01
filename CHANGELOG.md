@@ -10,6 +10,12 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-07-31
 
+- Added a bootstrap for a machine with no clone. `scripts/bootstrap.sh` and
+  `scripts/bootstrap.ps1` clone this repository to `~/.local/share/ai` or
+  `%USERPROFILE%\Development\ai`, then install from that clone; rerunning
+  fast-forwards it and installs again. `AI_INSTALL_DIR`, `AI_REPO_URL`,
+  `AI_BRANCH`, and `AI_GIT_TOKEN` override the defaults. The clone is permanent,
+  because the installer links into it.
 - Stopped replacing the files the agents write. `~/.codex/config.toml` is merged
   key by key instead of rendered, so marketplaces, plugin enablement, MCP
   servers, `[desktop]`, `shell_environment_policy`, and trust entries Codex wrote

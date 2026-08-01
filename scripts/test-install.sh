@@ -495,6 +495,42 @@ EOF
     fail "merge lost a managed key after the machine reverted it"
 fi
 
+# The bootstrap clones and then installs from the clone. It is exercised against
+# a local copy of this repository, so the test needs no network and never
+# contacts the real remote.
+bootstrap_origin="$task_test_root/origin.git"
+bootstrap_install_dir="$task_test_root/bootstrap clone"
+bootstrap_log="$task_test_root/bootstrap.log"
+git clone --quiet --bare "$repo_root" "$bootstrap_origin"
+
+AI_REPO_URL="$bootstrap_origin" AI_INSTALL_DIR="$bootstrap_install_dir" \
+  AI_BRANCH="$(git -C "$repo_root" rev-parse --abbrev-ref HEAD)" \
+  HOME="$test_user_home" CODEX_HOME="$task_test_root/bootstrap codex" \
+  AGENTS_HOME="$task_test_root/bootstrap agents" \
+  CLAUDE_CONFIG_DIR="$task_test_root/bootstrap claude" \
+  "$repo_root/scripts/bootstrap.sh" --dry-run >"$bootstrap_log" 2>&1
+
+[[ -f "$bootstrap_install_dir/scripts/install.sh" ]] ||
+  fail "bootstrap did not clone the repository"
+grep -q '^cloning ' "$bootstrap_log" || fail "bootstrap did not report the clone"
+grep -q '^dry run complete$' "$bootstrap_log" ||
+  fail "bootstrap did not run the installer from the clone"
+[[ ! -e "$task_test_root/bootstrap codex" ]] ||
+  fail "bootstrap dry run created CODEX_HOME"
+
+# A rerun updates the existing clone instead of cloning again.
+AI_REPO_URL="$bootstrap_origin" AI_INSTALL_DIR="$bootstrap_install_dir" \
+  AI_BRANCH="$(git -C "$repo_root" rev-parse --abbrev-ref HEAD)" \
+  HOME="$test_user_home" CODEX_HOME="$task_test_root/bootstrap codex" \
+  AGENTS_HOME="$task_test_root/bootstrap agents" \
+  CLAUDE_CONFIG_DIR="$task_test_root/bootstrap claude" \
+  "$repo_root/scripts/bootstrap.sh" --dry-run >"$bootstrap_log" 2>&1
+
+grep -q "^updating $bootstrap_install_dir\$" "$bootstrap_log" ||
+  fail "bootstrap rerun did not update the existing clone"
+grep -q '^dry run complete$' "$bootstrap_log" ||
+  fail "bootstrap rerun did not run the installer"
+
 [[ "$(cksum <"$repo_root/ai-home/rules/default.rules")" == "$repo_rules_checksum" ]] ||
   fail "the installer wrote into this repository's curated rule file"
 

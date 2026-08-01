@@ -14,12 +14,23 @@ $testAgentsHome = Join-Path $taskTestRoot 'agents home'
 $testClaudeHome = Join-Path $taskTestRoot 'claude home'
 $testUserHome = Join-Path $taskTestRoot 'user home'
 $testGitHubRepo = Join-Path (Join-Path (Join-Path $testUserHome 'github') 'nested') 'project'
-$previousCodexHome = [Environment]::GetEnvironmentVariable('CODEX_HOME', 'Process')
-$previousAgentsHome = [Environment]::GetEnvironmentVariable('AGENTS_HOME', 'Process')
-$previousClaudeHome = [Environment]::GetEnvironmentVariable('CLAUDE_CONFIG_DIR', 'Process')
-$previousPluginTestLog = [Environment]::GetEnvironmentVariable('CODEX_PLUGIN_TEST_LOG', 'Process')
-$previousClaudePluginTestLog = [Environment]::GetEnvironmentVariable('CLAUDE_PLUGIN_TEST_LOG', 'Process')
-$previousUserProfile = [Environment]::GetEnvironmentVariable('USERPROFILE', 'Process')
+# Every environment variable this test sets is restored in the finally block,
+# so a leaked AI_INSTALL_DIR or CODEX_HOME cannot reach whatever runs next.
+$managedEnvironment = @(
+    'CODEX_HOME'
+    'AGENTS_HOME'
+    'CLAUDE_CONFIG_DIR'
+    'CODEX_PLUGIN_TEST_LOG'
+    'CLAUDE_PLUGIN_TEST_LOG'
+    'USERPROFILE'
+    'AI_REPO_URL'
+    'AI_INSTALL_DIR'
+    'AI_BRANCH'
+)
+$previousEnvironment = @{}
+foreach ($name in $managedEnvironment) {
+    $previousEnvironment[$name] = [Environment]::GetEnvironmentVariable($name, 'Process')
+}
 
 function Assert-Condition {
     param(
@@ -553,6 +564,44 @@ prefix_rule(pattern=["sed"], decision="allow")
         [System.IO.File]::ReadAllText($provenanceConfig).Contains('approval_policy = "on-request"')
     ) 'Merge lost a managed key after the machine reverted it'
 
+    # The bootstrap clones and then installs from the clone. It is exercised
+    # against a local copy of this repository, so the test needs no network and
+    # never contacts the real remote.
+    $bootstrapOrigin = Join-Path $taskTestRoot 'origin.git'
+    $bootstrapClone = Join-Path $taskTestRoot 'bootstrap clone'
+    & git clone --quiet --bare $repoRoot $bootstrapOrigin
+    Assert-Condition ($LASTEXITCODE -eq 0) 'Could not create the local bootstrap origin'
+
+    $env:AI_REPO_URL = $bootstrapOrigin
+    $env:AI_INSTALL_DIR = $bootstrapClone
+    $env:AI_BRANCH = (& git -C $repoRoot rev-parse --abbrev-ref HEAD)
+    $env:CODEX_HOME = Join-Path $taskTestRoot 'bootstrap codex'
+    $env:AGENTS_HOME = Join-Path $taskTestRoot 'bootstrap agents'
+    $env:CLAUDE_CONFIG_DIR = Join-Path $taskTestRoot 'bootstrap claude'
+
+    $bootstrapLog = @(& (Join-Path $repoRoot 'scripts/bootstrap.ps1') -DryRun)
+    Assert-Condition (
+        Test-Path -LiteralPath (Join-Path $bootstrapClone 'scripts/install.ps1') -PathType Leaf
+    ) 'Bootstrap did not clone the repository'
+    Assert-Condition (
+        ($bootstrapLog -join "`n") -match '(?m)^cloning '
+    ) 'Bootstrap did not report the clone'
+    Assert-Condition (
+        ($bootstrapLog -join "`n") -match '(?m)^dry run complete$'
+    ) 'Bootstrap did not run the installer from the clone'
+    Assert-Condition (
+        -not (Test-Path -LiteralPath $env:CODEX_HOME)
+    ) 'Bootstrap dry run created CODEX_HOME'
+
+    # A rerun updates the existing clone instead of cloning again.
+    $bootstrapLog = @(& (Join-Path $repoRoot 'scripts/bootstrap.ps1') -DryRun)
+    Assert-Condition (
+        ($bootstrapLog -join "`n") -match '(?m)^updating '
+    ) 'Bootstrap rerun did not update the existing clone'
+    Assert-Condition (
+        ($bootstrapLog -join "`n") -match '(?m)^dry run complete$'
+    ) 'Bootstrap rerun did not run the installer'
+
     Assert-Condition (
         (Get-FileHash -LiteralPath (Join-Path $repoRoot 'ai-home/rules/default.rules') -Algorithm SHA256).Hash -eq
         $repoRulesHash
@@ -561,46 +610,13 @@ prefix_rule(pattern=["sed"], decision="allow")
     Write-Output 'installer integration test passed'
 }
 finally {
-    if ($null -eq $previousCodexHome) {
-        Remove-Item Env:CODEX_HOME -ErrorAction SilentlyContinue
-    }
-    else {
-        $env:CODEX_HOME = $previousCodexHome
-    }
-
-    if ($null -eq $previousAgentsHome) {
-        Remove-Item Env:AGENTS_HOME -ErrorAction SilentlyContinue
-    }
-    else {
-        $env:AGENTS_HOME = $previousAgentsHome
-    }
-
-    if ($null -eq $previousClaudeHome) {
-        Remove-Item Env:CLAUDE_CONFIG_DIR -ErrorAction SilentlyContinue
-    }
-    else {
-        $env:CLAUDE_CONFIG_DIR = $previousClaudeHome
-    }
-
-    if ($null -eq $previousPluginTestLog) {
-        Remove-Item Env:CODEX_PLUGIN_TEST_LOG -ErrorAction SilentlyContinue
-    }
-    else {
-        $env:CODEX_PLUGIN_TEST_LOG = $previousPluginTestLog
-    }
-
-    if ($null -eq $previousClaudePluginTestLog) {
-        Remove-Item Env:CLAUDE_PLUGIN_TEST_LOG -ErrorAction SilentlyContinue
-    }
-    else {
-        $env:CLAUDE_PLUGIN_TEST_LOG = $previousClaudePluginTestLog
-    }
-
-    if ($null -eq $previousUserProfile) {
-        Remove-Item Env:USERPROFILE -ErrorAction SilentlyContinue
-    }
-    else {
-        $env:USERPROFILE = $previousUserProfile
+    foreach ($name in $managedEnvironment) {
+        if ($null -eq $previousEnvironment[$name]) {
+            Remove-Item "Env:$name" -ErrorAction SilentlyContinue
+        }
+        else {
+            Set-Item "Env:$name" -Value $previousEnvironment[$name]
+        }
     }
 
     Remove-Item Function:\codex -ErrorAction SilentlyContinue
