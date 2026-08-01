@@ -12,7 +12,7 @@
 | `PLAN.md` | How the change in flight is being implemented, and why |
 | `DECISIONS.md` | Closed decisions that constrain future changes, and what they rejected |
 | `CHANGELOG.md` | What changed for anyone installing this repository |
-| `.agents/skills/` | Reusable workflows Codex can invoke |
+| `.agents/skills/` | Reusable workflows, installed into both agents' skill locations |
 | `docs/` | Reference material loaded only when requested or linked |
 
 ## Complete lifecycle
@@ -52,13 +52,24 @@
 ## Security baseline
 
 Establish the security checks that apply to the repository instead of adding
-irrelevant gates:
+irrelevant gates. Each rule carries the condition that makes it apply:
 
-- Enable secret scanning and push protection where available.
-- Configure Dependabot for every package ecosystem and GitHub Actions.
-- Run dependency review when dependency manifests can change.
-- Configure CodeQL for every language in the repository that CodeQL supports.
+- Enable secret scanning and push protection wherever the host offers them.
+- Configure Dependabot for the package ecosystems the repository actually has,
+  including GitHub Actions when any workflow pins an action.
+- Configure CodeQL for the languages it supports that the repository actually
+  contains. Shell and PowerShell are not among them, so a repository written in
+  those relies on ShellCheck and PSScriptAnalyzer instead.
+- Run dependency review only where pull requests exist for it to gate. It is a
+  `pull_request` check and does nothing in a flow without one.
+- Pin third-party actions by commit and keep the pins current through whichever
+  update path the repository's workflow accepts.
 - Document accepted exceptions with a reason, owner, and review date.
+
+Bots may open pull requests even where humans do not: Dependabot has no other
+delivery mechanism, and its pull request is a change to review rather than a
+gate on the maintainer's own work. Keep the validation workflow's
+`pull_request` trigger so those bumps are validated before they are merged.
 
 ## Required change evidence
 

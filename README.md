@@ -286,9 +286,11 @@ The llama.cpp profile expects a Responses-compatible endpoint at
 ```
 
 The validation includes an isolated Linux or macOS installer integration test.
-GitHub Actions also exercises the PowerShell installer on Windows. Its
-dependency-review job is pull-request-only and therefore unreachable under this
-repository's accepted no-pull-request flow; `TASKS.md` carries the resolution.
+GitHub Actions runs the same validation on Linux and macOS and exercises the
+PowerShell installer on Windows under both PowerShell 7 and Windows PowerShell
+5.1. A separate CodeQL workflow analyses the Python and JavaScript in the
+repository; the shell and PowerShell installers are covered by ShellCheck and
+PSScriptAnalyzer instead, because CodeQL does not support them.
 
 ## Repository layout
 

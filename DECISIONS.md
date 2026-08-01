@@ -8,6 +8,58 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-07-31 Bots may open pull requests, humans may not
+
+Status: Accepted. Supersedes in part "No branches and no pull requests in this
+repository" below, which left Dependabot, the `dependency-review` job, and the
+pull-request template stranded. The rule for human work is unchanged.
+
+### Decision
+
+Dependabot keeps opening pull requests to bump the pinned actions, and the
+`Validate` workflow keeps its `pull_request` trigger so those bumps are checked
+before merging. The `dependency-review` job and `.github/pull_request_template.md`
+are removed. CodeQL analyses the languages it supports that this repository
+actually contains, which is Python and JavaScript.
+
+### Why
+
+The stranded pieces were three different things, and the earlier entry treated
+them as one. Dependabot is the only mechanism that notices a pinned action has
+moved, and its pull request is a change to review, not a gate on the
+maintainer's own work; refusing it would mean either unpinning the actions or
+checking them by hand on no trigger. `dependency-review` is a `pull_request`
+check whose findings come from dependency manifests, and this repository has
+none: nothing here declares a dependency except the action pins Dependabot
+already watches. The template describes a review conversation that never
+happens.
+
+CodeQL was recommended by `docs/WORKFLOW.md` and configured nowhere. Until this
+phase the repository had no language CodeQL supports; the merge program added
+one Python file and a skill ships one JavaScript module, so the rule now applies
+to something and the workflow follows it.
+
+### Rejected alternatives
+
+- Dropping Dependabot as well: consistent, but nothing would then report that a
+  pinned action had gone stale, and the pins are the security control.
+- Keeping `dependency-review` for a future manifest: an unreachable job that
+  reports success by never running is worse than no job, and it can be added
+  back with the manifest that needs it.
+- Keeping the pull-request template for Dependabot's pull requests: it asks a
+  bot to describe manual testing and independent review.
+- Leaving all three to the governance phase: the contradiction was already
+  documented twice and cost more to keep explaining than to resolve.
+
+### Consequences
+
+`scripts/validate.sh` no longer requires the template and now requires the
+CodeQL workflow. The security baseline in `docs/WORKFLOW.md` states each rule
+with the condition that makes it apply, so an adopting repository is not told to
+scan languages it does not have or to gate on pull requests it does not open.
+Code scanning has to be enabled for a private repository before the CodeQL
+workflow can upload results.
+
 ## 2026-07-31 Windows PowerShell 5.1 is the supported floor
 
 Status: Accepted.
@@ -239,7 +291,8 @@ work.
 
 ## 2026-07-31 No branches and no pull requests in this repository
 
-Status: Accepted.
+Status: Superseded in part by "Bots may open pull requests, humans may not"
+above. The rule for human work stands.
 
 ### Decision
 

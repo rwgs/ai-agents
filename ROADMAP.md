@@ -197,8 +197,8 @@ without gates a single maintainer committing to `main` cannot satisfy.
 
 - Confirm secret scanning, push protection, and the selected dependency-update
   mechanism.
-- Reconcile Dependabot, dependency review, and the pull-request template with the
-  accepted no-branch, no-pull-request workflow.
+- Enable code scanning so the CodeQL workflow can report on this private
+  repository.
 - Reconcile reusable readiness guidance with the single-maintainer path where an
   independent human review is unavailable.
 
@@ -210,5 +210,6 @@ without gates a single maintainer committing to `main` cannot satisfy.
   dependency-update mechanism is verified operational.
 - Dependency updates have a documented path that does not contradict the
   accepted workflow.
-- No documented gate or required repository artifact depends on a pull request
-  or a second reviewer.
+- No documented gate or required repository artifact depends on a human pull
+  request or a second reviewer.
+- CodeQL results are visible, or the reason they cannot be is recorded.

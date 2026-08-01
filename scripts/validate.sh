@@ -41,7 +41,7 @@ required_files=(
   "docs/SKILLS.md"
   "docs/WORKFLOW.md"
   ".github/dependabot.yml"
-  ".github/pull_request_template.md"
+  ".github/workflows/codeql.yml"
   ".github/workflows/validate.yml"
   "scripts/install.ps1"
   "scripts/install.sh"

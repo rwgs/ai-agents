@@ -282,11 +282,18 @@ cross-machine MCP requirement justifies it.
 - [ ] Confirm secret scanning and push protection are enabled. Confirm
   Dependabot only after deciding how it can deliver updates under the accepted
   workflow.
-- [ ] Reconcile the no-branch, no-pull-request decision with all PR-only
-  artifacts. Dependabot opens branches and pull requests, `dependency-review`
-  is gated on `pull_request`, and `.github/pull_request_template.md` is still a
-  validator-required file. Choose and record either a narrowly stated bot-PR
-  exception or a non-PR replacement/removal for all three.
+- [x] Reconcile the no-branch, no-pull-request decision with all PR-only
+  artifacts. Recorded in `DECISIONS.md` as "Bots may open pull requests, humans
+  may not": Dependabot stays and the `Validate` workflow keeps its
+  `pull_request` trigger so its bumps are checked, while the unreachable
+  `dependency-review` job and `.github/pull_request_template.md` are removed.
+  `docs/WORKFLOW.md` now states each security rule with the condition that makes
+  it apply.
+- [ ] Confirm the CodeQL workflow can report. It analyses the repository's
+  Python and JavaScript, but code scanning is not enabled on this private
+  repository, and the API reports `Code scanning is not enabled for this
+  repository`. Acceptance: a dispatched `CodeQL` run uploads results, or the run
+  names what has to be enabled first and that requirement is recorded here.
 - [ ] Reconcile `pr-readiness` with the single-maintainer path. Its workflow
   currently requires a fresh independent review while `DECISIONS.md` rejects a
   gate that needs a second party. Define what local readiness requires when no

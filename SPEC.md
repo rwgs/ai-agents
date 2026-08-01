@@ -47,7 +47,8 @@ wants the same safe Claude/Codex baseline in multiple repositories.
   Never delete an existing grant unless installer ownership is provable; report
   an ambiguous identical grant for conservative resolution.
 - Run Linux, macOS, and Windows validation on every push to the default branch,
-  and on manual dispatch. There is no pull-request flow to gate.
+  on manual dispatch, and on the pull requests Dependabot opens to bump the
+  pinned actions. Humans open none.
 
 ## Architecture
 
@@ -164,9 +165,9 @@ installer must preserve.
 - Windows validation names and exercises every supported PowerShell edition.
 - CI rejects malformed Codex rule syntax without depending on a developer's
   locally installed Codex executable.
-- A dispatched run validates the latest commit on all three platforms. The
-  `dependency-review` job is gated on `pull_request` and so never runs; `TASKS.md`
-  carries the decision on what replaces it.
+- A dispatched run validates the latest commit on all three platforms, and the
+  Windows job runs the installer test under every supported PowerShell edition.
+- CodeQL analyses every language it supports that the repository contains.
 - Workflow documentation covers planning, implementation, local review, manual
   testing, and the CI evidence a single maintainer can produce.
 
