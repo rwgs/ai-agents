@@ -1,41 +1,50 @@
 # Project instructions
 
+The conventions an agent needs in every session for this repository, loaded
+automatically rather than pointed at. Keep it short enough to follow: a rule
+earns its place by preventing a repeat mistake or recording durable project
+behavior, and reference material belongs under `docs/`.
+
 ## Purpose
 
-Describe the project, its users, and the outcome it provides.
+What this project is, who uses it, and the outcome it delivers.
 
 ## Architecture
 
-- List the important directories and components.
-- Identify generated files and external interfaces.
-- Document the supported toolchain and target environments.
+- The directories and components that matter, and what each one owns.
+- Which files are generated, so they are regenerated rather than edited.
+- The supported toolchain and the target environments.
 
 ## Working boundaries
 
-- Preserve unrelated changes.
-- Do not expose or commit credentials, sessions, private data, or environment
+- Leave unrelated changes exactly as found.
+- Never commit or print credentials, sessions, private data, or environment
   files.
-- Ask before destructive operations, migrations, deployments, or changes that
-  require a product or architecture decision.
+- Ask before destructive work. Deleting, overwriting, resetting, force-pushing,
+  migrating, and deploying are not implied by a request to fix something.
+- Ask before a change that settles a product or architecture question, rather
+  than implementing one already settled.
 
 ## Commands
 
-Document the exact setup, formatting, lint, type-check, test, build, and run
-commands used by this repository.
+The exact setup, formatting, lint, type-check, test, build, and run commands
+this repository uses. Exact, because a command that is nearly right fails in a
+way that looks like a broken project.
 
 ## Validation
 
-- Run focused checks while implementing.
+- Run the focused check while implementing.
 - Run the complete required local gate before reporting done.
 - Inspect the final status and diff.
-- Verify visible behavior with screenshots or equivalent rendered evidence.
-- Report skipped checks and unresolved manual testing explicitly.
+- Verify visible behavior with screenshots or equivalent rendered output.
+- Report skipped checks and outstanding manual testing rather than omitting
+  them.
 
 ## Documentation routing
 
-- Read `SPEC.md` for requirements and acceptance criteria.
-- Read `ROADMAP.md` for phase order and exit criteria.
-- Read `TASKS.md` for current work and validation status.
-- Read `PLAN.md` for the approach behind the change currently in flight.
-- Read `DECISIONS.md` before changing an area it constrains, and before
-  proposing an approach it already rejected.
+- `SPEC.md` for requirements and acceptance criteria.
+- `ROADMAP.md` for phase order and exit criteria.
+- `TASKS.md` for current work and validation status.
+- `PLAN.md` for the approach behind the change currently in flight.
+- `DECISIONS.md` before changing an area it constrains, and before proposing an
+  approach it already rejected.

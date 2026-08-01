@@ -238,9 +238,21 @@ are deliberately left alone.
   guidance, and `ai-home/AGENTS.md` command execution, working style, and scope
   selection. Every rule survives; the destructive-operations rule now names what
   counts as destructive.
-- [ ] Restate the three inherited skills: `bash-scripting` (59 lines),
+- [x] Restate the three inherited skills: `bash-scripting` (59 lines),
   `pr-readiness` (57), and `ai-project-manager` (52) plus its project-document
-  templates (134 across five files).
+  templates (134 across five files: `SPEC.md` 47, `AGENTS.md` 38, `ROADMAP.md`
+  33, `TASKS.md` 16). Every rule survives, and each skill gained the `## Scope`
+  section `docs/SKILLS.md` asks for, naming the sibling skill at its boundary.
+  Two `pr-readiness` defects are deliberately left for the tasks that own them:
+  the independent-review gate that `DECISIONS.md` contradicts, and
+  `ai-project-manager`'s discovery glob, which still omits the `PLAN.md` it
+  writes and the `CHANGELOG.md` it updates. `agents/openai.yaml` (4 lines) is
+  left for the re-measure task below. Validation: WSL `./scripts/validate.sh`.
+- [x] Delete `ai-home/default.rules`, a byte-identical stray copy of
+  `ai-home/rules/default.rules` added by `397241b`, a commit about instruction
+  prose that touched no other rule file. Nothing read it: every script, test,
+  and document names the `rules/` path, which holds the file's continuous
+  history back to the original `rules/default.rules`.
 - [ ] Restate the inherited planning prose in `SPEC.md` (65), `ROADMAP.md` (51),
   `docs/SKILLS.md` (50), and `docs/WORKFLOW.md` (44).
 - [ ] Restate what is left in `README.md`. Most of its 159 attributed lines are

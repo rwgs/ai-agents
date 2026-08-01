@@ -1,47 +1,56 @@
 # Project specification
 
+What the project must do and the boundaries it stays inside. This document holds
+requirements rather than implementation: a change to how something is built does
+not belong here, and a change to what counts as correct does. Delete a section
+this project does not have instead of leaving it empty.
+
 ## Problem
 
-Describe the problem this project solves and why it matters.
+The problem being solved and who has it. State what happens today without the
+project, so the rest of this document has something to be checked against.
 
 ## Users
 
-Identify the intended users and their important constraints.
+The intended users and the constraints they bring: environment, expertise,
+permissions, and whatever they cannot change.
 
 ## Required behavior
 
-- Describe observable user and system behavior.
-- Define error, empty, loading, and recovery behavior where applicable.
+- Observable behavior, described from outside the system.
+- The error, empty, loading, and recovery cases. These are the ones most often
+  left undefined until they ship wrong.
 
 ## User experience
 
-Describe primary workflows, accessibility requirements, and supported layouts
-or interfaces.
+The primary workflows, the accessibility requirements, and the layouts or
+interfaces that are supported.
 
 ## Architecture and data flow
 
-Describe major components, state ownership, storage, external services, and
-interfaces.
+The major components, which one owns which state, where data is stored, and
+every external service or interface crossed.
 
 ## Security and privacy
 
-Document trust boundaries, permissions, sensitive data, and required security
-checks.
+Trust boundaries, permissions, sensitive data, and the required security checks.
+Name what is trusted, not only what is protected.
 
 ## Performance and compatibility
 
-Define supported environments and measurable budgets or compatibility
-requirements.
+The supported environments, and budgets written as numbers a check can measure.
 
 ## Non-goals
 
-- List adjacent work that is intentionally outside the project scope.
+- Adjacent work deliberately left out, recorded so it is not reintroduced later
+  as scope.
 
 ## Acceptance criteria
 
-- Use observable, testable outcomes.
-- Include required automated and manual validation.
+- Outcomes that are observable and testable, not intentions.
+- The automated and manual validation each outcome requires.
 
 ## Unresolved questions
 
-- Record decisions that must be resolved before implementation.
+- Questions that must be answered before implementation, each with who or what
+  answers it. Move an answered question into the section it constrains.
