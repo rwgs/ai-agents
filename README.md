@@ -7,14 +7,14 @@ installed into whichever locations each agent actually reads.
 
 ## Install
 
-Preview and install on Linux or macOS:
+Preview the change first, then install, on Linux or macOS:
 
 ```bash
 ./scripts/install.sh --dry-run
 ./scripts/install.sh
 ```
 
-On Windows, run the PowerShell installer from the repository root:
+On Windows the PowerShell installer does the same, run from the repository root:
 
 ```powershell
 .\scripts\install.ps1 -DryRun
@@ -63,7 +63,7 @@ Restart Codex and Claude Code after installation. Existing managed files are
 backed up under `~/.codex/backups/`. Credentials, sessions, history, caches, and
 plugins are not changed by default.
 
-The installer manages:
+What the installer manages, and where each piece lands:
 
 | Source | Codex | Claude Code |
 | --- | --- | --- |
@@ -148,11 +148,12 @@ $env:AI_TRUST_ROOTS = "$env:USERPROFILE\github;$env:USERPROFILE\Development"
 .\scripts\install.ps1
 ```
 
-Codex trust entries match exact project roots rather than directory globs, so
-the installer discovers each repository instead of relying on a parent or `*`
-entry. A project Codex already trusts is left as Codex wrote it. Rerun the
-installer after creating or cloning repositories so new worktrees are added.
-Common dependency and build directories are skipped during discovery.
+A Codex trust entry names an exact project root and does not accept a directory
+glob, which is why the installer walks the tree and writes one entry per
+repository rather than a single parent or `*` entry. A project Codex already
+trusts is left exactly as Codex wrote it. New worktrees are picked up by
+rerunning the installer after creating or cloning them, and the walk skips the
+usual dependency and build directories.
 
 ### Install recommended plugins
 
@@ -201,46 +202,48 @@ Start a new session in each agent after installation so the plugin's skills
 become available. The managed global instructions tell both agents to skip the
 full Superpowers methodology for trivial, low-risk edits.
 
-For GitHub-heavy projects, the broader priority order is:
+On a GitHub-heavy project, the wider set worth having, in the order it earns its
+place:
 
-1. **Superpowers plugin** for planning, TDD, debugging, and delivery workflows.
-2. **GitHub plugin** for pull requests, issues, reviews, and repository
-   operations.
-3. **Context7 MCP server** for current framework and dependency documentation.
-4. **Playwright or Chrome DevTools MCP server** for frontend testing and
-   browser debugging.
-5. **Codex Security plugin** for vulnerability analysis and remediation.
-6. **Sentry plugin** for production debugging.
+1. **Superpowers plugin**, carrying the planning, TDD, debugging, and delivery
+   methodology.
+2. **GitHub plugin**, for working pull requests, issues, reviews, and the
+   repository itself.
+3. **Context7 MCP server**, for framework and dependency documentation current
+   enough to trust.
+4. **Playwright or Chrome DevTools MCP server**, for driving a frontend and
+   debugging it in a real browser.
+5. **Codex Security plugin**, for finding vulnerabilities and fixing them.
+6. **Sentry plugin**, for debugging what production actually did.
 
-Only the entries in the two manifests are installed by `--plugins`. Context7,
-Playwright, and Chrome DevTools are
-[MCP servers](https://learn.chatgpt.com/docs/extend/mcp) rather than plugins and
-require separate configuration. GitHub, Codex Security, and Sentry remain
-opt-in until they are added to a manifest because they can require service
-authorization or project-specific setup. Plugin directories do not provide
-reliable public installation counts, so the ranking is based on fit for this
-workflow rather than unverifiable popularity.
+`--plugins` installs the two manifests and nothing else from that list.
+Context7, Playwright, and Chrome DevTools are
+[MCP servers](https://learn.chatgpt.com/docs/extend/mcp) rather than plugins, so
+they are configured separately. GitHub, Codex Security, and Sentry stay out of a
+manifest until someone adds them, because each can need service authorization or
+per-project setup. No plugin directory publishes trustworthy installation
+counts, so this order reflects fit for this workflow and not popularity anyone
+can check.
 
 ### Install RTK
 
-[RTK](https://github.com/rtk-ai/rtk) is an optional Rust CLI proxy that
-compresses verbose command output before it reaches Codex's context window.
-Install it directly from GitHub:
+[RTK](https://github.com/rtk-ai/rtk) is an optional Rust CLI proxy. It sits in
+front of a noisy command and compresses the output before it reaches the agent's
+context window. Install it straight from GitHub:
 
 ```bash
 cargo install --git https://github.com/rtk-ai/rtk
 ```
 
-Do not use `cargo install rtk`. The `rtk` package name on crates.io belongs to
-a different project.
+Not `cargo install rtk`: that name on crates.io belongs to an unrelated project.
 
-Ensure Cargo's binary directory is on `PATH`:
+Cargo's binary directory has to be on `PATH`:
 
 ```bash
 export PATH="$HOME/.cargo/bin:$PATH"
 ```
 
-Then verify both the binary and its output-savings command:
+Check both the binary and the command that reports what it saves:
 
 ```bash
 rtk --version
@@ -274,7 +277,8 @@ Both agents also select skills automatically based on their descriptions.
 
 ## AI development workflow
 
-The reusable workflow separates planning from pull-request readiness:
+Two skills split the work, one deciding what to build and the other deciding
+whether it is finished:
 
 - `$ai-project-manager` reads or creates `AGENTS.md`, `SPEC.md`, `ROADMAP.md`,
   and `TASKS.md`, records the chosen approach in `PLAN.md`, pauses at
@@ -282,15 +286,16 @@ The reusable workflow separates planning from pull-request readiness:
 - `$pr-readiness` validates the final diff, records manual testing, and verifies
   CI and review state before merge.
 
-Project-document templates live under
-`.agents/skills/ai-project-manager/assets/project-docs/`. Adapt them to the
-project instead of leaving placeholder requirements.
+The project-document templates are under
+`.agents/skills/ai-project-manager/assets/project-docs/`. Adapt one to the
+project it is going into; a placeholder left behind reads as a requirement.
 
-See [docs/WORKFLOW.md](docs/WORKFLOW.md) for the complete lifecycle.
+[docs/WORKFLOW.md](docs/WORKFLOW.md) has the complete lifecycle.
 
 ## Local models
 
-Local model profiles are optional and do not change the default provider.
+The local model profiles are optional, and adding them leaves the default
+provider alone.
 
 Ollama:
 
@@ -306,16 +311,16 @@ llama-server --model /path/to/model.gguf --jinja --port 8080
 codex --profile llamacpp
 ```
 
-Override either profile's model with `--model`:
+Either profile takes a different model through `--model`:
 
 ```bash
 codex --profile ollama --model another-model
 codex --profile llamacpp --model another-model
 ```
 
-Local models need reliable structured tool calling for effective Codex use.
-The llama.cpp profile expects a Responses-compatible endpoint at
-`http://127.0.0.1:8080/v1`.
+A local model is only useful to Codex if its structured tool calling is
+reliable, which is the thing to check before blaming the profile. The llama.cpp
+profile expects a Responses-compatible endpoint at `http://127.0.0.1:8080/v1`.
 
 ## Validate
 
@@ -323,7 +328,8 @@ The llama.cpp profile expects a Responses-compatible endpoint at
 ./scripts/validate.sh
 ```
 
-The validation includes an isolated Linux or macOS installer integration test.
+That run includes an installer integration test, isolated in temporary
+directories, on Linux or macOS.
 GitHub Actions runs the same validation on Linux and macOS and exercises the
 PowerShell installer on Windows under both PowerShell 7 and Windows PowerShell
 5.1. A separate CodeQL workflow analyses the Python and JavaScript in the
@@ -332,11 +338,11 @@ PSScriptAnalyzer instead, because CodeQL does not support them.
 
 ## Repository layout
 
-- `AGENTS.md`: instructions for maintaining this repository
+- `AGENTS.md`: how this repository itself is maintained
 - `CLAUDE.md`: an `@AGENTS.md` import, because Claude Code does not read
   `AGENTS.md`
-- `SPEC.md`, `ROADMAP.md`, and `TASKS.md`: requirements, phase order, and
-  validated task status
+- `SPEC.md`, `ROADMAP.md`, and `TASKS.md`: the requirements, the order the
+  phases run in, and which tasks have passed their validation
 - `PLAN.md`: the approach behind the change currently in flight, replaced when
   the next non-trivial change begins
 - `DECISIONS.md`: closed decisions and the alternatives they rejected
@@ -352,8 +358,9 @@ PSScriptAnalyzer instead, because CodeQL does not support them.
   agents also write
 - `scripts/bootstrap.sh` and `scripts/bootstrap.ps1`: clone this repository on a
   machine that has no copy of it, then install from that clone
-- `docs/`: reference documentation loaded only when explicitly requested
-- `scripts/`: installation and validation
+- `docs/`: reference material, read when something links to it rather than by
+  default
+- `scripts/`: the installers and the validation
 
-See [docs/AGENT_LAYOUT.md](docs/AGENT_LAYOUT.md) for detailed discovery and
-configuration behavior.
+[docs/AGENT_LAYOUT.md](docs/AGENT_LAYOUT.md) covers discovery and configuration
+behavior in detail.

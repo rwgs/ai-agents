@@ -261,8 +261,11 @@ are deliberately left alone.
   Section headings are deliberately kept, because `SPEC.md` shares them with the
   template in `ai-project-manager` and renaming one to shed attribution would
   desynchronize the pair for nothing. Validation: WSL `./scripts/validate.sh`.
-- [ ] Restate what is left in `README.md`. Most of its 159 attributed lines are
-  commands and code fences that have one spelling; only the prose counts.
+- [x] Restate what is left in `README.md`. Most of its 159 attributed lines are
+  commands and code fences that have one spelling; only the prose counts. Down
+  to 113, and every line still attributed is a command invocation, a fence, a
+  one-word label introducing a code block, or a file list. Validation: WSL
+  `./scripts/validate.sh`.
 - [ ] Re-measure and record the remainder, naming what stays attributed and why.
   Functional lines are expected to remain: command invocations, configuration
   keys, `.gitignore` patterns, and rule entries that are only command names.
