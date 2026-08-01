@@ -39,65 +39,67 @@ repository root without being told to.
 
 ## Before editing
 
-- State the plan or success criteria before editing. For non-trivial work,
-  include the verification you expect to run and record the approach in
-  `PLAN.md` so it survives the conversation and appears in review.
-- Read the files you will touch and the nearby callers, consumers, or docs that
-  define their behavior.
-- Match existing project patterns, naming, layout, and style even if a different
-  approach would be appealing in a new project.
-- Resolve ambiguity by reading code or running commands when practical; surface
-  assumptions out loud when they affect the result.
+- Say what the plan is, or what success looks like, before editing. For
+  non-trivial work name the verification you expect to run, and put the approach
+  in `PLAN.md`, where it outlives the conversation and shows up in review.
+- Read the files you are about to change, and whatever nearby defines their
+  behavior: callers, consumers, documentation.
+- Follow the patterns, naming, layout, and style already here, even where a
+  different approach would be the better call in a new project.
+- Settle an ambiguity by reading the code or running a command wherever that is
+  practical, and state any assumption that changes the result.
 
 ## Editing
 
-- Use simple ASCII punctuation unless a file format requires otherwise.
-- Keep credentials, tokens, sessions, history, caches, logs, and runtime
-  databases out of this repository.
-- Put reusable workflows in `.agents/skills/<name>/SKILL.md`.
+- Stick to plain ASCII punctuation unless the file format demands otherwise.
+- No credential, token, session, history file, cache, log, or runtime database
+  belongs in this repository.
+- A reusable workflow goes in `.agents/skills/<name>/SKILL.md`.
 - Put instructions that apply to every repository in `ai-home/AGENTS.md`; it is
   installed as the global instructions for both agents.
 - Put configuration shared by both agents in `ai-home/`, and Codex-specific
   portable configuration in `ai-home/codex/`. Claude Code has no equivalent
   directory: its `settings.json` is merged by the installer rather than linked,
   because it accumulates interactively approved permissions.
-- Put project maintenance instructions in this file.
-- Do not assume files in `docs/` are loaded automatically.
-- Use the minimum code or documentation change that solves the stated problem.
-- Do not add speculative features, abstractions, configurability, or hooks.
-- Do clean up orphans created by your own change, such as unused imports or
-  obsolete helper functions.
-- Do not delete pre-existing dead code unless asked; mention it in the summary
-  if it matters.
+- Instructions for maintaining this project go in this file.
+- Nothing under `docs/` is loaded automatically; assume it is unread until
+  something points at it.
+- Make the smallest code or documentation change that solves the stated problem.
+- Add no speculative feature, abstraction, configuration knob, or hook.
+- Clean up whatever your own change orphans, such as an import nothing uses or a
+  helper nothing calls.
+- Leave pre-existing dead code alone unless asked to remove it, and mention it
+  in the summary when it matters.
 
 ## Documentation routing
 
-Read only the documents needed for the task:
+Read the documents the task needs, and no others:
 
-- `SPEC.md` for product requirements, boundaries, and acceptance criteria.
-- `ROADMAP.md` for ordered outcomes, risks, and phase exit criteria.
-- `TASKS.md` for the current phase, validation status, and remaining work.
+- `SPEC.md` for the requirements, the boundaries, and the acceptance criteria.
+- `ROADMAP.md` for the order of outcomes, their risks, and each phase's exit
+  criteria.
+- `TASKS.md` for the current phase, what has been validated, and what is left.
 - `PLAN.md` for the approach behind the change currently in flight.
 - `DECISIONS.md` before changing an area it constrains, and before proposing an
   approach it already rejected.
 - `docs/AGENT_LAYOUT.md` for Claude and Codex discovery and installation
   boundaries.
 - `docs/RTK.md` for the full RTK command catalog.
-- `docs/SKILLS.md` when creating or changing skills.
-- `docs/WORKFLOW.md` when changing the repository development workflow.
+- `docs/SKILLS.md` when writing or changing a skill.
+- `docs/WORKFLOW.md` when changing how development in this repository works.
 
 ## Verification
 
-- Run the smallest meaningful verification during iteration and the requested or
-  relevant final verification before reporting done.
-- If verification fails, fix the cause instead of weakening the check.
-- For UI or visual changes, verify visually with screenshots or equivalent
+- Run the smallest meaningful check while iterating, and the requested or
+  relevant full one before reporting done.
+- When a check fails, fix what it caught rather than weakening the check.
+- Verify a UI or visual change by looking at it: a screenshot, or equivalent
   rendered output.
-- Run `./scripts/validate.sh` after changing configuration, skills, install
-  scripts, or repository layout.
-- Run `./scripts/test-install.sh` directly when diagnosing Linux or macOS
-  installer behavior. Windows installer behavior is covered by
-  `./scripts/test-install.ps1` in CI.
+- Run `./scripts/validate.sh` after touching configuration, a skill, an install
+  script, or the repository layout.
+- Run `./scripts/test-install.sh` on its own when diagnosing Linux or macOS
+  installer behavior. The Windows equivalent, `./scripts/test-install.ps1`, runs
+  in CI.
 - Run validation from an environment that can create symbolic links. Git Bash on
   Windows cannot, so the installer integration test fails there on a clean tree;
   WSL passes in full.
@@ -117,10 +119,10 @@ Read only the documents needed for the task:
 
 ## Maintenance
 
-- Keep this file short enough to follow. Add rules only when they prevent a real
-  repeat mistake or document durable project behavior.
-- When the user corrects an approach, tighten the relevant rule instead of
-  appending a vague warning.
+- Keep this file short enough to follow. A rule earns its place by preventing a
+  mistake that actually recurred, or by recording durable project behavior.
+- When the user corrects an approach, tighten the rule it belongs to rather than
+  appending another vague warning.
 - Before replacing `PLAN.md`, promote the decisions that constrain future work
   into `DECISIONS.md` with the alternatives they rejected, and the verified facts
   that change how the project is understood into `SPEC.md` or this file.

@@ -266,9 +266,46 @@ are deliberately left alone.
   to 113, and every line still attributed is a command invocation, a fence, a
   one-word label introducing a code block, or a file list. Validation: WSL
   `./scripts/validate.sh`.
-- [ ] Re-measure and record the remainder, naming what stays attributed and why.
+- [x] Re-measure and record the remainder, naming what stays attributed and why.
   Functional lines are expected to remain: command invocations, configuration
   keys, `.gitignore` patterns, and rule entries that are only command names.
+  Measured on 2026-08-01 after the restatement passes: 1,552 of 8,991 lines
+  across 31 files, from 1,926 of 8,704. It divides into four groups.
+
+  - Executable code, 750 lines: `scripts/install.ps1` 239, `install.sh` 150,
+    `test-install.ps1` 132, `test-install.sh` 124, `validate.sh` 105. Shebangs,
+    `set -euo pipefail`, argument parsing, variable assignment, and control
+    flow. This is the one group the phase did not schedule; the task below owns
+    the decision.
+  - Rule entries and configuration, 341 lines: `ai-home/rules/default.rules`
+    165, `.gitignore` 76, `.github/workflows/validate.yml` 49, the two
+    `ai-home/codex/*.config.toml` profiles 29, `.rtk/filters.toml` 13,
+    `.github/dependabot.yml` 8, `codex-plugins.txt` 1. Every one is a rule
+    entry naming a command, a pattern, or a configuration key, which is the
+    remainder `DECISIONS.md` expects to keep.
+  - Structure and commands in the restated documents, 291 lines: `README.md`
+    113, `ROADMAP.md` 36, `docs/SKILLS.md` 35, `SPEC.md` 29, `AGENTS.md` 27,
+    `TASKS.md` 21, `docs/WORKFLOW.md` 21, `ai-home/AGENTS.md` 9. Headings, table
+    delimiters, code fences, and command invocations with one spelling.
+  - Skill and template structure, 170 lines: front-matter delimiters, the `name:`
+    line the validator requires to equal the directory, headings, the
+    skill-layout tree, and the title-cased `display_name` shared by all eight
+    skills.
+
+  The prose goal is met: outside the scripts, no group holds a sentence that was
+  not rewritten. Section headings are kept on purpose, because `SPEC.md` shares
+  them with the `ai-project-manager` template and renaming one to shed
+  attribution would desynchronize the pair for nothing.
+
+- [ ] Decide whether the 750 attributed lines of installer, test, and validator
+  code are restated or left as they are. `DECISIONS.md` already rejects
+  rewriting commands and configuration keys as churn, but this is authored
+  logic rather than a command spelling, so the existing entry does not settle
+  it. Weigh it against the regression risk: these five scripts are the
+  installation, and their behavior is currently proven by a three-platform CI
+  run rather than by review. Acceptance: a `DECISIONS.md` entry recording the
+  choice and what it rejected, and, if the answer is to restate, a task naming
+  the order and the verification each pass needs.
 
 ## Later phase: Re-appliable repository baseline
 

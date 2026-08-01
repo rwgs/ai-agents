@@ -1,4 +1,4 @@
 interface:
   display_name: "Bash Scripting"
-  short_description: "Build safe, portable Bash and shell scripts"
-  default_prompt: "Use $bash-scripting to implement, review, or debug a safe shell script."
+  short_description: "Write, review, and debug safe portable shell scripts"
+  default_prompt: "Use $bash-scripting to write, review, or debug a shell script safely."
