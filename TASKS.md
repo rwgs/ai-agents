@@ -152,9 +152,13 @@
   ```
 
   Acceptance: the response identifies `15368` as GitHub Actions, and the next
-  push creates a three-platform `Validate` run without manual dispatch. The
-  GitHub connector was not connected during the 2026-07-31 review, so current
-  live state remains unverified.
+  push creates a three-platform `Validate` run without manual dispatch.
+
+  Re-checked against the live repository on 2026-07-31 through the API with the
+  credential helper's token: `f0a0c6f`, `e4f5c44`, `907b695`, `457768a`, and
+  `e594128` were all pushed to `main` and the repository has only ever had
+  `workflow_dispatch` runs. The preference is still the only explanation left,
+  and setting it still needs a personal access token this session does not have.
 - [x] Define one ownership and provenance model for `config.toml`, Codex rules,
   and derived Claude permissions before changing installer code. Recorded in
   `DECISIONS.md` as "Shared files are merged against a recorded provenance
@@ -194,17 +198,18 @@
   `SPEC.md` and `README.md` state it, both installer tests assert it and reject
   `danger-full-access`, and `ai-home/AGENTS.md` needed no change because nothing
   in it claimed a posture.
-- [ ] State the minimum supported PowerShell edition and make implementation and
-  CI match it. Decided: Windows PowerShell 5.1 is the floor, recorded in
-  `DECISIONS.md`. `install.ps1` and `test-install.ps1` no longer use
+- [x] State the minimum supported PowerShell edition and make implementation and
+  CI match it. Windows PowerShell 5.1 is the floor, recorded in `DECISIONS.md`.
+  `install.ps1` and `test-install.ps1` no longer use
   `ConvertFrom-Json -AsHashtable -Depth`, and the merge normalises the Unicode
   escapes 5.1 emits for `<`, `>`, `&`, and `'`, which 278 and 193 of this
-  machine's 832 approved entries contain. Verified locally by running the
-  installer's own merge functions under 5.1.26100.8875 and 7.6.4: same entries,
-  same key order, idempotent, characters intact. The Windows CI job now runs the
-  complete installer test under both editions; that run is the remaining
-  evidence, because symbolic-link creation needs Developer Mode or elevation and
-  fails here in both editions.
+  machine's 832 approved entries contain. Run `30674779854` on `main` at
+  `e594128` passes the complete installer test under both editions, each step
+  asserting the edition it runs on. Two 5.1-only defects were found and fixed on
+  the way: `Test-JsonProperty` read `.Name` off an empty property collection,
+  which PowerShell 7 strict mode rejects, and the stale-link fixture used
+  `New-Item -ItemType SymbolicLink`, which 5.1 refuses when the target is
+  missing.
 - [x] Close executable validation gaps while changing the installers.
   `scripts/validate.sh` now rejects any `default.rules` line that is not one
   `prefix_rule` with a non-empty quoted pattern list and a known decision, which
@@ -214,13 +219,14 @@
   Managed removal and populated Codex state are exercised by both installer
   tests. Checked that the new rule check flags a malformed line and that
   `show-reset-expiries.mjs` passes `node --check`.
-- [ ] Update `README.md`, `docs/AGENT_LAYOUT.md`, `SPEC.md`, tests, and
+- [x] Update `README.md`, `docs/AGENT_LAYOUT.md`, `SPEC.md`, tests, and
   `CHANGELOG.md` with the implemented behavior, then run the complete local gate
   and a manually dispatched three-platform workflow before relying on the fixed
-  push trigger. The documents, tests, and changelog are updated and the local WSL
-  gate passes. The dispatched run is outstanding: it needs a push, and it is the
-  only evidence available for the Windows installer, because this machine cannot
-  create symbolic links without Developer Mode or elevation.
+  push trigger. The local WSL gate passes, and dispatched run `30674779854` on
+  `e594128` passes `ubuntu-latest`, `macos-latest`, and `windows-latest`,
+  including ShellCheck on Linux. It took three dispatches: the first found a
+  PowerShell 7 strict-mode defect and a macOS path-normalisation defect in the
+  test, the second found the 5.1 fixture defect.
 - [ ] Install on this machine only after the state-preserving behavior passes.
   This is a first install, and symbolic links still require enabling Developer
   Mode or using an elevated shell. Acceptance: dry-run reports the intended
