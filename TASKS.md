@@ -289,11 +289,15 @@ cross-machine MCP requirement justifies it.
   `dependency-review` job and `.github/pull_request_template.md` are removed.
   `docs/WORKFLOW.md` now states each security rule with the condition that makes
   it apply.
-- [ ] Confirm the CodeQL workflow can report. It analyses the repository's
-  Python and JavaScript, but code scanning is not enabled on this private
-  repository, and the API reports `Code scanning is not enabled for this
-  repository`. Acceptance: a dispatched `CodeQL` run uploads results, or the run
-  names what has to be enabled first and that requirement is recorded here.
+- [ ] Enable code scanning for this private repository, then restore the
+  `CodeQL` workflow's `push` and `schedule` triggers. Confirmed by dispatched run
+  `30676585363` on `5ed2536`: both jobs check out, initialise, and build their
+  databases, then fail uploading with `Resource not accessible by integration`
+  after warning `Code scanning is not enabled for this repository`. On a private
+  repository that needs GitHub's code security product enabled in settings. The
+  workflow is dispatch-only meanwhile, so it does not fail on a schedule the way
+  the `dependency-review` job silently never ran. Acceptance: a dispatched run
+  uploads results and the alerts endpoint stops returning HTTP 403.
 - [ ] Reconcile `pr-readiness` with the single-maintainer path. Its workflow
   currently requires a fresh independent review while `DECISIONS.md` rejects a
   gate that needs a second party. Define what local readiness requires when no

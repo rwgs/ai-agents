@@ -1,13 +1,19 @@
 name: CodeQL
 
 on:
-  push:
-    branches:
-      - main
-  schedule:
-    # A push to this repository has never created a check suite, so the schedule
-    # is what guarantees the analysis actually runs.
-    - cron: '17 5 * * 1'
+  # Dispatch only until code scanning is enabled for this private repository.
+  # Run 30676585363 built both databases and then failed uploading its results,
+  # because the API rejects the upload with "Code scanning is not enabled for
+  # this repository". Restore the push and schedule triggers below once it is;
+  # `TASKS.md` carries that step.
+  #
+  # push:
+  #   branches:
+  #     - main
+  # schedule:
+  #   # A push here has never created a check suite, so the schedule is what
+  #   # would guarantee the analysis actually runs.
+  #   - cron: '17 5 * * 1'
   workflow_dispatch:
 
 permissions:
