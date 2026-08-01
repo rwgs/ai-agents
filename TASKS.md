@@ -328,6 +328,24 @@ are deliberately left alone.
   passes after each pass; and a three-platform run passes with the Windows job
   green under both PowerShell editions.
 
+  Restated on 2026-08-01, ahead of the install rather than after it, because
+  that install is blocked on a permission this machine still does not grant and
+  the restatement gets its own three-platform proof either way. The diff is four
+  function bodies and nothing else. Local evidence: WSL `./scripts/validate.sh`
+  passes, and the Bash installer integration test inside it is what exercises
+  `resolve_path` and `link_managed_path`. The two PowerShell functions have no
+  local integration test, so they were checked differentially instead: both
+  editions parse the file, PSScriptAnalyzer reports nothing, and a harness that
+  loads the functions out of `HEAD` and out of the working tree returns
+  identical output under 5.1 and 7 for ten `Get-BackupPath` cases and every
+  reachable `Test-LinkTargetsSource` case. Its rooted-target branch needs a real
+  symbolic link, so `Assert-Link` in CI remains the only thing that covers it.
+  One behavior changed, on a path no call site reaches: `link_managed_path` now
+  evaluates `backup_path_for` once and lets `set -e` propagate its `exit 1`,
+  where three separate command substitutions used to discard that status. Every
+  target passed to it is built from one of the three managed homes. Remaining:
+  the three-platform run, which needs a push.
+
 ## Later phase: Re-appliable repository baseline
 
 - [ ] Record in an adopting repository which baseline commit it took, which

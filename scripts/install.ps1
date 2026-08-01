@@ -104,16 +104,25 @@ function Test-LinkTargetsSource {
         [string] $Source
     )
 
-    if ($Item.LinkType -ne 'SymbolicLink' -or -not $Item.Target) {
+    if ($Item.LinkType -ne 'SymbolicLink') {
         return $false
     }
 
+    # Windows PowerShell 5.1 reports Target as a collection and PowerShell 7 as
+    # a string; the cast flattens either, and an empty one names no target.
     $linkTarget = [string] $Item.Target
-    if (-not [System.IO.Path]::IsPathRooted($linkTarget)) {
-        $linkTarget = Join-Path (Split-Path -Parent $Item.FullName) $linkTarget
+    if ([string]::IsNullOrEmpty($linkTarget)) {
+        return $false
     }
 
-    return (Get-NormalizedPath $linkTarget) -eq (Get-NormalizedPath $Source)
+    if (-not [System.IO.Path]::IsPathRooted($linkTarget)) {
+        $linkTarget = [System.IO.Path]::Combine(
+            [System.IO.Path]::GetDirectoryName($Item.FullName),
+            $linkTarget
+        )
+    }
+
+    return (Get-NormalizedPath $Source) -eq (Get-NormalizedPath $linkTarget)
 }
 
 function Get-BackupPath {
@@ -122,27 +131,29 @@ function Get-BackupPath {
         [string] $Target
     )
 
+    # Each managed home keeps its backups under a directory of its own, except
+    # CODEX_HOME, which holds the backup root and so files straight into it.
+    $managedHomes = @(
+        @{ Path = $codexHome; Subdirectory = $null }
+        @{ Path = $agentsHome; Subdirectory = 'agents' }
+        @{ Path = $claudeHome; Subdirectory = 'claude' }
+    )
+
     $normalizedTarget = Get-NormalizedPath $Target
-    $normalizedCodexHome = Get-NormalizedPath $codexHome
-    $codexPrefix = $normalizedCodexHome + [System.IO.Path]::DirectorySeparatorChar
 
-    if ($normalizedTarget.StartsWith($codexPrefix, [StringComparison]::OrdinalIgnoreCase)) {
-        $relative = $normalizedTarget.Substring($codexPrefix.Length)
-        return Join-Path $backupRoot $relative
-    }
+    foreach ($managedHome in $managedHomes) {
+        $prefix = (Get-NormalizedPath $managedHome.Path) + [System.IO.Path]::DirectorySeparatorChar
+        if (-not $normalizedTarget.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) {
+            continue
+        }
 
-    $normalizedAgentsHome = Get-NormalizedPath $agentsHome
-    $agentsPrefix = $normalizedAgentsHome + [System.IO.Path]::DirectorySeparatorChar
-    if ($normalizedTarget.StartsWith($agentsPrefix, [StringComparison]::OrdinalIgnoreCase)) {
-        $relative = $normalizedTarget.Substring($agentsPrefix.Length)
-        return Join-Path (Join-Path $backupRoot 'agents') $relative
-    }
+        $destination = $backupRoot
+        if ($managedHome.Subdirectory) {
+            $destination = Join-Path $backupRoot $managedHome.Subdirectory
+        }
 
-    $normalizedClaudeHome = Get-NormalizedPath $claudeHome
-    $claudePrefix = $normalizedClaudeHome + [System.IO.Path]::DirectorySeparatorChar
-    if ($normalizedTarget.StartsWith($claudePrefix, [StringComparison]::OrdinalIgnoreCase)) {
-        $relative = $normalizedTarget.Substring($claudePrefix.Length)
-        return Join-Path (Join-Path $backupRoot 'claude') $relative
+        $relative = $normalizedTarget.Substring($prefix.Length)
+        return Join-Path $destination $relative
     }
 
     throw "Managed target is outside CODEX_HOME, AGENTS_HOME, and CLAUDE_CONFIG_DIR: $Target"

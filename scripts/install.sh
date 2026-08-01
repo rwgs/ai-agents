@@ -64,42 +64,34 @@ ensure_parent() {
 
 resolve_path() {
   local path="$1"
-  local directory
-  local hops=0
-  local link_target
+  local hops=64
+  local parent
+  local target
 
+  # A relative target resolves against the physical directory holding the link,
+  # and the hop budget is what ends a cycle.
   while [[ -L "$path" ]]; do
-    hops=$((hops + 1))
-    if ((hops > 64)); then
+    if ((hops == 0)); then
       printf 'error: too many symbolic-link hops: %s\n' "$1" >&2
       return 2
     fi
+    hops=$((hops - 1))
 
-    if ! directory="$(cd -P "$(dirname "$path")" && pwd)"; then
-      return 1
-    fi
-    if ! link_target="$(readlink "$path")"; then
-      return 1
-    fi
-    if [[ "$link_target" == /* ]]; then
-      path="$link_target"
-    else
-      path="$directory/$link_target"
-    fi
+    parent="$(cd -P "$(dirname "$path")" && pwd)" || return 1
+    target="$(readlink "$path")" || return 1
+    case "$target" in
+      /*) path="$target" ;;
+      *) path="$parent/$target" ;;
+    esac
   done
 
   if [[ -d "$path" ]]; then
-    if ! directory="$(cd -P "$path" && pwd)"; then
-      return 1
-    fi
-    printf '%s\n' "$directory"
+    (cd -P "$path" && pwd) || return 1
     return
   fi
 
-  if ! directory="$(cd -P "$(dirname "$path")" && pwd)"; then
-    return 1
-  fi
-  printf '%s/%s\n' "$directory" "$(basename "$path")"
+  parent="$(cd -P "$(dirname "$path")" && pwd)" || return 1
+  printf '%s/%s\n' "$parent" "$(basename "$path")"
 }
 
 backup_path_for() {
@@ -129,33 +121,33 @@ link_managed_path() {
 
   if [[ -L "$target" ]]; then
     local resolved_source
-    local resolved_target=""
+    local resolved_target
     local resolve_status=0
 
-    if ! resolved_source="$(resolve_path "$source")"; then
-      return 1
-    fi
+    resolved_source="$(resolve_path "$source")" || return 1
+    resolved_target="$(resolve_path "$target")" || resolve_status=$?
 
-    if resolved_target="$(resolve_path "$target")"; then
-      resolve_status=0
-    else
-      resolve_status=$?
-    fi
-
-    if ((resolve_status != 0 && resolve_status != 2)); then
-      return "$resolve_status"
-    fi
-
-    if ((resolve_status == 0)) && [[ "$resolved_target" == "$resolved_source" ]]; then
-      printf 'already linked: %s\n' "$target"
-      return
-    fi
+    case "$resolve_status" in
+      0)
+        if [[ "$resolved_target" == "$resolved_source" ]]; then
+          printf 'already linked: %s\n' "$target"
+          return
+        fi
+        ;;
+      # A target that loops back on itself is replaced like any other link
+      # pointing somewhere else. Every other failure is reported upwards.
+      2) ;;
+      *) return "$resolve_status" ;;
+    esac
   fi
 
   if [[ -e "$target" || -L "$target" ]]; then
-    ensure_parent "$(backup_path_for "$target")"
-    run mv "$target" "$(backup_path_for "$target")"
-    printf 'backed up: %s -> %s\n' "$target" "$(backup_path_for "$target")"
+    local backup
+    backup="$(backup_path_for "$target")"
+
+    ensure_parent "$backup"
+    run mv "$target" "$backup"
+    printf 'backed up: %s -> %s\n' "$target" "$backup"
   fi
 
   run ln -s "$source" "$target"
