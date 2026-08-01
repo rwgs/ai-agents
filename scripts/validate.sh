@@ -213,6 +213,18 @@ if command -v git >/dev/null 2>&1 &&
     fail "tracked Codex runtime or credential files detected"
   fi
 
+  # A shell script committed without the executable bit runs fine on a Windows
+  # checkout and on a WSL DrvFs mount, which grant execute to everything, and
+  # fails with "Permission denied" on Linux and macOS. The index mode is checked
+  # rather than the file mode, because core.filemode is false on Windows.
+  while IFS= read -r indexed_script; do
+    [[ -n "$indexed_script" ]] || continue
+    fail "tracked shell script is not executable: $indexed_script"
+  done <<<"$(
+    git -C "$repo_root" ls-files --stage -- '*.sh' |
+      awk '$1 != "100755" { print $4 }'
+  )"
+
   # .gitattributes checks every tracked file out with LF except *.ps1, and a
   # CRLF shell script fails on Linux and macOS with a syntax error. git grep
   # reads working-tree bytes; Git Bash's grep strips CR before matching. The
