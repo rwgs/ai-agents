@@ -135,7 +135,11 @@
 - [x] Remove the empty `skills-optional/` directory left on disk by the commit
   that dropped the optional tree. Nothing tracked, ignored, or referenced it.
 
-## Current phase: State-preserving installation and reliable validation
+## Blocked phase: State-preserving installation and reliable validation
+
+Everything implementable here is done and verified on three platforms. The three
+items left need an action outside this environment: a personal access token, a
+repository setting, and Windows Developer Mode or an elevated shell.
 
 - [ ] Restore automatic validation on pushes to `main`. Actions is enabled, all
   actions are allowed, and `Validate` has a `push: branches: [main]` trigger, but
@@ -233,6 +237,30 @@
   changes, the real install preserves the pre-existing Codex and Claude state,
   and both agents report the expected instructions and skills after restart.
 
+## Current phase: A tree of its own
+
+This repository began as a copy of the unlicensed public `ChrisTitusTech/titus-ai`
+and is not a GitHub fork. `git blame` on 2026-08-01 attributes 1,926 of 8,704
+tracked lines to the upstream commits, across 31 files. `DECISIONS.md` records
+why the content is replaced rather than the history rewritten, and which lines
+are deliberately left alone.
+
+- [x] Restate the two instruction files, which carried the most inherited prose
+  and are the most read: `AGENTS.md` scope, operating principles, and RTK
+  guidance, and `ai-home/AGENTS.md` command execution, working style, and scope
+  selection. Every rule survives; the destructive-operations rule now names what
+  counts as destructive.
+- [ ] Restate the three inherited skills: `bash-scripting` (59 lines),
+  `pr-readiness` (57), and `ai-project-manager` (52) plus its project-document
+  templates (134 across five files).
+- [ ] Restate the inherited planning prose in `SPEC.md` (65), `ROADMAP.md` (51),
+  `docs/SKILLS.md` (50), and `docs/WORKFLOW.md` (44).
+- [ ] Restate what is left in `README.md`. Most of its 159 attributed lines are
+  commands and code fences that have one spelling; only the prose counts.
+- [ ] Re-measure and record the remainder, naming what stays attributed and why.
+  Functional lines are expected to remain: command invocations, configuration
+  keys, `.gitignore` patterns, and rule entries that are only command names.
+
 ## Later phase: Re-appliable repository baseline
 
 - [ ] Record in an adopting repository which baseline commit it took, which
@@ -256,8 +284,9 @@
   `show-codex-reset-expiries`: either record why a user-wide agent-operations
   skill is allowed despite being product-specific, or move it to the pool.
 - [ ] Extend adoption to install `.gitattributes` and offer the validation
-  workflow plus whichever dependency-update configuration Phase 6 retains. Do
-  not propagate the current pull-request template into a no-pull-request flow.
+  workflow and the Dependabot configuration. There is no pull-request template
+  to propagate any more, and an adopting repository that accepts no bot pull
+  requests should be offered neither Dependabot nor the `pull_request` trigger.
 - [ ] Give a new repository its own entry point instead of a skill named for
   adopting an existing one.
 - [ ] Prove the loop on a scratch repository: adopt, change the baseline,

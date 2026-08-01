@@ -25,9 +25,19 @@ if [[ -n "${AI_GIT_TOKEN:-}" ]]; then
   git_arguments=(-c "http.extraheader=Authorization: Basic $authorization")
 fi
 
+# macOS ships Bash 3.2, where expanding an empty array under `set -u` is an
+# unbound-variable error, so the empty case never expands the array at all.
+authenticated_git() {
+  if ((${#git_arguments[@]} > 0)); then
+    git "${git_arguments[@]}" "$@"
+  else
+    git "$@"
+  fi
+}
+
 if [[ -d "$install_dir/.git" ]]; then
   printf 'updating %s\n' "$install_dir"
-  git "${git_arguments[@]}" -C "$install_dir" fetch --quiet origin "$branch"
+  authenticated_git -C "$install_dir" fetch --quiet origin "$branch"
   git -C "$install_dir" checkout --quiet "$branch"
   # Fast-forward only: a local edit or a rewritten history stops the run instead
   # of being merged or discarded.
@@ -35,7 +45,7 @@ if [[ -d "$install_dir/.git" ]]; then
 else
   printf 'cloning %s into %s\n' "$repo_url" "$install_dir"
   mkdir -p "$(dirname "$install_dir")"
-  git "${git_arguments[@]}" clone --quiet --branch "$branch" "$repo_url" "$install_dir"
+  authenticated_git clone --quiet --branch "$branch" "$repo_url" "$install_dir"
 fi
 
 printf 'installed from %s at %s\n' \

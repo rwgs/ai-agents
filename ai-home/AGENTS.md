@@ -5,19 +5,17 @@ Code. One file, two link targets: keep it agent-neutral.
 
 ## Command execution
 
-- Use `rtk` when command output is likely to be large or repetitive and a
-  filtered summary is sufficient. Good candidates include test suites, builds,
-  linters, logs, broad searches, dependency listings, and infrastructure
-  status commands.
-- Use raw commands when output is expected to be short, when exact or complete
-  output matters, or when inspecting a specific file or narrowly scoped result.
-- In command chains, apply `rtk` only to segments that benefit from filtering.
-- If RTK hides needed detail, rejects a command or flag, or complicates
-  debugging, rerun the command raw. Do not use `rtk proxy` merely to satisfy an
-  RTK convention.
-- If a task is primarily Bash or command-line automation, consider RTK for
-  noisy validation commands, but keep commands raw when validating exact
-  stdout, stderr, exit-status, quoting, or pipeline behavior.
+- Route a command through `rtk` when its output is long or repetitive and a
+  summary answers the question: test suites, builds, linters, logs, wide
+  searches, dependency listings, infrastructure status.
+- Run it raw when the output is short, when the exact bytes matter, or when
+  looking at one file or one narrow result.
+- In a chain, wrap only the noisy segment.
+- Drop back to raw whenever RTK hides something needed, refuses a flag, or gets
+  in the way of a diagnosis. `rtk proxy` is not a box to tick.
+- Shell and command-line work is the exception that proves the rule: filter
+  noisy validation, but keep stdout, stderr, exit status, quoting, and pipeline
+  behavior raw, because those are the thing under test.
 
 Common wrappers:
 
@@ -35,24 +33,26 @@ Git passthrough covers every subcommand. Run `rtk --help` for the full catalog.
 
 ## Working style
 
-- Use simple ASCII punctuation unless a file format requires otherwise.
-- Inspect repository instructions and existing changes before editing.
-- Preserve unrelated user changes.
-- Prefer small, reviewable changes with relevant validation.
-- Do not expose credentials, tokens, private keys, or secret file contents.
-- Do not perform destructive operations without explicit authorization.
+- Stick to plain ASCII punctuation unless the file format demands otherwise.
+- Read the repository's own instructions, and whatever is already changed in the
+  working tree, before editing anything.
+- Leave unrelated changes exactly as you found them.
+- Keep a change small enough to review in one sitting, and validate it.
+- Never print credentials, tokens, private keys, or the contents of secret
+  files.
+- Destructive work needs to be asked for. Deleting, overwriting, resetting, and
+  force-pushing are not implied by a request to fix something.
 - Detect a project's package manager from its lockfile before installing
   anything. Running the wrong one rewrites the lockfile: `package-lock.json`
   means npm, `pnpm-lock.yaml` pnpm, `yarn.lock` Yarn, `bun.lockb` Bun,
   `uv.lock` uv, and `poetry.lock` Poetry.
-- Use subagents only when the user or applicable `AGENTS.md` or skill
-  instructions explicitly request subagents, delegation, or parallel agent
-  work.
-- When the Superpowers plugin is installed, skip its full development
-  methodology for trivial, low-risk edits. Use the relevant workflow for
-  non-trivial features, debugging, planning, and review work.
-- Treat explicit user stop points as hard boundaries. Stop at the requested
-  milestone and wait before starting the next phase.
+- Work alone unless subagents, delegation, or parallel agents were asked for,
+  either by the user or by an `AGENTS.md` or skill that applies.
+- With the Superpowers plugin installed, reach for its full methodology on
+  features, debugging, planning, and review, and skip it for small low-risk
+  edits.
+- A stop point the user names is a hard boundary. Finish that milestone, then
+  wait to be told to continue.
 
 ## Scope selection
 
@@ -63,4 +63,5 @@ Git passthrough covers every subcommand. Run `rtk --help` for the full catalog.
   `.claude/settings.json` for project-specific Claude Code settings.
 - Use skills for reusable task workflows. Codex loads them from
   `.agents/skills/`; Claude Code loads them from `.claude/skills/`.
-- Treat files under `docs/` as references, not automatic instructions.
+- Anything under `docs/` is reference material. Read it when a task or an
+  instruction points at it, not by default.

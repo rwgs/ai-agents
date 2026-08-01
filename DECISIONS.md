@@ -8,6 +8,57 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-01 Replace the inherited content instead of rewriting the history
+
+Status: Accepted.
+
+### Decision
+
+The commit history stays as it is, including the 34 commits by the upstream
+author. The inherited *content* is replaced file by file until the tree stands on
+its own, prioritised by how much surviving upstream prose each file carries.
+Functional lines are left alone: commands, configuration keys, rule entries that
+are just command names, `.gitignore` patterns, and workflow boilerplate.
+
+### Why
+
+Measured on 2026-08-01 with `git blame` across every tracked file: 1,926 of the
+tree's 8,704 lines are still authored by the upstream commits, spread over 31
+files. This repository began as a copy of the public `ChrisTitusTech/titus-ai`,
+which carries no licence, and it is not a GitHub fork.
+
+Rewriting the history was the obvious alternative and does not do what it looks
+like it does. Squashing to a fresh root would delete the record of who wrote what
+while keeping what they wrote, which is worse than leaving it: the same content
+would be published with its attribution removed. It would also discard the
+evidence trail this repository deliberately accumulates in its commit messages,
+including the CI run identifiers that close tasks.
+
+Replacing the content is the only route that ends with a tree that is this
+repository's own regardless of what upstream does, and it improves the files on
+the way: the inherited instruction prose was written for a different repository
+and says less about this one than a restatement can.
+
+### Rejected alternatives
+
+- Squash to a single fresh commit and force-push: covered above. It solves the
+  narrower problem of the upstream author's personal paths appearing in history,
+  which matters only if this repository is published.
+- Start a new repository: the same rewrite with the settings, URL, and evidence
+  thrown away.
+- Ask upstream to add a licence and change nothing: cheapest and still worth
+  doing, but it leaves the outcome dependent on someone else answering.
+- Rewrite every attributed line, including commands and configuration keys:
+  churn. `./scripts/install.sh --dry-run` has one spelling, and changing a rule
+  entry's command name would break it.
+
+### Consequences
+
+`TASKS.md` carries the remaining files in priority order. Each pass has to
+preserve behavior exactly: these are working instructions, and
+`scripts/validate.sh` checks several of them, so a restatement that drops a rule
+is a regression rather than a rewrite.
+
 ## 2026-07-31 Bots may open pull requests, humans may not
 
 Status: Accepted. Supersedes in part "No branches and no pull requests in this

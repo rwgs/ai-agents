@@ -17,8 +17,8 @@ skills install without replacing private Codex runtime state.
 
 ## Phase 2: Workflow alignment
 
-Status: Complete as originally scoped. No-pull-request governance cleanup is in
-Phase 6.
+Status: Complete as originally scoped. The pull-request artifacts it added were
+reconciled on 2026-07-31: bots may open pull requests, humans may not.
 
 ### Outcome
 
@@ -31,7 +31,9 @@ review, manual-testing, and merge workflow.
 - Separate project planning from pull-request readiness.
 - Add cross-platform installer integration tests and validation CI.
 - Add Dependabot coverage, dependency review, and change-evidence prompts. The
-  later no-pull-request decision leaves the PR-only pieces for Phase 6.
+  later no-pull-request decision kept Dependabot, whose pull requests are the
+  only way an action pin gets refreshed, and removed the unreachable
+  dependency-review job and the pull-request template.
 - Align Claude routing and workflow documentation.
 - Add explicit, cross-platform installation for selected plugins in both agents
   without making ordinary installs mutate plugin state.
@@ -140,7 +142,39 @@ validation automatically on every push to `main`.
 - A dry run and then a real install on the reviewed Windows machine complete
   without losing its pre-existing state.
 
-## Phase 5: Re-appliable repository baseline
+## Phase 5: A tree of its own
+
+Status: In progress. It runs alongside Phase 4's remainder, which is blocked on
+a token, a repository setting, and Windows Developer Mode.
+
+### Outcome
+
+Every line in the repository is either written for this repository or too
+functional to have an author, so publishing it depends on nobody else's licence.
+
+### Included work
+
+- Replace the inherited prose file by file, prioritised by how much of it
+  survives, starting with the two instruction files.
+- Leave functional lines alone: command invocations, configuration keys, rule
+  entries that are only command names, ignore patterns, workflow boilerplate.
+- Re-measure at the end and record what stays attributed and why.
+
+### Dependencies and risks
+
+- These are working instructions that `scripts/validate.sh` partly enforces, so
+  a restatement that quietly drops a rule is a regression, not a rewrite.
+- Rewriting for its own sake is churn. A file is touched because its prose is
+  inherited, not because a line is attributed to an upstream commit.
+
+### Exit criteria
+
+- The instruction files, skills, planning documents, and README carry no
+  inherited prose.
+- A `git blame` census shows only functional remainders, each named.
+- Local validation and a three-platform run pass with the restated files.
+
+## Phase 6: Re-appliable repository baseline
 
 Status: Planned
 
@@ -184,7 +218,7 @@ forked and since developed further.
 - Re-applying a second time with no baseline change reports nothing to do.
 - Adoption and update are covered by the same validation the installer has.
 
-## Phase 6: Enforced repository governance
+## Phase 7: Enforced repository governance
 
 Status: Planned
 

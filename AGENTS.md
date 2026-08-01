@@ -2,42 +2,40 @@
 
 ## Scope
 
-This repository is the source of truth for portable Claude and Codex
-configuration, reusable skills, and durable coding-agent instructions. The root
-`AGENTS.md` is the project maintenance file and follows the AGENTS.md convention
-for tools that load it automatically.
+This repository holds the portable Claude Code and Codex setup: one shared
+instruction file, the Codex configuration, the command rules both permission
+systems derive from, and the skills installed on every machine. This file is the
+maintenance guide for the repository itself, and both agents load it from the
+repository root without being told to.
 
 ## Operating principles
 
-- Working code only. Plausibility is not correctness; verify before reporting
-  done.
-- Never fabricate file paths, APIs, commit hashes, command output, or test
-  results. Read the file, run the command, or say what is unknown.
-- Say when a premise appears wrong before implementing around it.
-- Ask before proceeding only when a request has multiple plausible
-  interpretations and the choice materially affects the result.
-- Touch only what the task requires. Avoid drive-by refactors, formatting, or
-  cleanup.
-- Keep communication direct and concise. Skip flattery, filler, ceremonial
-  openings, and emoji.
+- Deliver working code. Looking right is not evidence; run it.
+- Say what is unknown instead of filling the gap. Paths, APIs, commit hashes,
+  command output, and test results are read or run, never recalled.
+- Challenge a wrong premise before building on top of it.
+- Settle an ambiguous request yourself, and ask only when the readings lead to
+  materially different work.
+- Change what the task needs and nothing beside it. No drive-by refactors,
+  reformatting, or tidying.
+- Write plainly: no preamble, no flattery, no emoji.
 
 ## Command execution
 
-- Use `rtk` when command output is likely to be large or repetitive and a
-  filtered summary is sufficient. Good candidates include test suites, builds,
-  linters, logs, broad searches, dependency listings, and infrastructure
-  status commands.
-- Use raw commands when output is expected to be short, when exact or complete
-  output matters, or when inspecting a specific file or narrowly scoped result.
-- In command chains, apply `rtk` only to segments that benefit from filtering.
-- If RTK hides needed detail, rejects a command or flag, or complicates
-  debugging, rerun the command raw. Do not use `rtk proxy` merely to satisfy an
-  RTK convention.
-- If a task is primarily Bash or command-line automation, consider RTK for
-  noisy validation commands, but keep commands raw when validating exact
-  stdout, stderr, exit-status, quoting, or pipeline behavior.
-- Prefer running code, tests, linters, and type checks over guessing.
-- Read complete errors, logs, and stack traces before fixing them.
+- Route a command through `rtk` when its output is long or repetitive and a
+  summary answers the question: test suites, builds, linters, logs, wide
+  searches, dependency listings, infrastructure status.
+- Run it raw when the output is short, when the exact bytes matter, or when
+  looking at one file or one narrow result.
+- In a chain, wrap only the noisy segment.
+- Drop back to raw whenever RTK hides something needed, refuses a flag, or gets
+  in the way of a diagnosis. `rtk proxy` is not a box to tick.
+- Shell and command-line work is the exception that proves the rule: filter
+  noisy validation, but keep stdout, stderr, exit status, quoting, and pipeline
+  behavior raw, because those are the thing under test.
+- Run the code, the tests, the linter, the type checker rather than predicting
+  what they would say.
+- Read the whole error, log, or stack trace before changing anything.
 
 ## Before editing
 
