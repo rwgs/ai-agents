@@ -276,13 +276,24 @@ prefix_rule(pattern=["sed"], decision="allow")
     ) 'The replacement rules file does not carry the curated rules'
 
     # Pruning: a link into this repository whose source is gone must be removed,
-    # while anything the installer did not create must survive. The stale link is
-    # fabricated rather than made by deleting a real skill, so the test never
+    # while anything the installer did not create must survive. The stale links
+    # are fabricated rather than made by deleting a real skill, so the test never
     # mutates the repository it is running from.
+    #
+    # mklink, not New-Item: Windows PowerShell 5.1 refuses to create a link whose
+    # target does not exist, which is exactly what a stale link is. Both reparse
+    # types are made, because Windows records a link to a missing target as a
+    # file unless the link is created with /D, and pruning has to remove either.
     $claudeSkills = Join-Path $testClaudeHome 'skills'
-    New-Item -ItemType SymbolicLink -Force `
-        -Path (Join-Path $claudeSkills 'removed-skill') `
-        -Target (Join-Path $repoRoot '.agents/skills/removed-skill') | Out-Null
+    foreach ($stale in @(
+            @{ Name = 'removed-skill'; Option = '/D' },
+            @{ Name = 'removed-file-skill'; Option = '' }
+        )) {
+        $stalePath = Join-Path $claudeSkills $stale.Name
+        $staleTarget = Join-Path $repoRoot ".agents/skills/$($stale.Name)"
+        & cmd.exe /c "mklink $($stale.Option) `"$stalePath`" `"$staleTarget`"" | Out-Null
+        Assert-Condition ($LASTEXITCODE -eq 0) "Could not fabricate a stale link: $stalePath"
+    }
     New-Item -ItemType Directory -Path (Join-Path $claudeSkills 'handmade-skill') -Force | Out-Null
     $foreignDir = Join-Path $taskTestRoot 'foreign skills/foreign-skill'
     New-Item -ItemType Directory -Path $foreignDir -Force | Out-Null
@@ -290,14 +301,18 @@ prefix_rule(pattern=["sed"], decision="allow")
         -Path (Join-Path $claudeSkills 'foreign-skill') -Target $foreignDir | Out-Null
 
     & (Join-Path $repoRoot 'scripts/install.ps1') -DryRun | Out-Null
-    Assert-Condition (
-        $null -ne (Get-Item -LiteralPath (Join-Path $claudeSkills 'removed-skill') -Force -ErrorAction SilentlyContinue)
-    ) 'Dry-run pruned a stale skill link'
+    foreach ($staleName in @('removed-skill', 'removed-file-skill')) {
+        Assert-Condition (
+            $null -ne (Get-Item -LiteralPath (Join-Path $claudeSkills $staleName) -Force -ErrorAction SilentlyContinue)
+        ) "Dry-run pruned a stale skill link: $staleName"
+    }
 
     & (Join-Path $repoRoot 'scripts/install.ps1') | Out-Null
-    Assert-Condition (
-        -not (Get-Item -LiteralPath (Join-Path $claudeSkills 'removed-skill') -Force -ErrorAction SilentlyContinue)
-    ) 'Stale managed skill link was not pruned'
+    foreach ($staleName in @('removed-skill', 'removed-file-skill')) {
+        Assert-Condition (
+            -not (Get-Item -LiteralPath (Join-Path $claudeSkills $staleName) -Force -ErrorAction SilentlyContinue)
+        ) "Stale managed skill link was not pruned: $staleName"
+    }
     Assert-Condition (
         Test-Path -LiteralPath (Join-Path $claudeSkills 'handmade-skill') -PathType Container
     ) 'Pruning removed a hand-made skill directory'
