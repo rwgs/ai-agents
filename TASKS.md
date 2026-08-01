@@ -297,15 +297,36 @@ are deliberately left alone.
   them with the `ai-project-manager` template and renaming one to shed
   attribution would desynchronize the pair for nothing.
 
-- [ ] Decide whether the 750 attributed lines of installer, test, and validator
-  code are restated or left as they are. `DECISIONS.md` already rejects
-  rewriting commands and configuration keys as churn, but this is authored
-  logic rather than a command spelling, so the existing entry does not settle
-  it. Weigh it against the regression risk: these five scripts are the
-  installation, and their behavior is currently proven by a three-platform CI
-  run rather than by review. Acceptance: a `DECISIONS.md` entry recording the
-  choice and what it rejected, and, if the answer is to restate, a task naming
-  the order and the verification each pass needs.
+- [x] Decide whether the 750 attributed lines of installer, test, and validator
+  code are restated or left as they are. Recorded in `DECISIONS.md` as "Restate
+  the installer's linking core, leave the rest of the script code": four
+  functions are restated and the remaining 626 lines stay. The 750 are not 750
+  lines of authored logic. 299 are a blank line, a lone `}`, `fi`, `done`, or
+  `else`, a shebang, or a comment, and much of the rest is declaration
+  boilerplate with one spelling. What is left is concentrated in six functions,
+  measured with `git blame`: `resolve_path` 39 of 39 lines and
+  `link_managed_path` 42 of 45 in `scripts/install.sh`, and
+  `Get-NormalizedPath` 11 of 11, `Test-LinkTargetsSource` 20 of 20,
+  `Get-BackupPath` 23 of 31, and `Write-DryRunCommand` 10 of 10 in
+  `scripts/install.ps1`. Two of the six wrap a parameter block around a single
+  expression and are excluded. Message strings are excluded from the whole
+  restatement because both installer tests match the installer's exact output,
+  so a reworded message is a four-file edit with no new evidence behind it.
+
+- [ ] Restate the four selected functions, bodies only. `resolve_path` and
+  `link_managed_path` in `scripts/install.sh` first, because WSL
+  `./scripts/validate.sh` runs `bash -n`, ShellCheck, and the whole Bash
+  installer integration test locally, so a defect surfaces in the pass that
+  caused it. Then `Test-LinkTargetsSource` and `Get-BackupPath` in
+  `scripts/install.ps1`, whose integration test runs only in CI: local
+  validation covers those two with the PowerShell parser and PSScriptAnalyzer
+  only, because `scripts/test-install.ps1` needs symbolic-link permission this
+  environment lacks. Sequenced after the pending first install above, so that
+  install runs the code the three-platform runs already proved. Acceptance: the
+  diff touches function bodies and nothing else, with every function name,
+  parameter name, and printed string unchanged; WSL `./scripts/validate.sh`
+  passes after each pass; and a three-platform run passes with the Windows job
+  green under both PowerShell editions.
 
 ## Later phase: Re-appliable repository baseline
 

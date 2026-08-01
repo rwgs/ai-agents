@@ -8,6 +8,89 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-01 Restate the installer's linking core, leave the rest of the script code
+
+Status: Accepted. Settles the case the entry below left open, which rejected
+rewriting commands and configuration keys as churn but said nothing about
+authored logic.
+
+### Decision
+
+Four functions are restated, because each is wholly or almost wholly inherited
+and each has a structure that could have been written another way:
+`resolve_path` and `link_managed_path` in `scripts/install.sh`, and
+`Test-LinkTargetsSource` and `Get-BackupPath` in `scripts/install.ps1`. Their
+bodies change; their names, parameters, and every string they print do not.
+
+The other 626 attributed lines across the five scripts stay as they are.
+
+### Why
+
+The 750 lines are not 750 lines of authored logic. Measured on 2026-08-01: 299
+of them are a blank line, a lone `}`, `fi`, `done`, or `else`, a shebang, or a
+comment. Much of the rest is declaration boilerplate that has one spelling --
+`set -euo pipefail`, `Set-StrictMode -Version Latest`, PowerShell `param(`
+blocks with their `[Parameter(Mandatory)]` and `[string] $Path` lines, and the
+`$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)` idiom every shell script
+here opens with.
+
+What is left is concentrated rather than spread, which is why a per-function
+answer is possible at all. Six functions hold it: `resolve_path` 39 of 39 lines,
+`link_managed_path` 42 of 45, `Get-NormalizedPath` 11 of 11,
+`Test-LinkTargetsSource` 20 of 20, `Get-BackupPath` 23 of 31, and
+`Write-DryRunCommand` 10 of 10. Two of those six are a parameter block wrapped
+around a single expression, so they are excluded; the other four branch, loop,
+or compare, and that is the choice a restatement can actually make differently.
+
+The message strings are excluded because they are a contract between four files,
+not prose. Both installer tests match the installer's exact output:
+`scripts/test-install.sh` greps `^error: too many symbolic-link hops:` and
+`^pruned stale skill link: `, and `scripts/test-install.ps1` matches
+`(?m)^preserved: ` and `(?m)^dry run complete$`. Rewording one message means
+editing four files in step, and the only evidence the edit is correct is the
+same three-platform run that already passes. Holding the strings fixed also
+means the restatement cannot break a test by rewording.
+
+Regression risk is asymmetric with the prose passes, which is the reason to
+restate four functions rather than five files. A restated document that drops a
+rule is caught by reading it. A restated installer that drops a guard is caught
+only where a test already covers that guard, and these scripts are the paths
+that write into a populated `~/.codex` and `~/.claude`. The four selected
+functions are the covered ones: `resolve_path` by the cyclic-link fixture and
+the relative and normalized equivalent-link assertions, `link_managed_path` by
+the full link inventory and the backup count, and the two PowerShell functions
+by `Assert-Link` on every managed link plus the idempotent re-install asserting
+that no second backup appears.
+
+### Rejected alternatives
+
+- Restate all 750 lines: churn across 299 structural lines and the declaration
+  boilerplate, and it drags the message strings into scope, which is exactly
+  where the four-file coupling lives.
+- Leave all 750 as they are: cheapest, and the reading the entry below invites.
+  Rejected because `resolve_path` and `link_managed_path` are 81 lines of wholly
+  inherited authored logic in the installer's linking core, the largest such
+  concentration left in the tree, and the phase's claim would then depend on
+  nobody looking there.
+- Rewrite the five scripts from scratch against `SPEC.md`: produces a genuinely
+  independent installer, and discards behavior proven on three platforms under
+  both PowerShell editions to solve an attribution problem 124 lines wide.
+- Restate `Get-NormalizedPath` and `Write-DryRunCommand` too, for consistency:
+  the first returns one `GetFullPath` call with a `TrimEnd`, the second is one
+  `if`. Renaming their parameters would shed attribution without changing
+  anything a reader would call authored.
+
+### Consequences
+
+The phase closes with 626 attributed lines rather than zero, and that is the
+intended end state. Its claim is about prose and authored logic, not about the
+number `git blame` reports.
+
+`TASKS.md` carries the restatement, sequenced after the pending first install on
+this machine so that install runs the code the CI runs already proved. Nothing
+here asks for attribution to be preserved: a later change to these scripts is
+free to rewrite whatever it touches.
+
 ## 2026-08-01 Replace the inherited content instead of rewriting the history
 
 Status: Accepted.
