@@ -58,20 +58,46 @@ says which gates apply to a repository rather than which ones exist.
 ## Security baseline
 
 Establish the checks that apply to this repository rather than collecting the
-ones that exist. Each rule carries the condition that makes it apply:
+ones that exist. Each rule states the capability it needs and the condition that
+makes it apply; the table underneath says what provides that capability on each
+host. Where a host provides nothing, the answer is to record an accepted
+exception, not to configure the other host's product.
 
-- Enable secret scanning and push protection wherever the host offers them.
-- Configure Dependabot for the package ecosystems the repository actually has,
-  including GitHub Actions when any workflow pins an action.
-- Configure CodeQL for the languages it supports that the repository actually
-  contains. Shell and PowerShell are not among them, so a repository written in
-  those relies on ShellCheck and PSScriptAnalyzer instead.
-- Run dependency review only where pull requests exist for it to gate. It is a
-  `pull_request` check and does nothing in a flow without one.
-- Pin third-party actions by commit and keep the pins current through whichever
-  update path the repository's workflow accepts.
+- Scan for committed secrets, and block a push that adds one.
+- Keep dependencies current for the ecosystems the repository actually declares,
+  including the CI definition itself when it pins third-party automation.
+- Scan the code for vulnerabilities in the languages the repository actually
+  contains. Shell and PowerShell are not languages CodeQL supports, so a
+  repository written in those relies on ShellCheck and PSScriptAnalyzer instead.
+- Review a dependency change only where pull requests exist for it to gate. It
+  does nothing in a flow without one.
+- Pin third-party automation to an immutable version, and keep the pins current
+  through whichever update path the repository's workflow accepts.
+- Validate every change that reaches the default branch, and validate a bot's
+  pull request before it merges.
 - Document an accepted exception with its reason, its owner, and the date it
   comes up for review again.
+
+| Capability | GitHub | Azure DevOps Services | Azure DevOps Server |
+| --- | --- | --- | --- |
+| Secret scanning and push protection | Native; free on a public repository, and sold as GitHub Secret Protection on a private one | GitHub Secret Protection for Azure DevOps, a paid add-on | None |
+| Dependency updates | Dependabot | No native equivalent. Advanced Security brings Dependabot security updates; routine version bumps need a third-party runner | Self-hosted third-party runner, unverified here |
+| Code scanning | CodeQL; free on a public repository, and sold as GitHub Code Security on a private one | GitHub Code Security for Azure DevOps, a paid add-on | None |
+| Dependency review gating a pull request | `dependency-review-action` | Advanced Security dependency scanning | None |
+| Default-branch enforcement | Rulesets and branch protection | Branch policies: build validation, required reviewers | Branch policies |
+| CI on a change | Actions workflow | Pipeline on Microsoft-hosted or self-hosted agents | Pipeline on self-hosted agents only |
+| Immutable pin for third-party automation | Action pinned by commit SHA | Task pinned by version; marketplace extensions are versioned | As Services |
+
+Microsoft states that Advanced Security and its standalone products are for
+Azure DevOps Services and that there are no current plans to bring them to
+Azure DevOps Server, so those `None` entries are the present state rather than
+something waiting to be switched on. A repository on an on-premise server meets
+the first three rules with whatever its organisation already runs, or records an
+accepted exception naming the gap.
+
+Nothing in this table has been verified against a live Azure DevOps
+organisation or server. It is compiled from Microsoft's published
+documentation, and the first person to use it should expect to correct a row.
 
 Bots may open pull requests even where humans do not: Dependabot has no other
 delivery mechanism, and its pull request is a change to review rather than a

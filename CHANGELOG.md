@@ -8,6 +8,20 @@ are in the commit history.
 This repository publishes no versioned releases, so entries are grouped by date,
 newest first. Version headings replace the dates if tagging begins.
 
+## 2026-08-01
+
+- The `pr-readiness` skill now covers Azure DevOps as well as GitHub. Its
+  diagnostics separate the worktree checks, which are the same everywhere, from
+  a per-host table giving the commands for pull-request state, checks against
+  the head commit, reviewer positions, and thread resolution. Azure DevOps has
+  no equivalent of `gh pr checks`, because build validation arrives as a branch
+  policy, and no `az` subcommand for comment threads at all, so the skill names
+  the REST endpoint and the thread states that count as unresolved. The Azure
+  DevOps commands are transcribed from Microsoft's reference and have not been
+  run against a live organisation; the skill says so where an agent will read
+  it. No permission, configuration, or link behavior changed, so there is
+  nothing here that requires rerunning the installer.
+
 ## 2026-07-31
 
 - Added a bootstrap for a machine with no clone. `scripts/bootstrap.sh` and

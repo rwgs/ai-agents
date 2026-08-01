@@ -1,0 +1,131 @@
+# The Azure DevOps counterpart of .github/workflows/validate.yml, running the
+# same three-platform gate over the same scripts.
+#
+# UNVERIFIED. This pipeline has never run. Neither an Azure DevOps organisation
+# nor an Azure DevOps Server instance is in use, so it is written from
+# Microsoft's published schema rather than from a passing run, and the first
+# person to queue it should expect to correct it. What would verify it: one
+# completed run per platform, with the Windows job green under both PowerShell
+# editions, matching the evidence the GitHub workflow already produces.
+#
+# Agent requirements, which the Microsoft-hosted images satisfy and a
+# self-hosted agent may not:
+#
+#   Linux    bash, git, python3, shellcheck
+#   macOS    bash, git, python3
+#   Windows  Windows PowerShell 5.1 and PowerShell 7, git, and permission to
+#            create symbolic links, which means Developer Mode or an elevated
+#            agent service account
+#
+# Azure DevOps Server has no Microsoft-hosted agent pool, so each pool is a
+# parameter. On Server, queue with a pool name instead of an image, for example
+#   linuxPool: {name: 'Self Hosted Linux'}
+
+parameters:
+  - name: linuxPool
+    type: object
+    default:
+      vmImage: ubuntu-latest
+  - name: macosPool
+    type: object
+    default:
+      vmImage: macOS-latest
+  - name: windowsPool
+    type: object
+    default:
+      vmImage: windows-latest
+
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+
+# A YAML pr trigger applies to GitHub and Bitbucket Cloud only. On Azure Repos
+# the equivalent is a build validation branch policy naming this pipeline, which
+# is configured in the project and not in this file, so declaring one here would
+# read as coverage that does not exist.
+pr: none
+
+jobs:
+  - job: linux
+    displayName: Validate (Linux)
+    pool: ${{ parameters.linuxPool }}
+    timeoutInMinutes: 10
+    steps:
+      - checkout: self
+
+      - bash: shellcheck scripts/*.sh
+        displayName: Run ShellCheck
+
+      - bash: ./scripts/validate.sh
+        displayName: Validate repository
+
+  - job: macos
+    displayName: Validate (macOS)
+    pool: ${{ parameters.macosPool }}
+    timeoutInMinutes: 10
+    steps:
+      - checkout: self
+
+      - bash: ./scripts/validate.sh
+        displayName: Validate repository
+
+  - job: windows
+    displayName: Validate (Windows)
+    pool: ${{ parameters.windowsPool }}
+    timeoutInMinutes: 10
+    steps:
+      - checkout: self
+
+      - task: PowerShell@2
+        displayName: Run PSScriptAnalyzer
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            Set-StrictMode -Version Latest
+            $ErrorActionPreference = 'Stop'
+            if (-not (Get-Module -ListAvailable PSScriptAnalyzer)) {
+              Set-PSRepository PSGallery -InstallationPolicy Trusted
+              Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+            }
+            # The installers expose -DryRun, which README documents, so they do
+            # not also implement the -WhatIf that ShouldProcess would require.
+            $findings = @(
+              Invoke-ScriptAnalyzer -Path scripts -Severity Warning, Error `
+                -ExcludeRule PSUseShouldProcessForStateChangingFunctions
+            )
+            if ($findings.Count) {
+              $findings |
+                Format-Table RuleName, ScriptName, Line, Message -AutoSize |
+                Out-String -Width 200 |
+                Write-Output
+              throw "PSScriptAnalyzer reported $($findings.Count) finding(s)."
+            }
+            Write-Output 'PSScriptAnalyzer: no findings'
+
+      # Both supported editions run the complete test. Windows ships 5.1 and
+      # pwsh is a separate installation, so a 7-only feature would otherwise
+      # reach users through a green build.
+      - task: PowerShell@2
+        displayName: Test PowerShell installer (PowerShell 7)
+        inputs:
+          pwsh: true
+          targetType: inline
+          script: |
+            if ($PSVersionTable.PSVersion.Major -lt 7) {
+              throw "Expected PowerShell 7 or later, got $($PSVersionTable.PSVersion)."
+            }
+            ./scripts/test-install.ps1
+
+      - task: PowerShell@2
+        displayName: Test PowerShell installer (Windows PowerShell 5.1)
+        inputs:
+          pwsh: false
+          targetType: inline
+          script: |
+            if ($PSVersionTable.PSVersion.Major -ne 5) {
+              throw "Expected Windows PowerShell 5.1, got $($PSVersionTable.PSVersion)."
+            }
+            ./scripts/test-install.ps1

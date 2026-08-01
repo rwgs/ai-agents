@@ -70,6 +70,11 @@ the agent state already on the machine at risk.
   systems; the installer merges it into `CODEX_HOME/rules/default.rules` and
   derives Claude Code's `permissions.allow` entries from it. It sits outside
   `ai-home/codex/` because both agents depend on it.
+- Only a single-token `prefix_rule` pattern derives a Claude Code grant. A
+  multi-token pattern such as `["az", "repos"]` is valid Codex syntax and passes
+  validation, but both the Python and the PowerShell derivation match one token,
+  so it reaches Codex alone and Claude Code keeps prompting. A rule scoped to a
+  subcommand therefore needs the derivation extended first.
 - `ai-home/codex/` contains the Codex-only files installed into `CODEX_HOME`.
   Claude Code has no counterpart directory, because its `settings.json` is
   merged rather than linked.

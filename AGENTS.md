@@ -115,11 +115,15 @@ Read the documents the task needs, and no others:
   or a pull request, and do not propose either as a review step.
 - Push only when asked.
 - When a change needs evidence only CI can produce, such as installer behavior on
-  a platform this environment cannot exercise, say so and ask to push. A push to
-  `main` now starts the validation workflow by itself, so read that run. Dispatch
-  only when there is nothing to push; dispatching for a commit that was just
-  pushed cancels one of the two runs, because both land in the same concurrency
-  group. Never open a pull request for it.
+  a platform this environment cannot exercise, say so and ask to push. Never open
+  a pull request for it.
+- CI evidence here means GitHub Actions, because that is where this repository is
+  hosted. A push to `main` starts the validation workflow by itself, so read that
+  run. Dispatch only when there is nothing to push; dispatching for a commit that
+  was just pushed cancels one of the two runs, because both land in the same
+  concurrency group. `azure-pipelines.yml` runs the same gate on Azure DevOps and
+  has never run, so it is not a source of evidence and a green claim must not
+  rest on it.
 
 ## Maintenance
 

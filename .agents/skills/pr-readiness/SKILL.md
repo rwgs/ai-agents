@@ -59,18 +59,49 @@ pull-request status as not applicable rather than as passing.
 
 ## Diagnostics
 
+The worktree half is the same wherever the repository is hosted:
+
 ```bash
 git status --short --untracked-files=all
 git diff                                   # unstaged
 git diff --stat origin/main...HEAD         # the branch's scope
-gh pr view --json state,isDraft,reviewDecision,statusCheckRollup
-gh pr checks
 ```
 
+The published half is host-specific in its commands and not in what it has to
+establish. Read the pull request's state, the checks that ran against its head
+commit rather than a summary, the reviewer positions, and thread resolution
+state rather than the flat comment list.
+
+| Read | GitHub | Azure DevOps |
+| --- | --- | --- |
+| State, draft, review decision | `gh pr view --json state,isDraft,reviewDecision,statusCheckRollup` | `az repos pr show --id <id>` |
+| Checks against the head commit | `gh pr checks`, plus `statusCheckRollup` above | `az repos pr policy list --id <id>` |
+| Reviewer positions | `reviewDecision` above | `az repos pr reviewer list --id <id>` |
+| Thread resolution | the thread view, never the comment list | the threads endpoint below |
+
 `statusCheckRollup` carries the commit each check ran against; compare it with
-the branch head rather than trusting a green summary. Comment listings do not
-carry resolution state, so unresolved threads have to be read from the thread
-view.
+the branch head rather than trusting a green summary. Azure DevOps has no
+equivalent of `gh pr checks`, because build validation reaches a pull request as
+a branch policy: `az repos pr policy list` is where a required check that failed
+or never evaluated shows up, and a stale policy evaluation is the same defect as
+a GitHub check attached to an older commit.
+
+Comment listings carry no resolution state on either host, and Azure DevOps has
+no `az repos pr` subcommand for threads at all. Its REST endpoint is
+
+```text
+GET {org}/{project}/_apis/git/repositories/{repositoryId}/pullRequests/{id}/threads?api-version=7.1
+```
+
+and a thread is unresolved while its `status` is `active` or `pending`. The
+resolved values are `fixed`, `wontFix`, `closed`, and `byDesign`.
+
+The Azure DevOps commands belong to the Azure CLI `azure-devops` extension and
+take `--organization`, which is the organisation URL on the hosted service and
+the collection URL on an on-premise server. They are transcribed from
+Microsoft's CLI and REST reference and have not been run against a live
+organisation, so treat an unexpected result as a defect in this table before
+treating it as a finding. The GitHub commands are in regular use.
 
 ## Pull request evidence
 

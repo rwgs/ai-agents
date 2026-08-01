@@ -52,6 +52,24 @@ $headers = @{ Authorization = "Bearer $env:AI_GIT_TOKEN" }
 The token is passed to `git` per command and never written into the clone's
 remote URL. Set `AI_REPO_URL` to an SSH remote instead to use an existing key.
 
+`AI_REPO_URL` also selects a different host entirely. Nothing in the installer
+contacts a Git host, so a fork or mirror in Azure DevOps installs the same way:
+
+```bash
+# Azure DevOps Services
+AI_REPO_URL=https://dev.azure.com/<organization>/<project>/_git/ai ./scripts/bootstrap.sh
+
+# Azure DevOps Server, whose URL carries the collection
+AI_REPO_URL=https://<server>/<collection>/<project>/_git/ai ./scripts/bootstrap.sh
+```
+
+An on-premise server usually presents a certificate from an internal authority.
+Git rejects it until that authority is trusted, and the bootstrap fails at the
+clone with a certificate error rather than anything that names the cause. Trust
+the authority in the system store, or point Git at its bundle with
+`git config --global http.sslCAInfo /path/to/ca.pem`, before running the
+bootstrap. Turning verification off is not the fix.
+
 **The clone is not temporary.** The installer links into it, so it is where the
 managed instructions, rules, and skills live afterwards; moving or deleting it
 breaks every link. It goes to `~/.local/share/ai` on Linux and macOS and
@@ -129,15 +147,19 @@ written in terms of. The baseline deliberately does not ship Codex's
 unrestricted `danger-full-access` and `never` pair; choose that per machine if
 you want it.
 
-### Trust GitHub projects
+### Trust local Git projects
 
 Every installation adds trusted-project entries to `~/.codex/config.toml` for
 each searched root and every Git worktree found recursively beneath it. This
 includes repositories inside organization or grouping subdirectories.
 
-The roots default to that user's `~/github`. Set `AI_TRUST_ROOTS` to search
-somewhere else, colon-separated on Linux and macOS and semicolon-separated on
-Windows:
+Discovery keys on the presence of a `.git` directory, so where a repository was
+cloned from makes no difference: a GitHub clone and an Azure DevOps clone under
+the same root are trusted alike.
+
+The roots default to that user's `~/github`, which is a path convention rather
+than a statement about the host. Set `AI_TRUST_ROOTS` to search somewhere else,
+colon-separated on Linux and macOS and semicolon-separated on Windows:
 
 ```bash
 AI_TRUST_ROOTS="$HOME/github:$HOME/Development" ./scripts/install.sh

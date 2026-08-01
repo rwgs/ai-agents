@@ -368,50 +368,65 @@ carries the approach and the seven couplings it addresses.
   written in GitHub features. Promoted out of the replaced `PLAN.md` on the way:
   neither installer has a TOML writer available, which is why the `config.toml`
   merge is textual on both sides, now in `SPEC.md`.
-- [ ] Restate the `docs/WORKFLOW.md` security baseline as the capability each
-  rule needs, with a table naming the mechanism per host and the cases where one
-  host has none. Acceptance: no rule names a product where it means a
-  capability, and an adopting repository on either host can tell what applies to
-  it.
-- [ ] Stop `scripts/validate.sh` requiring the `.github/` layout by name as the
-  definition of a valid repository. Acceptance: the check covers the CI
-  definitions this repository actually carries, including the Azure DevOps one,
-  and WSL `./scripts/validate.sh` passes.
-- [ ] Add `azure-pipelines.yml` running the same three-platform gate as
-  `.github/workflows/validate.yml`: `scripts/validate.sh` on Linux and macOS,
-  ShellCheck on Linux, and PSScriptAnalyzer plus `scripts/test-install.ps1`
-  under both PowerShell editions on Windows. The agent pool is parameterised,
-  because Azure DevOps Server has no Microsoft-hosted pool and a hard-coded one
-  would be cloud-only. Acceptance: the file states in its own header that it is
-  unverified and what would verify it, YAML parses locally, and the GitHub gate
-  still passes.
-- [ ] Document the Azure DevOps clone URL forms for `AI_REPO_URL` in
-  `README.md`, including that an on-premise server behind an internal
-  certificate authority fails the bootstrap clone until that authority is
-  trusted. Acceptance: a reader on either host knows what to set and what to
-  expect.
-- [ ] Install the Azure CLI and its `azure-devops` extension on this machine and
-  read the command surface. This is a machine change outside the repository, so
-  it needs asking for first. It unblocks the two tasks below, which `AGENTS.md`
-  forbids completing from recall. Acceptance: `az repos pr --help` and
-  `az devops --help` are read, and what they show is recorded here.
-- [ ] Add the Azure DevOps command-line tooling to `ai-home/rules/default.rules`
-  beside `gh`, renaming the section comment that currently says GitHub.
-  Acceptance: the derived Claude grant appears in both installers' dry-run
-  output, both installer tests still pass, and `CHANGELOG.md` records it,
-  because a new grant changes what installation does to a machine.
-- [ ] Make `.agents/skills/pr-readiness/SKILL.md` state its pull-request
-  semantics host-neutrally and name the commands per host. The semantics are the
-  durable part: identify the pull request, read its checks against the head
-  commit rather than a summary, and read thread resolution state rather than the
-  flat comment list. Acceptance: every existing rule survives, no command is
-  written that was not read from its own help output, and the skill says which
-  host's commands have been run and which have not.
-- [ ] Check that `AGENTS.md`'s version-control section labels its GitHub
-  specifics as such: the push trigger, the concurrency group that cancels a
-  dispatch racing a push, and reading a run. These describe where this
-  repository is hosted, so they stay; they should not read as universal.
-  Acceptance: the section states the host it is describing.
+- [x] Read the Azure DevOps facts the documents would otherwise state from
+  recall, from Microsoft's own references rather than a live instance. Advanced
+  Security is for Azure DevOps Services, and Microsoft states it has no current
+  plans to bring it or its standalone products to Azure DevOps Server.
+  Microsoft-hosted agents exist only in Services, so Server runs self-hosted
+  agents only. A YAML `pr` trigger applies to GitHub and Bitbucket Cloud alone;
+  on Azure Repos, pull-request validation is a build validation branch policy.
+  The pull-request command surface is `az repos pr show|list|policy
+  list|reviewer list`, with no `checks` command and no threads subcommand; the
+  threads REST resource is
+  `.../pullRequests/{id}/threads`, whose `status` is `active` or `pending` while
+  unresolved and `fixed`, `wontFix`, `closed`, or `byDesign` once resolved. This
+  replaced the planned local Azure CLI install, which would have needed a
+  machine change to read the same generated reference.
+- [x] Restate the `docs/WORKFLOW.md` security baseline as the capability each
+  rule needs, with a seven-row table naming the mechanism on GitHub, Azure
+  DevOps Services, and Azure DevOps Server, and `None` where a host offers
+  nothing. It closes by saying no row has been verified against a live instance.
+- [x] Stop `scripts/validate.sh` requiring the `.github/` layout by name as the
+  definition of a valid repository. The CI definitions are now a separate
+  `required_host_files` list with its own message, so adding a host means adding
+  a definition rather than renaming one. Checked both ways: WSL
+  `./scripts/validate.sh` passes, and moving `azure-pipelines.yml` aside makes
+  it report `missing host CI definition azure-pipelines.yml`.
+- [x] Add `azure-pipelines.yml` running the same three-platform gate as
+  `.github/workflows/validate.yml`. Each pool is a parameter, because Azure
+  DevOps Server has no Microsoft-hosted pool. It sets `pr: none` rather than a
+  pull-request trigger that Azure Repos ignores, and its header states that it
+  is unverified, what would verify it, and what a self-hosted agent needs.
+  Verified only as far as is possible without an instance: PyYAML parses it and
+  the parsed jobs, parameters, and Windows steps are the intended ones.
+- [x] Document the Azure DevOps clone URL forms for `AI_REPO_URL` in
+  `README.md`, both the hosted `dev.azure.com` form and the on-premise form
+  carrying a collection, plus the internal certificate authority that makes the
+  bootstrap clone fail with a certificate error naming nothing. Renamed the
+  `Trust GitHub projects` section, which describes discovery that keys on a
+  `.git` directory and has never cared about the host.
+- [x] Make `.agents/skills/pr-readiness/SKILL.md` state its pull-request
+  semantics host-neutrally and name the commands per host. Every existing rule
+  survives; the `gh`-only diagnostics block became a worktree half that is the
+  same everywhere and a four-row table. The skill records that the Azure DevOps
+  commands are transcribed from Microsoft's reference and have not been run, so
+  an unexpected result is a defect in the table before it is a finding.
+- [x] Check that `AGENTS.md`'s version-control section labels its GitHub
+  specifics as such. Split into the host-neutral rule, which is to ask to push
+  and never open a pull request, and a second bullet naming GitHub Actions as
+  where evidence comes from, since that is where this repository is hosted. It
+  also states that `azure-pipelines.yml` has never run and is not evidence.
+- [x] Decide against adding a blanket `az` rule to `ai-home/rules/default.rules`
+  for now, and record why, because the investigation changed the answer. The
+  scoped rule the job wants, `["az", "repos"]`, passes validation and is valid
+  Codex syntax but derives no Claude Code grant: both derivations match a
+  single-token pattern only, so it would reach one agent and silently leave the
+  other prompting. The unscoped `["az"]` that does derive grants the whole Azure
+  control plane, `az vm` and `az storage` included, to save approval prompts for
+  a service that is not yet in use. Promoted the derivation limit to `SPEC.md`,
+  since it is a silent gap rather than a visible one. Revisit when Azure DevOps
+  is actually in use, or when multi-token derivation exists; the cost meanwhile
+  is one approval prompt per `az` command.
 - [ ] Run WSL `./scripts/validate.sh` and report which checks it performed, then
   ask to push and read a three-platform run. Acceptance: the run passes
   `ubuntu-latest`, `macos-latest`, and `windows-latest`, with the Windows job

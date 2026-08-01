@@ -40,9 +40,6 @@ required_files=(
   "docs/RTK.md"
   "docs/SKILLS.md"
   "docs/WORKFLOW.md"
-  ".github/dependabot.yml"
-  ".github/workflows/codeql.yml"
-  ".github/workflows/validate.yml"
   "scripts/bootstrap.ps1"
   "scripts/bootstrap.sh"
   "scripts/install.ps1"
@@ -54,6 +51,21 @@ required_files=(
 
 for relative in "${required_files[@]}"; do
   [[ -f "$repo_root/$relative" ]] || fail "missing $relative"
+done
+
+# CI is the one part of this repository that has to be written per Git host, so
+# these are listed apart from the host-neutral files above rather than standing
+# in for the definition of a valid repository. Supporting another host means
+# adding its definition here, not renaming one of these.
+required_host_files=(
+  ".github/dependabot.yml"
+  ".github/workflows/codeql.yml"
+  ".github/workflows/validate.yml"
+  "azure-pipelines.yml"
+)
+
+for relative in "${required_host_files[@]}"; do
+  [[ -f "$repo_root/$relative" ]] || fail "missing host CI definition $relative"
 done
 
 selector='[a-z0-9][a-z0-9-]*@[a-z0-9][a-z0-9-]*'
