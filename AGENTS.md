@@ -103,6 +103,10 @@ Read the documents the task needs, and no others:
 - Run validation from an environment that can create symbolic links. Git Bash on
   Windows cannot, so the installer integration test fails there on a clean tree;
   WSL passes in full.
+- `./scripts/validate.sh` skips ShellCheck, the Node syntax check, and both
+  PowerShell checks wherever those tools are absent, and the WSL installation
+  here has none of the three. Report which checks a run performed rather than
+  that validation passed, and run the PowerShell ones from Windows.
 
 ## Version control
 
