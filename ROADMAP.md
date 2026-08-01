@@ -6,14 +6,15 @@ Status: Reopened. The state-preserving remediation is the current Phase 4.
 
 ### Outcome
 
-Portable global instructions, configuration, rules, local-model profiles, and
-skills install without replacing private Codex runtime state.
+Global instructions, configuration, rules, local-model profiles, and skills
+install from this repository without displacing the private runtime state Codex
+keeps beside them.
 
 ### Exit criteria
 
-- Linux, macOS, and Windows installers support preview and timestamped backups.
-- Repository validation rejects private runtime state and malformed portable
-  configuration.
+- The Linux, macOS, and Windows installers each offer a preview and take
+  timestamped backups.
+- Validation rejects private runtime state and malformed portable configuration.
 
 ## Phase 2: Workflow alignment
 
@@ -22,19 +23,19 @@ reconciled on 2026-07-31: bots may open pull requests, humans may not.
 
 ### Outcome
 
-The repository and reusable skills encode the complete planning, implementation,
-review, manual-testing, and merge workflow.
+The repository and its reusable skills carry the whole workflow: planning,
+implementation, review, manual testing, and merge.
 
 ### Included work
 
-- Add repository planning documents and reusable project templates.
-- Separate project planning from pull-request readiness.
+- Add the repository's planning documents and the reusable project templates.
+- Split project planning from pull-request readiness.
 - Add cross-platform installer integration tests and validation CI.
 - Add Dependabot coverage, dependency review, and change-evidence prompts. The
   later no-pull-request decision kept Dependabot, whose pull requests are the
   only way an action pin gets refreshed, and removed the unreachable
   dependency-review job and the pull-request template.
-- Align Claude routing and workflow documentation.
+- Bring the Claude routing and the workflow documentation into agreement.
 - Add explicit, cross-platform installation for selected plugins in both agents
   without making ordinary installs mutate plugin state.
 - Generate exact trusted-project entries for every Git worktree beneath the
@@ -45,16 +46,16 @@ review, manual-testing, and merge workflow.
 
 ### Risks
 
-- Windows symbolic-link behavior can differ by permissions and host policy.
+- Windows symbolic-link behavior varies with permissions and host policy.
 - A repository-level GitHub Actions app setting can prevent push runs even when
   the workflow YAML has the correct trigger; Phase 4 owns live verification.
 
 ### Exit criteria
 
-- Local validation and skill validation pass.
-- Linux installer integration tests pass locally.
-- Windows installer integration tests pass in CI.
-- The final diff contains only workflow-alignment changes.
+- Local validation passes, skills included.
+- The Linux installer integration tests pass locally.
+- The Windows installer integration tests pass in CI.
+- The final diff carries nothing but workflow-alignment changes.
 
 ## Phase 3: Claude and Codex parity
 

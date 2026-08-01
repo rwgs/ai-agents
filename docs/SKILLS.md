@@ -2,15 +2,15 @@
 
 ## Purpose
 
-A skill is a reusable workflow with focused instructions, optional references,
-and optional scripts.
+A skill is one reusable workflow: focused instructions, plus references and
+scripts where they earn their place.
 
-Use a skill for knowledge that is:
+Knowledge belongs in a skill when it is:
 
 - reused across repositories
-- independent of one project's requirements
-- specific enough to have a reliable trigger
-- too detailed for global or repository instructions
+- independent of any one project's requirements
+- specific enough that its trigger fires reliably
+- too detailed to sit in global or repository instructions
 
 ## Discovery locations
 
@@ -43,24 +43,28 @@ name rather than the `name` field.
 └── scripts/
 ```
 
-Only `SKILL.md` is required. It must start with YAML front matter containing a
-clear `name` and `description`.
+Only `SKILL.md` is required. It must open with YAML front matter carrying a
+`name` matching its directory and a `description` saying when to use the skill.
+`./scripts/validate.sh` checks both, and rejects a leftover `[TODO:` marker.
 
 ## Authoring rules
 
-- Keep each skill focused on one workflow.
-- Put trigger terms and boundaries in the description.
+- Keep a skill to one workflow.
+- Put the trigger terms and the boundaries in the description. It is all either
+  agent reads when deciding whether to load the skill.
 - Keep descriptions agent-neutral. Both agents select skills from the
   description, so wording such as "Use when Codex is asked to" biases selection
   against the other agent. Name an agent only when the skill genuinely applies
   to just that one, as `show-codex-reset-expiries` does.
 - Cross-reference sibling skills whose scope is adjacent, so the boundary is
   explicit in both descriptions.
-- Write imperative steps with explicit inputs, outputs, and validation.
-- Load references only when the task needs them.
-- Prefer instructions over scripts unless deterministic automation is useful.
-- Keep project requirements in project documentation, not reusable skills.
-- Use `agents/openai.yaml` only for useful UI metadata or dependencies.
+- Write the steps as imperatives, each with its inputs, outputs, and validation.
+- Pull in a reference only where the task needs it.
+- Prefer instructions to scripts, unless the automation has to be deterministic.
+- Keep a project's requirements in that project's documents, never in a reusable
+  skill.
+- Use `agents/openai.yaml` only for UI metadata that helps, or for declared
+  dependencies.
 
 ## Which skills belong in the default set
 

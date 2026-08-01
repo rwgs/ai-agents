@@ -253,8 +253,14 @@ are deliberately left alone.
   prose that touched no other rule file. Nothing read it: every script, test,
   and document names the `rules/` path, which holds the file's continuous
   history back to the original `rules/default.rules`.
-- [ ] Restate the inherited planning prose in `SPEC.md` (65), `ROADMAP.md` (51),
-  `docs/SKILLS.md` (50), and `docs/WORKFLOW.md` (44).
+- [x] Restate the inherited planning prose in `SPEC.md` (65), `ROADMAP.md` (51),
+  `docs/SKILLS.md` (50), and `docs/WORKFLOW.md` (44). Down from 210 attributed
+  lines to 121, and what survives is structure rather than prose: section
+  headings, table delimiters, code fences, the skill-layout tree, the skill
+  names themselves, and continuation lines whose tail did not need to change.
+  Section headings are deliberately kept, because `SPEC.md` shares them with the
+  template in `ai-project-manager` and renaming one to shed attribution would
+  desynchronize the pair for nothing. Validation: WSL `./scripts/validate.sh`.
 - [ ] Restate what is left in `README.md`. Most of its 159 attributed lines are
   commands and code fences that have one spelling; only the prose counts.
 - [ ] Re-measure and record the remainder, naming what stays attributed and why.
