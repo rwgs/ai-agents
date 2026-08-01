@@ -141,28 +141,16 @@ Everything implementable here is done and verified on three platforms. The three
 items left need an action outside this environment: a personal access token, a
 repository setting, and Windows Developer Mode or an elevated shell.
 
-- [ ] Restore automatic validation on pushes to `main`. Actions is enabled, all
-  actions are allowed, and `Validate` has a `push: branches: [main]` trigger, but
-  pushing `90073f0` created check suites for the `claude` and
-  `cloudflare-workers-and-pages` apps and none for GitHub Actions. Manual dispatch
-  works. The evidence points to automatic check-suite creation being disabled for
-  the Actions app, a per-repository per-app setting with no read endpoint or web
-  UI. With a personal access token in `GH_TOKEN` (the Git Credential Manager
-  OAuth token receives HTTP 403), run:
+- [x] Restore automatic validation on pushes to `main`. It works: the runs list
+  now holds `push` events for `be8b8ea` at 04:54Z and `397241b` at 12:43Z on
+  2026-08-01, where every push from `90073f0` through `0507ce2` had produced
+  none. The diagnosis stands as recorded, that automatic check-suite creation was
+  off for the Actions app; the setting was applied outside this session.
 
-  ```
-  gh api --method PATCH repos/rwgs/ai/check-suites/preferences \
-    -f 'auto_trigger_checks[][app_id]=15368' -F 'auto_trigger_checks[][setting]=true'
-  ```
-
-  Acceptance: the response identifies `15368` as GitHub Actions, and the next
-  push creates a three-platform `Validate` run without manual dispatch.
-
-  Re-checked against the live repository on 2026-07-31 through the API with the
-  credential helper's token: `f0a0c6f`, `e4f5c44`, `907b695`, `457768a`, and
-  `e594128` were all pushed to `main` and the repository has only ever had
-  `workflow_dispatch` runs. The preference is still the only explanation left,
-  and setting it still needs a personal access token this session does not have.
+  Both push runs were cancelled seconds after starting, because a
+  `workflow_dispatch` for the same commit landed in the same concurrency group
+  and `cancel-in-progress` kills the older run. Push and read, or dispatch and
+  read, but not both for one commit.
 - [x] Define one ownership and provenance model for `config.toml`, Codex rules,
   and derived Claude permissions before changing installer code. Recorded in
   `DECISIONS.md` as "Shared files are merged against a recorded provenance

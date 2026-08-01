@@ -109,9 +109,11 @@ Read only the documents needed for the task:
   or a pull request, and do not propose either as a review step.
 - Push only when asked.
 - When a change needs evidence only CI can produce, such as installer behavior on
-  a platform this environment cannot exercise, say so and ask to push. Confirm it
-  by dispatching the validation workflow on `main` and reading the run, not by
-  opening a pull request.
+  a platform this environment cannot exercise, say so and ask to push. A push to
+  `main` now starts the validation workflow by itself, so read that run. Dispatch
+  only when there is nothing to push; dispatching for a commit that was just
+  pushed cancels one of the two runs, because both land in the same concurrency
+  group. Never open a pull request for it.
 
 ## Maintenance
 

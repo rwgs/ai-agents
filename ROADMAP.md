@@ -95,7 +95,9 @@ each agent actually reads.
 
 ## Phase 4: State-preserving installation and reliable validation
 
-Status: In progress
+Status: Blocked. Everything implementable is done and verified on three
+platforms. What remains needs code scanning enabled on the repository and
+Windows Developer Mode or an elevated shell.
 
 ### Outcome
 
@@ -138,7 +140,7 @@ validation automatically on every push to `main`.
   agents and reports any ambiguous identical grant without deleting it.
 - Every supported PowerShell edition passes its installer test.
 - A push to `main` creates a three-platform validation run without a manual
-  dispatch.
+  dispatch. Met on 2026-08-01.
 - A dry run and then a real install on the reviewed Windows machine complete
   without losing its pre-existing state.
 
