@@ -213,6 +213,10 @@ forked and since developed further.
   marker, because it would report an update as applied when it was not.
 - `.gitattributes` is the highest-value item: without it CRLF makes Bash fail
   outright, which this repository hit in its own checkout.
+- Propagating CI and dependency-update configuration is host-specific, so this
+  phase depends on Phase 8's separation despite the higher number. Adopting a
+  GitHub-shaped propagation first and unpicking it afterwards costs more than
+  taking the host branch before the propagation is written.
 
 ### Exit criteria
 
@@ -250,3 +254,53 @@ without gates a single maintainer committing to `main` cannot satisfy.
 - No documented gate or required repository artifact depends on a human pull
   request or a second reviewer.
 - CodeQL results are visible, or the reason they cannot be is recorded.
+- Each enforced gate says whether Azure DevOps offers it, and an adopting
+  repository on that host is told what it gets instead of being told to
+  configure a GitHub feature.
+
+## Phase 8: Host-neutral version control
+
+Status: In progress. Runs before Phase 6's propagation work despite the higher
+number, because that work is host-specific and the numbering is historical.
+
+### Outcome
+
+The baseline serves a repository hosted on GitHub or on Azure DevOps, hosted
+service or on-premise server, without a GitHub name appearing anywhere the host
+is irrelevant.
+
+### Included work
+
+- State the security baseline as capabilities, with a table naming the mechanism
+  on each host and the cases where one host has none.
+- Stop `scripts/validate.sh` treating the `.github/` layout as the definition of
+  a valid repository.
+- Ship `azure-pipelines.yml` running the same three-platform gate as the Actions
+  workflow, with a parameterised agent pool so an on-premise server can supply
+  its own, labelled unverified.
+- Make `pr-readiness` state its pull-request semantics host-neutrally and name
+  the commands per host, after reading the Azure CLI command surface rather than
+  recalling it.
+- Allow the Azure DevOps command-line tooling in the curated rules alongside
+  `gh`.
+- Document the Azure DevOps clone forms for `AI_REPO_URL`, including the
+  on-premise certificate-authority case.
+
+### Dependencies and risks
+
+- Neither Azure DevOps variant is in use, so nothing host-facing can be verified
+  end to end. The pipeline is expected to need correction on its first real run.
+- The Azure CLI is installed on neither shell here. Writing an `az` command
+  without reading its surface first would violate the repository's own rule
+  against recalled commands, so two tasks are blocked behind installing it.
+- Azure DevOps Server has no Microsoft-hosted agents, no Dependabot, and no
+  confirmed code-scanning product. Rules that assume any of them cannot simply
+  be renamed.
+
+### Exit criteria
+
+- No file outside a named host-specific artifact requires, is named for, or
+  states a rule only reachable on one Git host.
+- Local validation and a three-platform GitHub run pass with the changes.
+- Every Azure DevOps artifact states that it is unverified and what would verify
+  it.

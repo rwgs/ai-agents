@@ -225,7 +225,13 @@ repository setting, and Windows Developer Mode or an elevated shell.
   changes, the real install preserves the pre-existing Codex and Claude state,
   and both agents report the expected instructions and skills after restart.
 
-## Current phase: A tree of its own
+## Blocked phase: A tree of its own
+
+Every restatement is done and committed. What is left is the three-platform run
+that proves the four restated functions, which needs a push and a run to read.
+`gh` is installed here but unauthenticated, with no token in the environment, so
+the run cannot be read from this session.
+
 
 This repository began as a copy of the unlicensed public `ChrisTitusTech/titus-ai`
 and is not a GitHub fork. `git blame` on 2026-08-01 attributes 1,926 of 8,704
@@ -346,6 +352,71 @@ are deliberately left alone.
   target passed to it is built from one of the three managed homes. Remaining:
   the three-platform run, which needs a push.
 
+## Current phase: Host-neutral version control
+
+The baseline must serve a repository hosted on Azure DevOps, hosted service or
+on-premise server, as well as one on GitHub. Neither Azure DevOps variant is in
+use, so this phase separates the host-neutral core from the host-specific edge
+and ships the Azure DevOps side labelled unverified. `DECISIONS.md` records the
+choice as "Both hosts are supported, only GitHub is verified", and `PLAN.md`
+carries the approach and the seven couplings it addresses.
+
+- [x] Record the requirement and the closed choice: `DECISIONS.md`, `SPEC.md`
+  required behavior, compatibility, non-goals, acceptance criteria and two
+  unresolved questions, `ROADMAP.md` Phase 8, and `PLAN.md`. Phase 6 gained the
+  dependency it has on this one, and Phase 7 an exit criterion, because both are
+  written in GitHub features. Promoted out of the replaced `PLAN.md` on the way:
+  neither installer has a TOML writer available, which is why the `config.toml`
+  merge is textual on both sides, now in `SPEC.md`.
+- [ ] Restate the `docs/WORKFLOW.md` security baseline as the capability each
+  rule needs, with a table naming the mechanism per host and the cases where one
+  host has none. Acceptance: no rule names a product where it means a
+  capability, and an adopting repository on either host can tell what applies to
+  it.
+- [ ] Stop `scripts/validate.sh` requiring the `.github/` layout by name as the
+  definition of a valid repository. Acceptance: the check covers the CI
+  definitions this repository actually carries, including the Azure DevOps one,
+  and WSL `./scripts/validate.sh` passes.
+- [ ] Add `azure-pipelines.yml` running the same three-platform gate as
+  `.github/workflows/validate.yml`: `scripts/validate.sh` on Linux and macOS,
+  ShellCheck on Linux, and PSScriptAnalyzer plus `scripts/test-install.ps1`
+  under both PowerShell editions on Windows. The agent pool is parameterised,
+  because Azure DevOps Server has no Microsoft-hosted pool and a hard-coded one
+  would be cloud-only. Acceptance: the file states in its own header that it is
+  unverified and what would verify it, YAML parses locally, and the GitHub gate
+  still passes.
+- [ ] Document the Azure DevOps clone URL forms for `AI_REPO_URL` in
+  `README.md`, including that an on-premise server behind an internal
+  certificate authority fails the bootstrap clone until that authority is
+  trusted. Acceptance: a reader on either host knows what to set and what to
+  expect.
+- [ ] Install the Azure CLI and its `azure-devops` extension on this machine and
+  read the command surface. This is a machine change outside the repository, so
+  it needs asking for first. It unblocks the two tasks below, which `AGENTS.md`
+  forbids completing from recall. Acceptance: `az repos pr --help` and
+  `az devops --help` are read, and what they show is recorded here.
+- [ ] Add the Azure DevOps command-line tooling to `ai-home/rules/default.rules`
+  beside `gh`, renaming the section comment that currently says GitHub.
+  Acceptance: the derived Claude grant appears in both installers' dry-run
+  output, both installer tests still pass, and `CHANGELOG.md` records it,
+  because a new grant changes what installation does to a machine.
+- [ ] Make `.agents/skills/pr-readiness/SKILL.md` state its pull-request
+  semantics host-neutrally and name the commands per host. The semantics are the
+  durable part: identify the pull request, read its checks against the head
+  commit rather than a summary, and read thread resolution state rather than the
+  flat comment list. Acceptance: every existing rule survives, no command is
+  written that was not read from its own help output, and the skill says which
+  host's commands have been run and which have not.
+- [ ] Check that `AGENTS.md`'s version-control section labels its GitHub
+  specifics as such: the push trigger, the concurrency group that cancels a
+  dispatch racing a push, and reading a run. These describe where this
+  repository is hosted, so they stay; they should not read as universal.
+  Acceptance: the section states the host it is describing.
+- [ ] Run WSL `./scripts/validate.sh` and report which checks it performed, then
+  ask to push and read a three-platform run. Acceptance: the run passes
+  `ubuntu-latest`, `macos-latest`, and `windows-latest`, with the Windows job
+  green under both PowerShell editions.
+
 ## Later phase: Re-appliable repository baseline
 
 - [ ] Record in an adopting repository which baseline commit it took, which
@@ -372,6 +443,9 @@ are deliberately left alone.
   workflow and the Dependabot configuration. There is no pull-request template
   to propagate any more, and an adopting repository that accepts no bot pull
   requests should be offered neither Dependabot nor the `pull_request` trigger.
+  Both artifacts are host-specific, so adoption offers the one matching the
+  adopting repository's host and says so when the host has no equivalent. This
+  is why the phase depends on the host-neutral phase above.
 - [ ] Give a new repository its own entry point instead of a skill named for
   adopting an existing one.
 - [ ] Prove the loop on a scratch repository: adopt, change the baseline,

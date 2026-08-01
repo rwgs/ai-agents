@@ -8,6 +8,92 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-01 Both hosts are supported, only GitHub is verified
+
+Status: Accepted.
+
+### Decision
+
+The baseline supports GitHub and Azure DevOps, covering both the hosted service
+and Azure DevOps Server on-premise. Support means three things and not a fourth.
+
+- Nothing host-neutral asserts a host. A rule states the capability it needs,
+  and a table underneath it names the mechanism on each host, including where
+  one host has none.
+- Host-specific artifacts are named per host and sit beside each other. This
+  repository keeps its GitHub Actions workflows and gains an
+  `azure-pipelines.yml` running the same gate. Neither is generated from the
+  other.
+- Azure DevOps artifacts ship labelled unverified until an organisation or a
+  server exists to run them against.
+
+It does not mean a host abstraction layer, a detected-host branch in installer
+code, or a command wrapper that dispatches on the remote URL.
+
+### Why
+
+The requirement is to design for Azure DevOps, cloud and on-premise, with
+neither in use. That makes verification impossible today and makes the
+verifiable part the separation itself: whether a GitHub name appears where the
+host is irrelevant. Read this session, the leak is in seven places and only two
+of them are genuinely host-specific work, the CI definition and the
+pull-request commands. The rest is a GitHub product name standing in for a
+capability.
+
+Labelling rather than withholding follows from who reads these files. An agent
+loads `pr-readiness` in every repository and `docs/WORKFLOW.md` on any
+governance question, so an unwritten Azure DevOps path is not a neutral absence:
+the agent falls back to the GitHub commands, which fail, or invents an `az`
+line. An artifact marked unverified is a claim the reader can price. Nothing
+here weakens the rule that a command is read before it is written; the two
+tasks that need a command surface are sequenced behind reading it.
+
+Keeping GitHub as the verified host is a statement of fact rather than a
+preference. The repository is hosted there, its three-platform runs are the only
+CI evidence the maintainer can obtain, and the `Validate` workflow's push
+trigger was fixed at some cost in Phase 4.
+
+### Rejected alternatives
+
+- Stay GitHub-only and revisit if an Azure DevOps repository appears: cheapest,
+  and it was the position until this was asked for. It also means the coupling
+  keeps spreading, because Phase 6 is about to teach `adopt-baseline` to
+  propagate CI and dependency-update configuration, and a GitHub-shaped
+  propagation is far more expensive to unpick afterwards than to avoid now.
+- Abstract the host behind one interface, so no file names a host: the shape a
+  reader expects, and it fits badly. Two hosts differ in what exists, not only
+  in how it is spelled. Azure DevOps Server has no Microsoft-hosted agents, no
+  Dependabot, and no code-scanning product this session could confirm, so the
+  abstraction would need holes named per host anyway, and the holes are the
+  useful part.
+- Generate `azure-pipelines.yml` from the Actions workflow: one source, and it
+  requires a translator for two schemas with different job, matrix, and shell
+  models, validated against neither host. A second file of ninety lines is
+  cheaper than a generator nobody can test.
+- Withhold the Azure DevOps artifacts until an instance exists to verify them
+  against: honest and it leaves the requirement unmet indefinitely, with the
+  design work discarded. Rejected in favour of shipping them labelled.
+- Migrate this repository to Azure DevOps to make the second host the verified
+  one: it would verify the new path by abandoning the one that works, and the
+  maintainer uses neither Azure DevOps variant.
+
+### Consequences
+
+`SPEC.md` gains host neutrality as required behavior and the unverified pipeline
+as a stated non-goal for this phase. `docs/WORKFLOW.md`'s security baseline is
+restated as capabilities with a per-host table, which is what an adopting
+repository on either host reads. `scripts/validate.sh` stops treating the
+`.github/` layout as the definition of a valid repository.
+
+Phase 6 inherits a requirement rather than a fix: whatever `adopt-baseline`
+learns to propagate, it propagates the artifact matching the adopting
+repository's host. Phase 7's governance gates are GitHub features, so that phase
+now has to say which of its gates exist on Azure DevOps and which do not.
+
+The first person to run the pipeline against a real organisation should expect
+to correct it. That is the cost accepted here, and it is recorded in the file
+itself so the expectation is not lost with this entry.
+
 ## 2026-08-01 Restate the installer's linking core, leave the rest of the script code
 
 Status: Accepted. Settles the case the entry below left open, which rejected

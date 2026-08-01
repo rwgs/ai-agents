@@ -57,6 +57,10 @@ the agent state already on the machine at risk.
 - Run Linux, macOS, and Windows validation on every push to the default branch,
   on manual dispatch, and on the pull requests Dependabot opens to bump the
   pinned actions. Humans open none.
+- Serve a repository hosted on GitHub or on Azure DevOps, whether that is the
+  hosted service or an on-premise server. Only a named host-specific artifact
+  may assume a host; everything else states the capability it needs and names
+  the mechanism per host.
 
 ## Architecture
 
@@ -146,6 +150,19 @@ installer must preserve.
   interactively, so the installer adds one before installing from it. The
   `owner/repo` shorthand resolves over SSH and fails without a GitHub host key,
   so `claude-plugins.txt` carries the full HTTPS URL.
+- Neither installer has a TOML writer to call. Python's `tomllib` reads TOML and
+  does not write it, and PowerShell has no TOML support at all, so the
+  `config.toml` merge is textual on both sides and refuses whatever it cannot
+  locate rather than reformatting the file.
+- This repository is hosted on GitHub, and its GitHub Actions workflows are the
+  verified three-platform gate. `azure-pipelines.yml` runs the same gate on
+  Azure DevOps and is unverified, because neither an organisation nor a server
+  is in use. Its agent pool is parameterised: Azure DevOps Server has no
+  Microsoft-hosted pool, so a hard-coded one would be cloud-only.
+- The installer contacts no Git host. Trust discovery keys on the presence of a
+  `.git` directory beneath `AI_TRUST_ROOTS`, so a worktree is trusted the same
+  way whatever it was cloned from, and `AI_REPO_URL` selects where the bootstrap
+  clones this repository from.
 
 ## Non-goals
 
@@ -156,6 +173,11 @@ installer must preserve.
 - Installing Codex, Claude Code, RTK, or local model servers.
 - Adding a security scanner that does not support the languages this repository
   is written in.
+- Verifying any Azure DevOps behavior against a live organisation or server
+  while neither is in use.
+- Abstracting the Git host behind one interface, or dispatching on the remote
+  URL. The hosts differ in which features exist, not only in how they are
+  spelled, so the differences are named rather than hidden.
 
 ## Acceptance criteria
 
@@ -185,6 +207,8 @@ installer must preserve.
 - CodeQL analyses every language it supports that the repository contains.
 - Workflow documentation covers planning, implementation, local review, manual
   testing, and the CI evidence a single maintainer can produce.
+- No file outside a named host-specific artifact requires, is named for, or
+  states a rule only reachable on one Git host.
 
 ## Unresolved questions
 
@@ -193,7 +217,12 @@ installer must preserve.
   reporting is not built.
 - How dependency updates and dependency review work after the accepted decision
   to create no branches or pull requests. Dependabot and the current dependency
-  review action both deliver through pull requests.
+  review action both deliver through pull requests. Azure DevOps is the same
+  question again with no Dependabot to answer it.
+- Which Azure DevOps features stand in for the GitHub ones the security baseline
+  names. The hosted service sells GitHub Advanced Security for Azure DevOps;
+  whether an equivalent reaches Azure DevOps Server was not established here,
+  and none of it has been verified against a live instance.
 
 Closed decisions and the alternatives they rejected are recorded in
 `DECISIONS.md`, including the resolved questions about user-wide Claude Code
