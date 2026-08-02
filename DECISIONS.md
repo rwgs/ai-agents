@@ -78,6 +78,16 @@ Dependabot version-update job, so the fix is also the test: if it was, the next
 monthly run behaves normally, and if nothing appears the remaining explanation is
 that version updates are not running on this repository at all.
 
+Proven the same day, and the paragraph above is wrong about how. A version-update
+job is an Actions workflow run named `Dependabot Updates`, so `gh run view --log`
+reads its conclusion for every dependency without the repository's Dependabot tab.
+The job that ran before the repin logged the action with no version at all and
+resolved the latest version to the pinned commit itself; the job that ran after it
+logged `4.37.4` and compared against the release stream. The pin comment was the
+cause, version updates do run here, and the decision above stands unchanged. The
+evidence is recorded against the task in `TASKS.md`, and the verification route is
+now a rule in the `docs/WORKFLOW.md` security baseline.
+
 ## 2026-08-02 The default branch is worth protecting and cannot be protected here
 
 Status: Accepted. Answers the ruleset question Phase 7 left open, and rejects the

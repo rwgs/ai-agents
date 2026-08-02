@@ -825,9 +825,7 @@ cross-machine MCP requirement justifies it.
 
 ## Later phase: Enforced repository governance
 
-- [ ] Confirm secret scanning and push protection are enabled. Confirm
-  Dependabot only after deciding how it can deliver updates under the accepted
-  workflow.
+- [ ] Confirm secret scanning and push protection are enabled.
 
   Read on 2026-08-02, once `gh` was authenticated, with a token the API reports as
   having `admin` on the repository: neither is on. `GET /repos/rwgs/ai` returns
@@ -852,9 +850,10 @@ cross-machine MCP requirement justifies it.
   returns HTTP 404 `Secret scanning is disabled on this repository`, and the
   code-scanning alerts endpoint still returns HTTP 403.
 
-  The Dependabot half of this item is no longer waiting on anything. It was gated
-  behind deciding how updates could be delivered under the accepted workflow, and
-  "Bots may open pull requests, humans may not" settled that on 2026-07-31. Read on
+- [x] Confirm the retained dependency-update mechanism actually delivers. It was
+  gated behind deciding how updates could be delivered under the accepted
+  workflow, and "Bots may open pull requests, humans may not" settled that on
+  2026-07-31. Read on
   2026-08-02: the dependency graph detects all three pinned actions in its SBOM,
   which is the prerequisite Dependabot reads manifests through, and Dependabot
   alerts are on, `GET /repos/rwgs/ai/vulnerability-alerts` returning HTTP 204 with
@@ -901,25 +900,45 @@ cross-machine MCP requirement justifies it.
   `{"enabled":true,"paused":false}`, which is what makes a monthly routine cadence
   safe.
 
-  What stays unproven is whether the comment was the cause. No REST endpoint exposes
-  a Dependabot version-update job, and only the repository's Dependabot tab reports
-  whether one ran and what it concluded, so the fix is also the test: if it was the
-  cause the next monthly run behaves normally, and if nothing appears the remaining
-  explanation is that version updates are not running here at all. The Dependabot tab
-  answers this in one click and is the cheapest next step; a deliberately downgraded
-  pin was considered and rejected, since the repository already had a stale pin and
-  the experiment would have measured the same silence more slowly.
+  One gap was found rather than confirmed, and closing it is what the enablement
+  above was. `GET /repos/rwgs/ai/automated-security-fixes` returned
+  `{"enabled":false,"paused":false}` while alerts were on and version updates were
+  configured, so the mechanism the security baseline and `DECISIONS.md` both called
+  "Dependabot" was one of the two switches GitHub has: `dependabot.yml` for routine
+  bumps, a repository setting for advisory-driven ones. Unlike secret scanning and
+  code scanning, that switch is reachable from the API with the current token and is
+  not plan-gated.
 
-  One gap was found rather than confirmed.
-  `GET /repos/rwgs/ai/automated-security-fixes` returns
-  `{"enabled":false,"paused":false}`, so Dependabot security updates are off while
-  alerts are on and version updates are configured. The security baseline and
-  `DECISIONS.md` both say "Dependabot" as one mechanism, and on GitHub it is two
-  switches: `dependabot.yml` for routine bumps, a repository setting for
-  advisory-driven ones. Unlike secret scanning and code scanning, this one is
-  reachable from the API with the current token and is not plan-gated. The cost of
-  leaving it off is bounded: an advisory against a pinned action waits for the
-  weekly version bump instead of getting a pull request when it lands.
+  The comment was the cause, proved on 2026-08-02 rather than left as the
+  hypothesis the plan expected to carry for a month. The claim that only the
+  repository's Dependabot tab reports a version-update job is wrong: each job is an
+  Actions workflow run named `Dependabot Updates`, which `gh run list` shows and
+  `gh run view --job=<id> --log` reads in full. Two jobs bracket the repin and
+  differ in one thing.
+
+  Run `30762102588`, job `91534370435` at 18:52Z, ran `"command":"version"` under
+  the pre-change configuration, which its job definition shows as
+  `"dependency-groups":[]`. It logged `Checking if github/codeql-action/analyze `
+  with no version at all, resolved `Latest version is
+  18420e3271f74589575af831a523c833acda327f`, which is the pinned commit itself, and
+  concluded `No update needed`. Run `30762519578`, job `91535490362` at 19:03Z, ran
+  on the push that repinned, with
+  `"dependency-groups":[{"name":"github-actions","rules":{"patterns":["*"]}}]` in
+  its job definition. It logged `Checking if github/codeql-action/init 4.37.4 needs
+  updating`, resolved `Latest version is 4.37.4`, and concluded `No update needed
+  for github/codeql-action/init 4.37.4`, then the same for `analyze`. So a bundle
+  tag in the trailing comment left Dependabot with no version to place on a stream
+  and comparing the pin against itself, and a version tag puts it on the release
+  stream where an update would be visible. `actions/checkout 7.0.1` parsed
+  correctly in both runs, which is the control that makes it the comment rather
+  than the ecosystem.
+
+  Three things follow. Version updates do run on this repository, so the remaining
+  alternative explanation is eliminated. The grouped configuration is live in the
+  job definition rather than only in the file. And no pull request is expected now,
+  because both pins are current: `gh pr list --state all` returns nothing, and this
+  repository has never had one. The deliberately downgraded pin considered as an
+  experiment stays rejected and is now unnecessary.
 - [x] Reconcile the no-branch, no-pull-request decision with all PR-only
   artifacts. Recorded in `DECISIONS.md` as "Bots may open pull requests, humans
   may not": Dependabot stays and the `Validate` workflow keeps its

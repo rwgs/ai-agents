@@ -131,10 +131,12 @@ gate on the maintainer's own work. Keep the validation workflow's
 `pull_request` trigger so those bumps are validated before they are merged.
 
 An absent pull request is not evidence that dependency updates work. It means
-either that nothing needs bumping or that nothing is being produced, and on GitHub
-no REST endpoint distinguishes them: only the repository's Dependabot tab reports
-whether a version-update job ran and what it concluded. Check the pins against
-their upstream tags before reading silence as success.
+either that nothing needs bumping or that nothing is being produced, and the two
+are distinguishable. On GitHub each version-update job is an Actions workflow run
+named `Dependabot Updates`, so `gh run list` shows that one ran and `gh run view
+--job=<id> --log` reports what it concluded for every dependency, including the
+version it parsed from the pin and the latest it resolved. Read that, and check
+the pins against their upstream tags, before reading silence as success.
 
 ## Required change evidence
 

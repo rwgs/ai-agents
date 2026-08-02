@@ -63,10 +63,11 @@ nothing cannot be judged by how often it would produce it.
 - Repinning to the release commit changes the action's default CodeQL bundle.
   Nothing observable here depends on which bundle runs, because code scanning is
   disabled on this repository and the workflow cannot upload results at all.
-- The Dependabot diagnosis stays a hypothesis. No REST endpoint exposes a
-  version-update job, so the fix is also the test: if the pin comment was the
-  cause, the next monthly run behaves normally. That is recorded as unproven
-  rather than claimed.
+- The Dependabot diagnosis was expected to stay a hypothesis for a month, on the
+  belief that no REST endpoint exposes a version-update job. That belief was
+  wrong, and the diagnosis is confirmed instead: a version-update job is an
+  Actions workflow run named `Dependabot Updates`, and the jobs either side of the
+  repin differ exactly as the diagnosis predicted.
 
 ## Verification
 
@@ -74,6 +75,15 @@ nothing cannot be judged by how often it would produce it.
 - Parse both changed YAML files and confirm the pinned commit is the one the
   comment names, read from the API rather than from this plan.
 - Confirm the security-updates setting reports enabled after the change.
+- Read the `Dependabot Updates` runs either side of the repin and compare what
+  each job parsed for `github/codeql-action`, with `actions/checkout` as the
+  control.
 - No three-platform run is expected from the configuration edits themselves. The
   CodeQL workflow is dispatch-only until code scanning is enabled, so the repinned
   steps are exercised by a dispatch rather than by a push.
+
+Done. `GET /repos/rwgs/ai/automated-security-fixes` reports
+`{"enabled":true,"paused":false}`, the push run `30762518006` for the change
+passed, and the two Dependabot jobs are recorded against the task in `TASKS.md`:
+no version parsed and the pin resolved as its own latest before, `4.37.4` and the
+release stream after.
