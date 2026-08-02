@@ -8,6 +8,108 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-01 An adopting repository records what it took in `.agents/baseline.json`
+
+Status: Accepted. Gives the update mode planned in Phase 6 something to compare
+against, which the entry below left named but unplaced.
+
+### Decision
+
+A repository that adopts the baseline commits one file, `.agents/baseline.json`,
+beside the `.agents/skills/` directory adoption already writes into. It carries a
+`version`, the baseline clone URL, the full commit taken and the date it was
+taken, the baseline artifacts adopted, the artifacts declined with a reason for
+each, and every skill copied from `rwgs/ai-skills` with its source URL and full
+commit.
+
+It records what came from the baseline or the pool and nothing else. A skill
+authored in the repository has no entry, because it has no upstream to compare
+against, and the keep-or-promote-or-retire decisions adoption makes stay in that
+repository's `DECISIONS.md`.
+
+Every entry names something checkable in the working tree, so a later run reports
+the marker disagreeing with the repository rather than trusting it. Both commits
+are read from a clone with no uncommitted changes, because content copied out of
+a dirty tree is not the commit that would be recorded.
+
+### Why
+
+Update mode is additive: it adds what is missing, reports drift, and overwrites
+nothing. Two absences look identical in a repository and mean opposite things. A
+`SPEC.md` missing because the repository declined it must never be offered again;
+a `SPEC.md` missing because the baseline added it after adoption is exactly what
+an update exists to add. Only a record of the decline separates them, and only a
+reason on that record stops the declined document being offered on every
+subsequent run.
+
+The same argument already decided where the skill pool lives. That entry made the
+pool a repository so a copy would have a commit to be compared against; this one
+is where the commit is written down. Without it the pool decision buys nothing.
+
+A separate file rather than a section of an adopted document, for two reasons.
+The marker is state that every re-apply rewrites, and the planning documents are
+either hand-maintained prose or, in `DECISIONS.md`, append-only by their own
+header. It also has to exist in a repository that declined every planning
+document, which the selection table permits for a documentation repository, and
+that is precisely where the declined list is most of the content.
+
+JSON because it is the one format `python3` and Windows PowerShell 5.1 both parse
+with nothing installed, which is already recorded here as why the `config.toml`
+merge is textual: `tomllib` reads TOML and does not write it, and PowerShell has
+no TOML support at all. The installer's provenance manifest is the precedent for
+the shape, including the `version` field. The marker differs from it in the one
+way that matters: it is per-repository and committed, because a fresh clone must
+be able to say what the repository adopted.
+
+Full 40-character commits, because a short hash goes ambiguous as either
+repository grows and this file is read long after it is written. The clone URL
+rather than `rwgs/ai`, because nothing host-neutral asserts a host and the same
+content can be cloned from Azure DevOps.
+
+### Rejected alternatives
+
+- A `## Baseline` section in the adopting repository's `AGENTS.md`: no new file,
+  and it is the one document every adopting repository has. Rejected because a
+  re-apply would rewrite a block inside hand-maintained instructions that both
+  agents load in full, spending context in every session on a fact only an update
+  run reads.
+- An entry in the adopting repository's `DECISIONS.md`: adoption already writes
+  decisions there, so it looks like the natural home. Rejected because that file
+  is append-only, the recorded commit changes on every re-apply, and a
+  documentation repository declines the file entirely.
+- A dotfile at the repository root: one more top-level entry in every adopting
+  repository, competing for attention with a planning set deliberately closed at
+  six files, when `.agents/` already holds the other per-repository artifact
+  adoption writes.
+- Recording only the commit and letting update mode diff the baseline tree against
+  the repository: fewest fields and no reasons to maintain. Rejected because a
+  diff cannot tell a declined document from a missing one, so every update would
+  offer back everything the repository deliberately refused.
+- A submodule or subtree pinning the baseline: an exact commit with nothing
+  hand-written to drift. Rejected because it drags the whole baseline into every
+  adopting repository, and adopted documents are customised after they land, which
+  is the case a subtree merge handles worst.
+- A Markdown table, which a human reads most easily: it has no parser in any
+  language used here, so every reader would hand-roll one.
+- Recording every skill in the repository rather than only the pool copies: a
+  hand-maintained inventory whose extra rows have no upstream, so they can never
+  be compared and can only go stale.
+
+### Consequences
+
+`adopt-baseline` gains a step that writes the marker and an inventory check that
+stops adoption when one already exists, since the skill applies to a repository
+once. `docs/SKILLS.md` and `SPEC.md` name the file as where a pool commit is
+recorded, and the `SPEC.md` unresolved question narrows: both inputs to the
+comparison now exist and only the reporting is unbuilt.
+
+Update mode reads one file for both recorded commits and receives the declined set
+as data rather than inferring it. Its remaining freedom is what to do when the
+marker and the repository disagree, which is a report either way.
+
+This repository gets no marker. It is the baseline rather than an adopter, and
+nothing here reads or writes one.
+
 ## 2026-08-01 One skill source per repository, exposed by an ignored link
 
 Status: Accepted. Settles the disagreement between `docs/SKILLS.md` and

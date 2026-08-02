@@ -10,6 +10,16 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-08-01
 
+- Adoption now leaves a record of itself. `adopt-baseline` writes a committed
+  `.agents/baseline.json` holding the baseline clone URL and the full commit
+  taken, the artifacts adopted, the artifacts declined with a reason for each, and
+  the pool commit behind every skill copied from `rwgs/ai-skills`. The reasons are
+  what let a later update tell a document the repository refused from one the
+  baseline has since added, and the commits are what let it report a copied skill
+  as stale. The skill also stops when a marker already exists, because adopting
+  twice is not what an already-adopted repository needs. Nothing here changes a
+  permission, a configuration value, or a link the installer writes, so there is no
+  reason to rerun it.
 - The `adopt-baseline` and `ai-project-manager` skills now agree with the
   decisions this repository has recorded. `adopt-baseline` inventories
   `DECISIONS.md` and `CHANGELOG.md`, never adopts `PLAN.md` without

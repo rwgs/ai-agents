@@ -1,6 +1,6 @@
 ---
 name: adopt-baseline
-description: Standardise an existing repository on the shared agent baseline, reconciling AGENTS.md and CLAUDE.md without losing content, selecting the planning documents that suit the repository type, deciding which existing skills stay local or move to the baseline, and wiring project-local skills for both agents. Use once per repository when asked to adopt, standardise, align, or roll out the shared conventions.
+description: Standardise an existing repository on the shared agent baseline, reconciling AGENTS.md and CLAUDE.md without losing content, selecting the planning documents that suit the repository type, deciding which existing skills stay local or move to the baseline, wiring project-local skills for both agents, and recording what was adopted, declined, and copied in so a later update can tell customisation from drift. Use once per repository when asked to adopt, standardise, align, or roll out the shared conventions.
 ---
 
 # adopt-baseline
@@ -19,7 +19,9 @@ to anything here.
 3. Select the planning documents that match the repository type.
 4. Decide keep-or-promote for each existing skill.
 5. Wire project-local skills so both agents find them.
-6. Verify each agent loads what is expected.
+6. Add project-scoped configuration only where the project needs it.
+7. Record what was adopted, declined, and copied in.
+8. Verify each agent loads what is expected.
 
 ## 1. Inventory
 
@@ -27,12 +29,18 @@ to anything here.
 ls AGENTS.md CLAUDE.md CLAUDE.local.md 2>/dev/null
 ls SPEC.md ROADMAP.md TASKS.md PLAN.md DECISIONS.md CHANGELOG.md 2>/dev/null
 ls -d .agents/skills .claude/skills .codex/skills 2>/dev/null
+ls .agents/baseline.json 2>/dev/null
 git log --oneline -5 -- AGENTS.md CLAUDE.md
 ```
 
 Record which files exist and whether each carries real content or is a stub.
 Note whether `.claude/skills` is a real directory or already a link, because step
 5 handles those two cases differently. Report the inventory before editing.
+
+Stop if `.agents/baseline.json` exists. The repository has already adopted, and
+this is the wrong workflow for it: bringing an adopted repository up to date is an
+update against that marker, not a second adoption. Report what the marker records
+and ask before going further.
 
 ## 2. Reconcile instruction files
 
@@ -111,10 +119,10 @@ project-local skill once under `.agents/skills/` and expose it to Claude with a
 single directory link rather than duplicating files.
 
 A skill copied in from the `rwgs/ai-skills` pool is one of these. Copy it to
-`.agents/skills/<name>` and nowhere else, record the pool commit it came from,
-and let the same link expose it to Claude Code. A second copy under
-`.claude/skills/<name>` drifts from the first, and only one copy can be compared
-against the recorded commit.
+`.agents/skills/<name>` and nowhere else, record the pool commit it came from in
+the marker step 7 writes, and let the same link expose it to Claude Code. A second
+copy under `.claude/skills/<name>` drifts from the first, and only one copy can be
+compared against the recorded commit.
 
 When `.claude/skills/` already exists as a real directory, move every skill in it
 to `.agents/skills/` before replacing the directory with the link. Never remove
@@ -161,6 +169,67 @@ Two asymmetries matter:
 - `.codex/config.toml` is honored only in projects Codex trusts, so a setting
   placed there silently does nothing in an untrusted project.
 
+## 7. Record what was adopted
+
+Write `.agents/baseline.json` and commit it. Everything above is a decision that
+leaves no evidence of itself: a declined document and a document the baseline
+gained later are both just an absent file, and a skill copied from the pool is
+indistinguishable from one written here. This file is what a later update reads to
+tell the two apart.
+
+```json
+{
+  "version": 1,
+  "baseline": {
+    "repository": "https://github.com/rwgs/ai.git",
+    "commit": "0000000000000000000000000000000000000000",
+    "taken": "2026-01-01"
+  },
+  "adopted": ["AGENTS.md", "CLAUDE.md", "TASKS.md"],
+  "declined": {
+    "SPEC.md": "one deployment script; the requirements are three lines of AGENTS.md",
+    "ROADMAP.md": "nothing to order into phases",
+    "PLAN.md": "declined with DECISIONS.md, because the two are one mechanism",
+    "DECISIONS.md": "no change here has been large enough to need one",
+    "CHANGELOG.md": "nobody installs this independently of its source"
+  },
+  "skills": {
+    "linux-sysadmin": {
+      "repository": "https://github.com/rwgs/ai-skills.git",
+      "commit": "0000000000000000000000000000000000000000"
+    }
+  }
+}
+```
+
+- `baseline.repository` is the clone URL the baseline was taken from, not an
+  `owner/repo` shorthand. The same content is cloned from a different host under a
+  different URL.
+- `commit` is the full 40 characters in both places. A short hash goes ambiguous
+  as a repository grows, and this file is read long after it is written.
+- `adopted` lists the baseline artifacts this repository took, and `declined`
+  gives every one it refused a reason. The reason is the point: without it an
+  update run cannot tell a deliberate refusal from a document that has not been
+  offered yet, so it offers the refused document again every time.
+- `skills` holds only the skills copied from the pool. A skill authored in this
+  repository has no upstream to compare against and gets no entry, and the
+  keep-or-promote-or-retire decisions from step 4 belong in `DECISIONS.md`.
+- Every entry names something checkable in the working tree, so a disagreement
+  between the marker and the repository is reportable. Record nothing that cannot
+  be checked that way.
+
+Read each commit from the clone the content was copied from, and check the clone
+is clean first:
+
+```bash
+git -C "$baseline_clone" status --porcelain   # must print nothing
+git -C "$baseline_clone" rev-parse HEAD
+```
+
+A dirty clone means the content taken is not the commit recorded, which is exactly
+the drift this file exists to prevent. Commit the marker as part of adoption, and
+do not ignore it: a fresh clone has to be able to say what the repository adopted.
+
 ## Safety rules
 
 - Never reduce a `CLAUDE.md` to the import before preserving its content.
@@ -172,6 +241,9 @@ Two asymmetries matter:
   `.agents/skills/`.
 - Never commit `.claude/skills` when it is a link.
 - Never commit `.claude/settings.local.json`. Ignore it before it exists.
+- Never adopt a second time over an existing `.agents/baseline.json`.
+- Never record a commit read from a clone with uncommitted changes.
+- Never leave a declined artifact without a reason, and never ignore the marker.
 - Keep project requirements in the project's documents, not in promoted skills.
 
 ## Validation
@@ -188,5 +260,10 @@ Two asymmetries matter:
 - Project-local skills resolve under both `.agents/skills/` and
   `.claude/skills/`.
 - `.claude/skills` is ignored by Git when it is a link.
+- `.agents/baseline.json` parses, is committed, and holds the baseline commit,
+  every adopted artifact, a reason for every declined one, and a pool commit for
+  each copied skill.
+- Every path the marker names as adopted exists, and every path it names as
+  declined does not.
 - Each agent, asked to list its active instruction sources and skills, reports
   the repository instructions and the expected skills.

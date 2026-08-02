@@ -93,6 +93,12 @@ the agent state already on the machine at risk.
   copied into. An adopting repository holds one copy of each skill, under
   `.agents/skills/`, and exposes it to Claude Code through an ignored
   `.claude/skills` link rather than a second copy.
+- An adopting repository records what it took in a committed
+  `.agents/baseline.json`: the baseline clone URL, the full commit taken and its
+  date, the artifacts adopted, the artifacts declined with a reason for each, and
+  the pool commit behind each skill copied from `rwgs/ai-skills`. It is what an
+  update compares against, so every entry names something checkable in that
+  repository. This repository has no marker, because it is the baseline.
 - `scripts/install.sh` and `scripts/install.ps1` install into the user's own
   directories. `scripts/bootstrap.sh` and `scripts/bootstrap.ps1` obtain the
   clone they install from, so a machine with nothing checked out can run one
@@ -222,8 +228,8 @@ installer must preserve.
 ## Unresolved questions
 
 - How an adopting repository is told that a skill it copied from the pool has
-  changed. The pool now has commits to record, so the comparison is possible; the
-  reporting is not built.
+  changed. Both inputs to the comparison now exist, the pool's commits and the
+  copy's recorded commit in `.agents/baseline.json`; the reporting is not built.
 - How dependency updates and dependency review work after the accepted decision
   to create no branches or pull requests. Dependabot and the current dependency
   review action both deliver through pull requests. Azure DevOps is the same

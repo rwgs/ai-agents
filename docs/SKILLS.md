@@ -122,9 +122,10 @@ removing a skill also requires rerunning the installer so its links are pruned.
 `python-ai`, `rust-cli`, `web-development`, and `windows-sysadmin`.
 
 A repository draws one in by copying it to `.agents/skills/<name>` and recording
-the pool commit it took. That is the only copy it makes. Claude Code reaches the
-skill through the single ignored `.claude/skills` link that `adopt-baseline`
-wires, never through a second copy under `.claude/skills/<name>`.
+the pool commit it took in `.agents/baseline.json`, the marker `adopt-baseline`
+writes. That is the only copy it makes. Claude Code reaches the skill through the
+single ignored `.claude/skills` link that `adopt-baseline` wires, never through a
+second copy under `.claude/skills/<name>`.
 
 The commit is the point: an installed skill is symlinked, so a pull updates every
 machine at once, while a pool skill is a copy and a copy drifts. Without a

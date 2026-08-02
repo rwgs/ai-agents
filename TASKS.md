@@ -454,11 +454,8 @@ unauthenticated with no token in the environment.
 
 ## Current phase: Re-appliable repository baseline
 
-The three reconciliation tasks are done: the two reusable workflow skills now
-agree with the decisions this repository has recorded, and both open skill-policy
-questions are closed. `PLAN.md` carries the approach. What is left starts with
-the marker an adopting repository records, because update mode compares against
-it.
+The reconciliation is done and the marker is defined, so update mode has a record
+to compare against. `PLAN.md` carries the marker's approach.
 
 - [x] Reconcile the reusable workflows before building update mode.
   `adopt-baseline` now inventories `DECISIONS.md` and `CHANGELOG.md`, notes
@@ -498,9 +495,42 @@ it.
   of which reads a file this change touched. Both skills were then read end to end,
   because no check catches a rule dropped during an edit. No three-platform run
   was asked for: the change touches no script, no workflow, and no installed path.
-- [ ] Record in an adopting repository which baseline commit it took, which
+- [x] Record in an adopting repository which baseline commit it took, which
   documents it adopted, which pieces it declined, and the pool commit behind any
-  skill copied from `rwgs/ai-skills`.
+  skill copied from `rwgs/ai-skills`. It is a committed `.agents/baseline.json`,
+  written by a new `adopt-baseline` step and recorded in `DECISIONS.md` as "An
+  adopting repository records what it took in `.agents/baseline.json`". It carries
+  a `version`, the baseline clone URL rather than an `owner/repo` shorthand
+  because nothing host-neutral asserts a host, the full 40-character commit and
+  the date it was taken, the artifacts adopted, the artifacts declined with a
+  reason for each, and each pooled skill's source URL and commit. Only baseline
+  and pool content is recorded: a skill authored in the repository has no upstream
+  to compare against, and step 4's keep-or-promote decisions stay in that
+  repository's `DECISIONS.md`.
+
+  Three things fell out of the design. The decline reasons are the load-bearing
+  field, because a declined document and one the baseline added after adoption are
+  the same absent file, and without a reason update mode offers the refusal back
+  on every run. Both commits are read only from a clone with an empty `git status
+  --porcelain`, since content copied out of a dirty tree is not the commit
+  recorded, which is the drift `ROADMAP.md` warns is worse than no marker at all.
+  Step 1 now stops when a marker exists, which nothing prevented before although
+  the skill's scope has always said one repository, once.
+
+  The workflow list was aligned with the body sections while adding the step: it
+  omitted the project-scoped configuration section and carried a verify step with
+  no section, so a new numbered step could not be placed correctly without it.
+
+  Validation: WSL `./scripts/validate.sh` passed on 2026-08-01, reporting
+  `installer integration test passed` and `validation passed: 8 skills checked`.
+  Of the tools it probes, this WSL installation has only `python3` and `git`, so
+  it skipped ShellCheck, `node --check`, `codex execpolicy`, and both PowerShell
+  checks, none of which reads a file this change touches. The marker example was
+  parsed out of the skill with `json.loads` and checked for a 40-character commit
+  in both places and a non-empty reason on every decline, because a malformed
+  example is the one defect no check here would catch and every adopting
+  repository would copy. `adopt-baseline` was then read end to end and every
+  existing rule survives.
 - [ ] Add an update mode to `adopt-baseline`, or a sibling skill, that adds
   missing documents and sections and reports drift without overwriting an
   adopted document. It reads both recorded commits, so a copied pool skill is
