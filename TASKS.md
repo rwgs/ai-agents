@@ -794,6 +794,16 @@ cross-machine MCP requirement justifies it.
 - [ ] Confirm secret scanning and push protection are enabled. Confirm
   Dependabot only after deciding how it can deliver updates under the accepted
   workflow.
+
+  Read on 2026-08-02, once `gh` was authenticated, with a token the API reports as
+  having `admin` on the repository: neither is on. `GET /repos/rwgs/ai` returns
+  `security_and_analysis: null`, `GET /repos/rwgs/ai/secret-scanning/alerts`
+  returns HTTP 404 `Secret scanning is disabled on this repository`, and
+  `GET /repos/rwgs/ai/code-scanning/alerts` still returns HTTP 403 as the CodeQL
+  task below records. So this item is not a confirmation but an enablement, and it
+  needs the repository settings changed outside this environment. Whether either
+  product is available for a private repository on this account's plan was not
+  established here and is the first thing to check in those settings.
 - [x] Reconcile the no-branch, no-pull-request decision with all PR-only
   artifacts. Recorded in `DECISIONS.md` as "Bots may open pull requests, humans
   may not": Dependabot stays and the `Validate` workflow keeps its
