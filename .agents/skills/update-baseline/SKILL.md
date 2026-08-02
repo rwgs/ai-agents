@@ -112,7 +112,12 @@ Additive only. Three things are added and nothing else.
 - A section the template at the compared commit has and the adopted document does
   not. Write it for this repository from what the repository shows. Where it cannot
   be written that way, report it as drift instead: a heading with nothing under it
-  reads as an answered question.
+  reads as an answered question. Read this repository's `DECISIONS.md` before
+  reporting either way, exactly as section 5 does: a section the repository decided
+  not to have is closed, so it is reported as kept on purpose and never counted
+  outstanding. Without that check a repository converges on nothing, because
+  adoption tells it to delete the sections that do not apply and every later run
+  offers them back.
 - An infrastructure artifact the marker does not decline and the repository does
   not have, written the way `adopt-baseline` writes it: the line normalisation that
   follows `.gitattributes`, and check steps derived from the checks this repository
@@ -123,13 +128,23 @@ the way `adopt-baseline` reads it. Where the marker records one for a different
 host, the repository moved: report that, and never leave it carrying two CI
 definitions.
 
-Compare headings, not prose. The templates carry stable headings, and the prose
-below them is meant to have been rewritten:
+Compare headings, not prose, wherever the template's headings are stable section
+names, because the prose below them is meant to have been rewritten:
 
 ```bash
 grep '^## ' SPEC.md
 grep '^## ' "$clone/.agents/skills/ai-project-manager/assets/project-docs/SPEC.md"
 ```
+
+Four templates are comparable that way: `AGENTS.md`, `SPEC.md`, `TASKS.md`, and
+`PLAN.md`. Three are not, and running the same comparison over them reports noise
+that looks exactly like a missing section. `DECISIONS.md` and `CHANGELOG.md` are
+append-only logs whose template holds one placeholder entry heading,
+`## <YYYY-MM-DD> <Decision title>` and `## <Version or date>`, so every real entry
+differs from it. `ROADMAP.md`'s headings are example phase names, and a repository
+names its own phases. Check those three by their own rules instead: that the log
+exists and its newest entry is first, and that the roadmap's phases each carry the
+exit criteria the template asks for.
 
 Never rewrite a line an adopted document already carries. Those documents are
 customised after they land, which is the rule this whole workflow exists to keep.
@@ -198,8 +213,8 @@ refreshed skill's commit forward. Leave every existing decline reason as it is.
 
 Advance `baseline.commit` only when nothing is left outstanding: every artifact on
 offer is adopted, declined with a reason, or covered by a decision recorded in this
-repository's `DECISIONS.md`, and every document and section that was added is
-written. Leave it at the recorded value when drift was reported and not applied, so
+repository's `DECISIONS.md`, and every missing section was either written or closed
+by a decision recorded there too. Leave it at the recorded value when drift was reported and not applied, so
 the next run finds it again. A pooled skill is separate, because it carries its own
 commit: one customised copy does not hold the baseline commit back.
 

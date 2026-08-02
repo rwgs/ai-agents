@@ -466,13 +466,19 @@ needed pushing.
   until `gh` was authenticated on 2026-08-02, which is the only thing that was
   ever blocking this item.
 
-## Current phase: Re-appliable repository baseline
+## Completed phase: Re-appliable repository baseline
 
 The marker, the two skills that write it, the update skill that reads it, and the
-development infrastructure all three propagate are in place. `PLAN.md` carries the
-entry-point approach. What is left is the proof of the loop on a scratch
-repository, which is the only thing here that verifies any of it against a real
-repository.
+development infrastructure all three propagate are in place, and the loop has been
+run end to end on a scratch repository. That run is what closed the phase: it found
+four defects in the instructions, including one that made the phase's own
+convergence criterion unreachable. `PLAN.md` carries the proof and its findings.
+
+The third exit criterion, that adoption and update are covered by the same
+validation the installer has, is met as `scripts/validate.sh` covers every skill's
+front matter, name, placeholder markers, and the documented inventory, and CI runs
+that script on three platforms. Nothing automated can run the skills themselves:
+they are instructions an agent follows, which is why the scratch proof exists.
 
 - [x] Reconcile the reusable workflows before building update mode.
   `adopt-baseline` now inventories `DECISIONS.md` and `CHANGELOG.md`, notes
@@ -702,9 +708,73 @@ repository.
   reason. No three-platform run was asked for: the change touches no script, no
   workflow, and no installed path beyond the skill directory the installer links
   identically everywhere.
-- [ ] Prove the loop on a scratch repository: adopt, change the baseline,
+- [x] Prove the loop on a scratch repository: adopt, change the baseline,
   re-apply, and confirm no customisation is lost and a second re-apply reports
-  nothing to do.
+  nothing to do. Done on 2026-08-02, and it found four defects, which is what the
+  task was for. Every rule in the three skills had been reasoned from this
+  repository's own history and none had been run.
+
+  The scratch repository was built to fire the interesting branches rather than the
+  clean ones: a `CLAUDE.md` carrying content with no `AGENTS.md`, a real
+  `.claude/skills` directory holding a project-specific skill, a `run-tests.sh`
+  committed with CRLF so the renormalisation had work, a `github.com` remote, and
+  pytest and ruff so the CI definition was derived rather than declined. The
+  baseline and the pool were cloned first and moved forward afterwards, so the
+  update run had to fast-forward an existing clone. The baseline change added two
+  template sections on purpose: `## Dependencies`, writable from what the
+  repository shows, and `## Deployment targets`, which is not, because nothing
+  releases the project.
+
+  Adoption came out clean against the skill's own validation list: `AGENTS.md`
+  carries every rule the old `CLAUDE.md` held, `CLAUDE.md` is a bare import, the
+  local skill moved to `.agents/skills/` before the directory became a junction,
+  the pooled `linux-sysadmin` copy was byte-identical to the pool, every path the
+  marker records as adopted exists and every declined one does not, and
+  `git add --renormalize .` stages nothing after the conversion commit and the
+  working-tree refresh. The update run added `## Dependencies` only, reported
+  `## Deployment targets` rather than writing an empty heading, refreshed the
+  pooled skill to the new pool commit, and held `baseline.commit` back because
+  something was outstanding. `git diff --numstat` on the adopted documents reported
+  `6 0 AGENTS.md`: additions only, no customisation touched. Recording the dropped
+  section in the scratch repository's own `DECISIONS.md` then let the next run
+  advance the commit, and a third run reported nothing to add and nothing
+  outstanding.
+
+  The four defects, all in the instructions rather than the design, and all fixed:
+
+  - The Windows wiring command never worked. `New-Item -ItemType Junction -Target
+    .agents/skills` fails with "Creating a junction requires an absolute path for
+    the target" and creates nothing, so every Windows adoption would have stopped
+    there. Fixed with `(Resolve-Path .agents/skills)`. The deliberately relative
+    `ln -s ../.agents/skills .claude/skills` form was checked under WSL and is
+    correct, so the asymmetry is now stated in the skill.
+  - Adoption never said to keep the template's heading text, only to adapt the
+    template and delete what does not apply. The adapted `AGENTS.md` therefore
+    carried three headings of its own against the template's six, and the update
+    run reported the entire template as missing.
+  - The heading comparison is valid for four of the seven templates.
+    `DECISIONS.md` and `CHANGELOG.md` hold one placeholder entry heading, and
+    `ROADMAP.md`'s are example phase names, so comparing those three reports noise
+    that reads exactly like a missing section.
+  - The loop could not converge. "Read `DECISIONS.md` before calling it drift" sat
+    only in the convention-drift section, so a template section a repository
+    deliberately does not have was re-reported every run and the recorded commit
+    could never advance past it. Adoption tells every repository to delete the
+    sections that do not apply, so this affected all of them.
+
+  The last three are one contract, recorded in `DECISIONS.md` as "Heading text is
+  the contract between a template and an adopted document". Validation: WSL
+  `./scripts/validate.sh` passed after the fixes, reporting `installer integration
+  test passed` and `validation passed: 10 skills checked`; this WSL installation has
+  only `python3` and `git` of the tools it probes, so ShellCheck, `node --check`,
+  `codex execpolicy`, and both PowerShell checks were skipped, and none of them
+  reads a skill file.
+
+  Two paths stay unexercised and are worth naming rather than implying: the
+  repository was adopted rather than started from empty, and its host was read from
+  a `github.com` remote rather than asked for. The proof also recorded local paths
+  as the baseline and pool URLs, because the baseline commit under test is not on
+  `origin`, so an HTTPS clone of either repository is untested.
 
 ## Candidate work: MCP server management
 

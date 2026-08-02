@@ -179,11 +179,12 @@ functional to have an author, so publishing it depends on nobody else's licence.
 
 ## Phase 6: Re-appliable repository baseline
 
-Status: In progress. Three skills now partition the work by precondition:
+Status: Complete. Three skills partition the work by precondition:
 `start-repository` for a repository with nothing to reconcile, `adopt-baseline` for
 one that already holds work, and `update-baseline` for one carrying the marker the
-first two write. None of it has been run against a real repository yet, which is
-what the scratch-repository exit criterion is for.
+first two write. The loop was run end to end on a scratch repository on 2026-08-02,
+which found and fixed four defects in the instructions, one of them the reason the
+convergence criterion could not have been met as written.
 
 ### Outcome
 

@@ -8,6 +8,86 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-02 Heading text is the contract between a template and an adopted document
+
+Status: Accepted. Settles what the update workflow compares, which the scratch
+proof found unstated and therefore broken.
+
+### Decision
+
+An adopted document keeps the heading text of every template section it retains,
+and drops the sections that do not apply. Renaming a retained heading is
+prohibited, and renaming one in a template here is a breaking change for every
+repository that adopted it.
+
+The comparison applies to the four templates whose headings are stable section
+names: `AGENTS.md`, `SPEC.md`, `TASKS.md`, and `PLAN.md`. It does not apply to
+`DECISIONS.md` or `CHANGELOG.md`, whose template holds a single placeholder entry
+heading, or to `ROADMAP.md`, whose headings are example phase names. Those three
+are checked by their own rules.
+
+A section a repository deliberately does not have is closed by an entry in that
+repository's own `DECISIONS.md`, and is then reported as kept on purpose rather
+than counted outstanding.
+
+### Why
+
+Found by running the loop on a scratch repository on 2026-08-02 rather than by
+reading it. Adoption said to adapt each template and delete what does not apply,
+and said nothing about heading text, so an adapted `AGENTS.md` came out carrying
+`## Scope`, `## Working style`, and `## Verification` where the template had six
+different headings. The update run then reported the whole template as missing,
+which is the maximally wrong answer: it is noise on every run, and the one thing it
+hides is a genuinely new section.
+
+Heading text is the only join available. The prose beneath a heading is meant to
+have been rewritten, which rules out comparing content; the marker records paths
+rather than sections, which rules out recording the section set; and any identifier
+added to a heading would be visible in a document a human reads constantly.
+
+The exclusions are the same argument in reverse. A template that never had stable
+sections cannot supply the join, and comparing anyway produces a diff on every real
+entry of an append-only log and on every phase name a repository chose for itself.
+
+The closed-section rule is what makes the loop terminate at all. Adoption
+instructs a repository to delete inapplicable sections, so every adopting
+repository is missing some, and the update workflow only read `DECISIONS.md` in its
+convention-drift section. Without extending that read to sections, a missing
+section stayed outstanding forever, the recorded commit could never advance, and
+"re-apply until it reports nothing to do" was unreachable by construction.
+
+### Rejected alternatives
+
+- Compare content rather than headings, and report a section whose prose still
+  matches the template: it inverts the rule the baseline is built on, that an
+  adopted document is adapted as it lands, and it would report nothing for a
+  document that was properly adapted.
+- Record the adopted section set in `.agents/baseline.json`: a second list to
+  maintain, and it goes stale exactly when someone edits the document without
+  updating the marker, which is the failure the marker exists to detect rather than
+  to acquire.
+- Let each repository rename headings and match them by order or by similarity:
+  a matcher with no ground truth, guessing which of two rewritten headings is the
+  same section.
+- Add a stable machine identifier to each heading, such as an anchor comment:
+  robust, and it puts markup into the documents a human reads most, for a join that
+  heading text already provides for free.
+- Keep the `DECISIONS.md` read in the convention-drift section only and accept
+  that a dropped section is reported forever: it is what the skill said, and it
+  makes the phase's own exit criterion unreachable.
+
+### Consequences
+
+`adopt-baseline` requires the heading text and carries a safety rule against
+renaming one. `start-repository` says the same for the documents it creates.
+`update-baseline` names the four comparable templates, says how to check the other
+three, and reads the repository's `DECISIONS.md` before reporting a missing section
+or counting it outstanding.
+
+Renaming a section heading in one of the four templates here now costs every
+adopting repository a reported drift. That is the intended price of having a join
+at all, and it is worth stating in a commit that renames one.
+
 ## 2026-08-02 A new repository is started, and its refusals carry a reopening condition
 
 Status: Accepted. Implements the third workflow the entry below on sibling skills

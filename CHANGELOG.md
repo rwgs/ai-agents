@@ -10,6 +10,23 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-08-02
 
+- Fixed four defects in the adoption skills, found by running the whole loop on a
+  scratch repository rather than by reading it. The Windows wiring command never
+  worked: `New-Item -ItemType Junction` rejects a relative `-Target`, so every
+  Windows adoption stopped at the point where Claude Code's skill directory is
+  created, and it now resolves the target first. Adoption never said to keep the
+  heading text of the template sections it retains, so an adapted document reported
+  its whole template as missing on the next update; heading text is the only join
+  those two have once the prose is rewritten, and renaming a retained heading is now
+  refused. The heading comparison is restricted to the four templates whose headings
+  are stable section names, because `DECISIONS.md`, `CHANGELOG.md`, and `ROADMAP.md`
+  carry placeholder or example headings that produced noise indistinguishable from a
+  missing section. And a section a repository deliberately does not have is now
+  closed by an entry in its own `DECISIONS.md` rather than re-reported forever, which
+  is what lets a re-apply finish with nothing outstanding. All three skills are
+  linked rather than copied, so pulling is enough; only the tenth skill below needs
+  the installer rerun.
+
 - Added `start-repository`, a tenth installed skill, so a project that holds no
   work yet has an entry point of its own instead of a skill named for adopting an
   existing one. Rerun the installer to add its link in both agents. It creates the

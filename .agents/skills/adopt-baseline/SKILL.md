@@ -107,6 +107,13 @@ These are selections from one template set, not separate variants. Adapt each
 adopted template to the repository and delete sections that do not apply rather
 than leaving placeholders.
 
+Keep the heading text of every section that is retained, and rewrite what is under
+it. `update-baseline` joins an adopted document to its template on heading text,
+which is the only join available once the prose beneath has been rewritten, so a
+renamed heading reads as the template's section missing and the repository's as
+one the baseline never had. Deleting an inapplicable section is expected and
+reported cleanly; renaming a kept one turns every later update into noise.
+
 Do not create a document the repository has no use for. An empty `ROADMAP.md`
 teaches an agent nothing and goes stale.
 
@@ -148,9 +155,15 @@ ln -s ../.agents/skills .claude/skills
 ```
 
 ```powershell
-# Windows: a junction works without Developer Mode or elevation
-New-Item -ItemType Junction -Path .claude/skills -Target .agents/skills
+# Windows: a junction works without Developer Mode or elevation, and it requires
+# an absolute target, so a relative one fails before it creates anything
+New-Item -ItemType Junction -Path .claude/skills -Target (Resolve-Path .agents/skills)
 ```
+
+The Linux form is deliberately relative and the Windows one cannot be: `New-Item
+-ItemType Junction` rejects a relative `-Target` with "Creating a junction
+requires an absolute path for the target". Both were run against a real
+repository on 2026-08-02.
 
 Add `.claude/skills` to `.gitignore` and create it during adoption. A committed
 symbolic link becomes a plain text file when cloned on a Windows machine without
@@ -368,6 +381,8 @@ do not ignore it: a fresh clone has to be able to say what the repository adopte
 - Never reduce a `CLAUDE.md` to the import before preserving its content.
 - Never overwrite an existing planning document. Merge, or ask.
 - Never adopt `PLAN.md` without `DECISIONS.md`.
+- Never rename a template section heading that is kept. Delete the section or keep
+  its heading; renaming it breaks the only join a later update has.
 - Never delete a skill without confirming the baseline covers it.
 - Never leave a second copy of a skill under `.claude/skills/<name>`, and never
   replace a real `.claude/skills` directory before its skills are under

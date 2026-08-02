@@ -112,6 +112,11 @@ run and test the project can be stated as soon as they are chosen; a convention
 the project has not established yet is written when it establishes one. A heading
 with nothing under it reads as an answered question.
 
+Keep the heading text of every template section that is kept, and drop the ones
+that do not apply. `update-baseline` joins a document to its template on heading
+text, so a renamed heading reads as the template's section missing and this
+repository's as one the baseline never had, on every run from here on.
+
 ## 4. Choose the planning documents
 
 Select from `adopt-baseline`'s table by what the project will be. The table keys
@@ -143,7 +148,10 @@ first non-trivial change brings `PLAN.md` with it.
 
 Create nothing there is nothing to write in. A document of headings teaches an
 agent nothing, goes stale, and reads as answered, and a later update run reports
-it as a stub.
+it as a stub. The heading rule from step 3 applies to each of these too: keep the
+template's heading text where the section is kept, and drop the section otherwise.
+A section deliberately dropped is worth an entry in `DECISIONS.md`, which is what
+stops a later update offering it back on every run.
 
 `ai-project-manager` owns what goes in these documents once they exist. This skill
 decides which exist; that one writes them and keeps them current.
