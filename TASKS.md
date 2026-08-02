@@ -858,18 +858,30 @@ cross-machine MCP requirement justifies it.
   2026-08-02: the dependency graph detects all three pinned actions in its SBOM,
   which is the prerequisite Dependabot reads manifests through, and Dependabot
   alerts are on, `GET /repos/rwgs/ai/vulnerability-alerts` returning HTTP 204 with
-  no open alerts. Every pin is already at the newest release and pinned to that
-  release's own commit: `actions/checkout` at `3d3c42e5` is the `v7.0.1` tag object
-  and `v7.0.1` is the latest release, and both `github/codeql-action` entries at
-  `18420e32` are the `codeql-bundle-v2.26.2` tag, which is the latest release.
+  no open alerts.
 
-  So Dependabot has opened no pull request, and that is the expected result rather
-  than evidence it is not running: there is nothing to bump. Nothing available here
-  distinguishes the two, because no REST endpoint exposes a Dependabot
-  version-update job, only the repository's Dependabot tab does. Real operational
-  proof needs a pin deliberately moved backwards and a wait for the weekly
-  schedule, which means committing a known-stale pin to `main`; that has not been
-  done and is not assumed either way.
+  Dependabot has opened no pull request, ever, and the first reading of why was
+  wrong. Checking each pin against the tag it names: `actions/checkout` at
+  `3d3c42e5` is the `v7.0.1` tag object and `v7.0.1` is the latest release, so that
+  one has nothing to bump. Both `github/codeql-action` entries at `18420e32` are the
+  `codeql-bundle-v2.26.2` tag, which is the newest `codeql-bundle-*` tag but is not
+  the newest release of that action: `v4.37.4` was published a day later at a
+  different commit, `ea14db8a`, and neither major stream's tip is the pinned commit
+  either, `v4` being `bce182f8` and `v3` being `47be0dbd`.
+
+  So "there is nothing to bump" covers one pin and not the other, and an empty pull
+  request list is no longer the expected result. Two explanations remain open, and
+  nothing readable here separates them: Dependabot may be treating the bundle tag as
+  the version stream to follow, in which case the pin is current and silence is
+  correct, or it may not be producing version updates on this repository at all. No
+  REST endpoint exposes a Dependabot version-update job; only the repository's
+  Dependabot tab shows whether one has run and what it concluded, so that is where
+  this gets settled.
+
+  The pins are also inconsistent with each other, which is what made the question
+  ambiguous. One names a version tag and the other names a bundle tag, so there is
+  no single rule for what "current" means across the two, and the answer differs
+  depending on which stream Dependabot follows.
 
   One gap was found rather than confirmed.
   `GET /repos/rwgs/ai/automated-security-fixes` returns
