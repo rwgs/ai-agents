@@ -179,7 +179,9 @@ functional to have an author, so publishing it depends on nobody else's licence.
 
 ## Phase 6: Re-appliable repository baseline
 
-Status: Planned
+Status: In progress. The two reusable workflow skills have been reconciled with
+the recorded decisions, and one dual-agent skill wiring is settled, so the marker
+and the update mode can be built on workflows that agree with each other.
 
 ### Outcome
 
@@ -260,8 +262,10 @@ without gates a single maintainer committing to `main` cannot satisfy.
 
 ## Phase 8: Host-neutral version control
 
-Status: In progress. Runs before Phase 6's propagation work despite the higher
-number, because that work is host-specific and the numbering is historical.
+Status: Blocked on the three-platform run that closes it. Everything
+implementable is done and validated locally. It ran before Phase 6's propagation
+work despite the higher number, because that work is host-specific and the
+numbering is historical.
 
 ### Outcome
 

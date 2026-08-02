@@ -8,6 +8,116 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-01 One skill source per repository, exposed by an ignored link
+
+Status: Accepted. Settles the disagreement between `docs/SKILLS.md` and
+`adopt-baseline`, which described two different dual-agent wirings.
+
+### Decision
+
+A repository holds one copy of each skill, under `.agents/skills/<name>`,
+whether it was written for that repository or copied in from the `rwgs/ai-skills`
+pool. Claude Code reaches it through a single directory link, `.claude/skills`
+pointing at `.agents/skills`, created during adoption, listed in `.gitignore`,
+and never committed. There is no second copy under `.claude/skills/<name>`.
+
+Where a repository already has a real `.claude/skills` directory, its skills move
+to `.agents/skills/` before that directory is replaced by the link.
+
+### Why
+
+Two copies of one skill in one repository drift, and the drift is silent because
+each agent reads only one of them. That is the same argument this baseline
+already accepted twice: one `AGENTS.md` with `CLAUDE.md` as a bare import, and
+managed files installed as links rather than copies.
+
+It also decides a question Phase 6's update mode would otherwise have to answer.
+That mode compares an adopted copy against the pool commit recorded for it. With
+one copy the comparison has one input. With two it has two, plus a rule for what
+a disagreement between them means, and that rule would have to be invented
+because neither copy is more authoritative than the other.
+
+`.agents/skills/` is the source rather than `.claude/skills/` because it is the
+agent-neutral path, it is what this repository already authors into, and Codex
+reads it directly.
+
+### Rejected alternatives
+
+- Two committed copies, the wording `docs/SKILLS.md` carried: it needs no
+  per-clone setup and works on a Windows clone that cannot create links, which is
+  a real advantage. Rejected because it trades a one-time setup step for silent
+  drift between two files that are supposed to be the same file.
+- Committing the link instead of ignoring it: a committed symbolic link is
+  checked out as a plain text file on a Windows clone without symbolic-link
+  support, and skill discovery then fails with no error at all.
+- Authoring under `.claude/skills/` and linking `.agents/skills`: the same shape
+  reversed, with the source in the agent-specific directory.
+- Leaving both wordings and letting each repository pick: the two have different
+  drift behavior, so update mode would need to detect which was used before it
+  could report anything.
+
+### Consequences
+
+`.claude/skills` is per-clone setup under this decision, so a fresh clone of an
+adopting repository has no Claude Code skills until the link is recreated. That
+cost is accepted and stated in `adopt-baseline`, whose validation step already
+checks that project-local skills resolve under both paths.
+
+This repository is unaffected: it has no `.claude/skills` and needs none, because
+every skill here is installed user-wide by the installer and none is
+project-local. The rule governs adopting repositories.
+
+Phase 6's update mode reads one skill copy per name and one recorded pool commit.
+
+## 2026-08-01 A skill about the agent's own operation is installed, not pooled
+
+Status: Accepted. Adds the clause that "Install only the skills that earn a place
+on every machine" below needed and did not have, and that `docs/SKILLS.md` has
+been contradicting since `show-codex-reset-expiries` was installed.
+
+### Decision
+
+The bar that sends a skill tied to one product, one environment, or one kind of
+project to the pool is about the repository a skill is drawn into. A skill about
+an agent's own operation is placed by machine reach instead, so
+`show-codex-reset-expiries` stays installed even though it names Codex.
+
+### Why
+
+The pool exists because a skill about a stack is wanted in the repositories
+written in that stack and nowhere else, so a copy per repository is the right
+shape. `show-codex-reset-expiries` has no repository dependency of any kind: it
+reports the expiry times of the signed-in account's Codex rate-limit reset
+credits, which is the same answer in every directory on the machine. Pooling it
+would make an account-level check present only in the repositories that happened
+to copy it, absent in the one the user asks from, and duplicated as a `.mjs` file
+per repository.
+
+It also passes the part of the bar that the pool test exists to protect. The
+description is explicitly gated on the user asking for it, so the trigger cannot
+misfire into unrelated work, and `docs/SKILLS.md` already names this skill as the
+one legitimate case for putting an agent's name in a description.
+
+### Rejected alternatives
+
+- Move it to the pool, as the literal wording of the bar requires: consistent,
+  and it makes a user-wide question answerable only where someone copied the
+  answer in.
+- Leave the contradiction and note it on the skill: it was already noted twice,
+  in `TASKS.md` and in the authoring rules, and each placement decision had to
+  re-derive the exception.
+- Drop the skill: it is the only thing here that reads the reset-credit
+  expiries, and nothing else in either agent reports them.
+
+### Consequences
+
+`docs/SKILLS.md` states the clause, so the next candidate is placed by reading
+the bar rather than by comparing itself to this skill. A future skill about
+Claude Code's own operation is installed for the same reason without needing a
+new entry.
+
+The installed set stays at eight.
+
 ## 2026-08-01 Both hosts are supported, only GitHub is verified
 
 Status: Accepted.

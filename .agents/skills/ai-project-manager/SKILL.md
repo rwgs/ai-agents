@@ -17,9 +17,11 @@ that boundary rather than duplicating either side of it.
 1. Read the repository's instructions, whatever is already changed in the
    working tree, and the active branch.
 2. Work out which planning documents the task actually touches. Look for each
-   `SPEC.md`, `ROADMAP.md`, `TASKS.md`, and `DECISIONS.md` at the repository root
-   first, then under `docs/`. Where both locations hold a relevant copy, read
-   both and report the conflict rather than picking one.
+   `SPEC.md`, `ROADMAP.md`, `TASKS.md`, `PLAN.md`, and `DECISIONS.md` at the
+   repository root first, then under `docs/`, and for a `CHANGELOG.md` where the
+   project keeps one. Where both locations hold a relevant copy, read both and
+   report the conflict rather than picking one. An existing `PLAN.md` is the plan
+   this task is about to replace, so read it before overwriting it.
 3. Identify the missing requirements, unresolved decisions, dependencies, risks,
    and implementation impact.
 4. Build a phase plan that maps onto the acceptance criteria and states its
@@ -45,7 +47,8 @@ that boundary rather than duplicating either side of it.
 ```bash
 git status --short
 git branch --show-current
-rg --files -g 'AGENTS.md' -g 'AGENTS.override.md' -g 'SPEC.md' -g 'ROADMAP.md' -g 'TASKS.md' -g 'DECISIONS.md'
+rg --files -g 'AGENTS.md' -g 'AGENTS.override.md' -g 'SPEC.md' -g 'ROADMAP.md' \
+  -g 'TASKS.md' -g 'PLAN.md' -g 'DECISIONS.md' -g 'CHANGELOG.md'
 ```
 
 Read every applicable `AGENTS.md` and each planning document the task touches.

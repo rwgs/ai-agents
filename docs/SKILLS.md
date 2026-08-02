@@ -76,6 +76,13 @@ A skill tied to one product, one environment, or one kind of project does not
 meet that bar. Those live in the `rwgs/ai-skills` pool, described below, and are
 drawn into the repositories that use them.
 
+That bar is about the repository a skill is drawn into. A skill about an agent's
+own operation is placed by machine reach instead, because it has no repository
+dependency at all: pooling it would leave a user-wide answer available only in
+the repositories that happened to copy it. `show-codex-reset-expiries` is
+installed for that reason despite naming one product, and its description is
+gated on the user asking for it, so the trigger cannot misfire.
+
 For a language skill, the test is what the language is used for. Install it when
 an agent reaches for that language as a tool in a repository of any kind,
 including one containing none of it, which is true of shell and Python. Pool it
@@ -114,12 +121,15 @@ removing a skill also requires rerunning the installer so its links are pruned.
 `hugo`, `infrastructure`, `linux-sysadmin`, `mdbook`, `podman-operator`,
 `python-ai`, `rust-cli`, `web-development`, and `windows-sysadmin`.
 
-A repository draws one in by copying it to `.agents/skills/<name>`, and
-`.claude/skills/<name>` as well if the repository is used with both agents, then
-recording the pool commit it took. The commit is the point: an installed skill is
-symlinked, so a pull updates every machine at once, while a pool skill is a copy
-and a copy drifts. Without a recorded commit there is nothing to compare an
-adopted copy against.
+A repository draws one in by copying it to `.agents/skills/<name>` and recording
+the pool commit it took. That is the only copy it makes. Claude Code reaches the
+skill through the single ignored `.claude/skills` link that `adopt-baseline`
+wires, never through a second copy under `.claude/skills/<name>`.
+
+The commit is the point: an installed skill is symlinked, so a pull updates every
+machine at once, while a pool skill is a copy and a copy drifts. Without a
+recorded commit there is nothing to compare an adopted copy against, and with two
+copies there is no rule saying which one the comparison should use.
 
 Moving a skill in either direction changes the installed set, so it needs the list
 above updated, the installer rerun to add or prune links, and a `CHANGELOG.md`

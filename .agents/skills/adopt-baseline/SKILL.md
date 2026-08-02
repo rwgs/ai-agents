@@ -24,13 +24,15 @@ to anything here.
 ## 1. Inventory
 
 ```bash
-ls AGENTS.md CLAUDE.md CLAUDE.local.md SPEC.md ROADMAP.md TASKS.md PLAN.md 2>/dev/null
+ls AGENTS.md CLAUDE.md CLAUDE.local.md 2>/dev/null
+ls SPEC.md ROADMAP.md TASKS.md PLAN.md DECISIONS.md CHANGELOG.md 2>/dev/null
 ls -d .agents/skills .claude/skills .codex/skills 2>/dev/null
 git log --oneline -5 -- AGENTS.md CLAUDE.md
 ```
 
 Record which files exist and whether each carries real content or is a stub.
-Report the inventory before editing.
+Note whether `.claude/skills` is a real directory or already a link, because step
+5 handles those two cases differently. Report the inventory before editing.
 
 ## 2. Reconcile instruction files
 
@@ -62,10 +64,22 @@ Adopt only what the repository needs. All types take `AGENTS.md` and
 
 | Repository type | Add |
 | --- | --- |
-| Product or service with staged delivery | `SPEC.md`, `ROADMAP.md`, `TASKS.md`, `PLAN.md` |
-| Automation, infrastructure, or dotfiles | `TASKS.md`, and `PLAN.md` when a change is non-trivial |
-| Library or single-purpose tool | `PLAN.md` only when a change is non-trivial |
+| Product or service with staged delivery | `SPEC.md`, `ROADMAP.md`, `TASKS.md`, `PLAN.md`, `DECISIONS.md` |
+| Automation, infrastructure, or dotfiles | `TASKS.md`, plus `PLAN.md` and `DECISIONS.md` when a change is non-trivial |
+| Library or single-purpose tool | `PLAN.md` and `DECISIONS.md` only when a change is non-trivial |
 | Documentation or content | none beyond the instruction files |
+
+`PLAN.md` and `DECISIONS.md` are one mechanism, so never adopt the first without
+the second. `PLAN.md` is replaced when the next non-trivial change begins, and
+promoting its closed decisions into `DECISIONS.md` is the only thing that stops a
+rejected approach being proposed again. Adoption supplies the first entries
+itself: which planning documents this repository declined, and which existing
+skills were kept local, promoted, or retired.
+
+`CHANGELOG.md` sits outside the table and outside the planning set, because it
+does not depend on the repository type. Create it when the project has consumers
+who install or upgrade it independently of its source, and record what changed
+for them rather than one entry per commit.
 
 These are selections from one template set, not separate variants. Adapt each
 adopted template to the repository and delete sections that do not apply rather
@@ -96,6 +110,16 @@ Codex reads `.agents/skills/`; Claude Code reads `.claude/skills/`. Author each
 project-local skill once under `.agents/skills/` and expose it to Claude with a
 single directory link rather than duplicating files.
 
+A skill copied in from the `rwgs/ai-skills` pool is one of these. Copy it to
+`.agents/skills/<name>` and nowhere else, record the pool commit it came from,
+and let the same link expose it to Claude Code. A second copy under
+`.claude/skills/<name>` drifts from the first, and only one copy can be compared
+against the recorded commit.
+
+When `.claude/skills/` already exists as a real directory, move every skill in it
+to `.agents/skills/` before replacing the directory with the link. Never remove
+it while it is the only place one of those skills exists.
+
 ```bash
 # Linux and macOS
 ln -s ../.agents/skills .claude/skills
@@ -108,7 +132,9 @@ New-Item -ItemType Junction -Path .claude/skills -Target .agents/skills
 
 Add `.claude/skills` to `.gitignore` and create it during adoption. A committed
 symbolic link becomes a plain text file when cloned on a Windows machine without
-symbolic-link support, which breaks skill discovery silently.
+symbolic-link support, which breaks skill discovery silently. The link is
+therefore per-clone setup: a fresh clone has no Claude Code skills until someone
+recreates it, so say that when adoption finishes.
 
 Skip this step entirely when the repository has no project-local skills.
 
@@ -139,7 +165,11 @@ Two asymmetries matter:
 
 - Never reduce a `CLAUDE.md` to the import before preserving its content.
 - Never overwrite an existing planning document. Merge, or ask.
+- Never adopt `PLAN.md` without `DECISIONS.md`.
 - Never delete a skill without confirming the baseline covers it.
+- Never leave a second copy of a skill under `.claude/skills/<name>`, and never
+  replace a real `.claude/skills` directory before its skills are under
+  `.agents/skills/`.
 - Never commit `.claude/skills` when it is a link.
 - Never commit `.claude/settings.local.json`. Ignore it before it exists.
 - Keep project requirements in the project's documents, not in promoted skills.
@@ -151,6 +181,10 @@ Two asymmetries matter:
   instructions of its own.
 - Every adopted planning document describes this repository, with no leftover
   placeholder text.
+- `DECISIONS.md` exists wherever `PLAN.md` was adopted, and holds the decisions
+  adoption itself closed.
+- Each skill exists once, under `.agents/skills/`, and a copy taken from the pool
+  records the commit it came from.
 - Project-local skills resolve under both `.agents/skills/` and
   `.claude/skills/`.
 - `.claude/skills` is ignored by Git when it is a link.

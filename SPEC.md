@@ -88,7 +88,11 @@ the agent state already on the machine at risk.
 - `.agents/skills/` contains reusable workflows linked into `AGENTS_HOME` and
   `CLAUDE_CONFIG_DIR`. Skills tied to one stack, product, or environment live in
   the separate `rwgs/ai-skills` repository and are copied into the repositories
-  that need them, recording the pool commit taken.
+  that need them, recording the pool commit taken. A skill about an agent's own
+  operation is installed rather than pooled, because it has no repository to be
+  copied into. An adopting repository holds one copy of each skill, under
+  `.agents/skills/`, and exposes it to Claude Code through an ignored
+  `.claude/skills` link rather than a second copy.
 - `scripts/install.sh` and `scripts/install.ps1` install into the user's own
   directories. `scripts/bootstrap.sh` and `scripts/bootstrap.ps1` obtain the
   clone they install from, so a machine with nothing checked out can run one

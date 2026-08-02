@@ -10,6 +10,22 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-08-01
 
+- The `adopt-baseline` and `ai-project-manager` skills now agree with the
+  decisions this repository has recorded. `adopt-baseline` inventories
+  `DECISIONS.md` and `CHANGELOG.md`, never adopts `PLAN.md` without
+  `DECISIONS.md`, because promoting the plan's closed decisions is the only thing
+  that survives the plan being replaced, and creates `CHANGELOG.md` on its own
+  condition rather than by repository type. `ai-project-manager` now looks for the
+  `PLAN.md` it replaces and the `CHANGELOG.md` it updates, which its discovery
+  step and its search glob both omitted.
+- A repository now draws a pooled skill into `.agents/skills/<name>` and nowhere
+  else, and Claude Code reaches it through the single ignored `.claude/skills`
+  link rather than a second copy. `docs/SKILLS.md` described one wiring and
+  `adopt-baseline` the other, and the two drift differently. The installed set is
+  unchanged: `show-codex-reset-expiries` stays, and `docs/SKILLS.md` now says why
+  a skill about an agent's own operation is installed rather than pooled. Nothing
+  here changes a permission, a configuration value, or a link the installer
+  writes, so there is no reason to rerun it.
 - The `pr-readiness` skill now covers Azure DevOps as well as GitHub. Its
   diagnostics separate the worktree checks, which are the same everywhere, from
   a per-host table giving the commands for pull-request state, checks against

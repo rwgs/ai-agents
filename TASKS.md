@@ -352,14 +352,18 @@ are deliberately left alone.
   target passed to it is built from one of the three managed homes. Remaining:
   the three-platform run, which needs a push.
 
-## Current phase: Host-neutral version control
+## Blocked phase: Host-neutral version control
 
 The baseline must serve a repository hosted on Azure DevOps, hosted service or
 on-premise server, as well as one on GitHub. Neither Azure DevOps variant is in
 use, so this phase separates the host-neutral core from the host-specific edge
 and ships the Azure DevOps side labelled unverified. `DECISIONS.md` records the
-choice as "Both hosts are supported, only GitHub is verified", and `PLAN.md`
-carries the approach and the seven couplings it addresses.
+choice as "Both hosts are supported, only GitHub is verified"; the approach and
+the seven couplings it addressed were in the `PLAN.md` since replaced.
+
+Everything implementable is done, committed, and validated locally. What is left
+is the three-platform run, which needs a push and a run to read. `gh` here is
+unauthenticated with no token in the environment.
 
 - [x] Record the requirement and the closed choice: `DECISIONS.md`, `SPEC.md`
   required behavior, compatibility, non-goals, acceptance criteria and two
@@ -448,8 +452,52 @@ carries the approach and the seven couplings it addresses.
   `gh` here is unauthenticated with no token in the environment, so no run can
   be read from this session.
 
-## Later phase: Re-appliable repository baseline
+## Current phase: Re-appliable repository baseline
 
+The three reconciliation tasks are done: the two reusable workflow skills now
+agree with the decisions this repository has recorded, and both open skill-policy
+questions are closed. `PLAN.md` carries the approach. What is left starts with
+the marker an adopting repository records, because update mode compares against
+it.
+
+- [x] Reconcile the reusable workflows before building update mode.
+  `adopt-baseline` now inventories `DECISIONS.md` and `CHANGELOG.md`, notes
+  whether `.claude/skills` is a directory or a link, pairs `DECISIONS.md` with
+  `PLAN.md` in its selection table because promotion out of the plan is the only
+  thing that survives the plan, and gives `CHANGELOG.md` its own condition
+  outside that table. It also covers the case the wiring alignment exposed: a
+  repository whose `.claude/skills` is already a real directory moves those
+  skills to `.agents/skills/` before the directory is replaced. The first
+  `DECISIONS.md` entries are not empty, because adoption itself closes which
+  documents were declined and which skills were kept, promoted, or retired.
+  `ai-project-manager` now discovers the `PLAN.md` it replaces and the
+  `CHANGELOG.md` it updates, in both its workflow step and its `rg` glob, which
+  omitted the two files the skill writes.
+- [x] Align `docs/SKILLS.md` with `adopt-baseline` on one dual-agent wiring
+  method. One source under `.agents/skills/` plus the ignored `.claude/skills`
+  link wins, recorded in `DECISIONS.md` as "One skill source per repository,
+  exposed by an ignored link". Two copies drift silently, and they would give the
+  planned update mode two inputs to compare against one recorded pool commit with
+  no rule for a disagreement. The accepted cost is per-clone setup, now stated in
+  the skill: a fresh clone has no Claude Code skills until the link is recreated.
+- [x] Resolve the installed-skill policy exception for
+  `show-codex-reset-expiries`. Recorded in `DECISIONS.md` as "A skill about the
+  agent's own operation is installed, not pooled", and stated as a clause of the
+  bar in `docs/SKILLS.md` rather than a note on the skill. The product test is
+  about the repository a skill is drawn into; this one reports the signed-in
+  account's Codex reset-credit expiries and has no repository dependency, so
+  pooling it would leave a user-wide answer available only where someone copied
+  it. The installed set stays at eight.
+- [x] Validate the reconciliation locally. WSL `./scripts/validate.sh` passed on
+  2026-08-01, reporting `installer integration test passed` and `validation
+  passed: 8 skills checked`, which is what covers each skill's front matter, every
+  `name` matching its directory, the absence of a `[TODO:` marker, and the
+  `docs/SKILLS.md` inventory still matching the skill directories. Of the optional
+  tools this WSL installation has only `python3` and `git`, so the run skipped
+  ShellCheck, `node --check`, `codex execpolicy`, and both PowerShell checks, none
+  of which reads a file this change touched. Both skills were then read end to end,
+  because no check catches a rule dropped during an edit. No three-platform run
+  was asked for: the change touches no script, no workflow, and no installed path.
 - [ ] Record in an adopting repository which baseline commit it took, which
   documents it adopted, which pieces it declined, and the pool commit behind any
   skill copied from `rwgs/ai-skills`.
@@ -457,19 +505,6 @@ carries the approach and the seven couplings it addresses.
   missing documents and sections and reports drift without overwriting an
   adopted document. It reads both recorded commits, so a copied pool skill is
   reported alongside a stale document.
-- [ ] Reconcile the reusable workflows before building update mode:
-  `adopt-baseline` must inventory and select `DECISIONS.md` whenever it adopts
-  `PLAN.md`, treat `CHANGELOG.md` conditionally, and expose a pooled skill to
-  both agents from one project-local source. `ai-project-manager` must discover
-  the existing `PLAN.md` and conditional `CHANGELOG.md` it is expected to use.
-- [ ] Align `docs/SKILLS.md` with `adopt-baseline` on one dual-agent wiring
-  method. The current pool instructions say to copy a skill into both
-  `.agents/skills/` and `.claude/skills/`, while the adoption skill requires one
-  `.agents/skills/` source plus an ignored link, and the two approaches have
-  different drift behavior.
-- [ ] Resolve the installed-skill policy exception for
-  `show-codex-reset-expiries`: either record why a user-wide agent-operations
-  skill is allowed despite being product-specific, or move it to the pool.
 - [ ] Extend adoption to install `.gitattributes` and offer the validation
   workflow and the Dependabot configuration. There is no pull-request template
   to propagate any more, and an adopting repository that accepts no bot pull
