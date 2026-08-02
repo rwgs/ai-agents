@@ -1,120 +1,131 @@
-# Bring an adopted repository up to date
+# Propagate the development infrastructure adoption skips
 
 Approach for the change currently in flight. Replaced when the next non-trivial
 change begins, so anything that must outlive it is promoted first: verified
 product facts to `SPEC.md`, actionable work to `TASKS.md`, and closed choices to
 `DECISIONS.md`.
 
-The marker plan this replaces was promoted before it was overwritten. Its decision
-is in `DECISIONS.md` as "An adopting repository records what it took in
-`.agents/baseline.json`", the marker itself is in `SPEC.md`, and its evidence is
-recorded against the closed task in `TASKS.md`.
+The update-skill plan this replaces was already promoted. Its decision is in
+`DECISIONS.md` as "Updating is a sibling skill, and only a verbatim copy is
+refreshed", the marker and the update semantics are in `SPEC.md`, and its
+evidence is recorded against the closed task in `TASKS.md`.
 
 ## Problem
 
-A repository adopts the baseline once and the baseline keeps changing. Nothing
-brings the two back together, so an adopted repository silently falls behind: it
-misses a document the baseline added, a section a template gained, and a fix to a
-skill it copied out of the pool.
+Adoption reconciles instructions, planning documents, and skills, and stops
+there. Three things this repository depends on are never propagated:
+`.gitattributes`, the CI definition that validates a change, and the
+dependency-update configuration that keeps the CI definition's action pins
+current. An adopted repository therefore gets the conventions and none of the
+machinery that enforces them.
 
-The record needed to do that safely now exists. What is missing is the half that
-reads it, and its hard constraint is stated in `ROADMAP.md`: adopted documents are
-customised after they land, so an update that overwrites destroys work. Additive
-semantics are a correctness requirement rather than a preference.
+`.gitattributes` is the one with a failure rather than a gap behind it. Without
+it a contributor on Windows commits CRLF, and a Bash script checked out with CRLF
+fails with `syntax error near unexpected token`. This repository hit exactly that
+in its own checkout, which is why the file exists here at all.
 
 ## Constraints discovered
 
-- The user settled the shape this session: a sibling skill, not a second mode
-  inside `adopt-baseline`. That agrees with the `docs/SKILLS.md` authoring rule to
-  keep a skill to one workflow, and with the precedent that split project planning
-  from pull-request readiness.
-- Read this session, the templates carry stable `##` headings, so a missing
-  section is computable by comparing headings rather than prose. The pool's layout
-  is `skills/<name>/`, and its history is two commits with `4c6cf88` at the tip.
-- `adopt-baseline` already defines what is on offer, in its selection table and
-  its wiring and configuration rules. A second list here would drift from it, and
-  the propagation task later in this phase is about to add to that list.
-- The provenance rule this repository already accepted for shared files fits a
-  pooled skill exactly and a document not at all. A pooled skill is copied
-  verbatim, so byte-identical to the recorded commit means nothing here changed it
-  and it is safe to refresh. An adopted document is adapted to the repository as it
-  lands, so it is never byte-identical and the test would be dead code.
-- A convention a repository deliberately keeps needs somewhere to be recorded, or
-  it is reported as drift on every run. `DECISIONS.md` is that place, so this skill
-  reads the repository's own decision log before calling a deviation drift. It
-  needs no new marker field, and a repository that declined `DECISIONS.md` accepts
-  a repeated report.
-- Advancing the recorded commit past drift that was reported and not applied would
-  hide that drift permanently, because the next run diffs from the newer commit.
-  The commit is therefore a claim that nothing is outstanding, not a timestamp.
-  Each pooled skill carries its own commit, so one customised skill does not hold
-  the baseline commit back.
+- The CI definition cannot be copied. This repository's
+  `.github/workflows/validate.yml` runs `shellcheck scripts/*.sh`,
+  `./scripts/validate.sh`, and the PowerShell installer test under both editions.
+  Every one of those is a check only this repository has, so a verbatim copy is a
+  workflow that fails on its first run in the adopting repository.
+- Two of the three artifacts are host-specific, which is why `ROADMAP.md`
+  sequences this behind Phase 8. `azure-pipelines.yml` is the Azure DevOps
+  counterpart of the workflow, and `docs/WORKFLOW.md`'s table records that Azure
+  DevOps has no Dependabot counterpart at all.
+- The host cannot always be read from the remote. `github.com`, `dev.azure.com`,
+  and `*.visualstudio.com` name a product; an on-premise Azure DevOps Server is
+  reached at whatever hostname the organisation gave it, and a repository may
+  have no remote yet. A hostname that names no product is a question, not a
+  default.
+- Dependabot and the `pull_request` trigger stand or fall together. `DECISIONS.md`
+  keeps both here under "Bots may open pull requests, humans may not", and the
+  reason is one condition: whether the repository accepts a pull request a bot
+  opens. A repository that does not wants neither.
+- Verified this session in a scratch repository, because the sequence is what the
+  skill will tell an agent to run. Adding `.gitattributes` to a repository that
+  already has commits changes nothing already committed: `git status` prints
+  nothing. `git add --renormalize .` is what stages the conversion, and it touches
+  every affected file, so it belongs in a commit of its own. After that commit
+  `git ls-files --eol` still reports `w/crlf`, because the working tree keeps its
+  old endings until the paths are checked out again, and
+  `git rm --cached -r . && git reset --hard` is what refreshes them. Rerunning
+  `git add --renormalize .` on a converged tree stages nothing, which is the
+  check.
+- `update-baseline` deliberately keeps no list of its own, so it reads
+  `adopt-baseline` for what is on offer. Adding a section there is enough for the
+  update half to offer these three, provided the sentence that enumerates the
+  offerable set names the new section.
 
 ## Approach
 
-- Add `.agents/skills/update-baseline/`, installed alongside `adopt-baseline`,
-  each naming the other at its boundary. Presence of the marker is what separates
-  them, and it is checkable rather than a matter of interpretation.
-- Stop rather than guess on three inputs: no marker, a marker that does not parse
-  or carries an unknown `version`, and a recorded commit absent from the clone's
-  history. Everything below the read trusts the marker, so a half-read one is
-  worse than none.
-- Check the marker against the working tree before using it, and report every
-  disagreement instead of normalising it. That is the drift `ROADMAP.md` calls
-  worse than no marker.
-- Sort each artifact on offer into adopted, declined, new since adoption, or added
-  by hand, and act only on the last three. A declined artifact is reported once
-  with its recorded reason and never added.
-- Add two things and nothing else: a document the selection table calls for that
-  the marker does not decline, and a section the template has that the adopted
-  document lacks. Write a section for the repository or report it, never leave an
-  empty heading, since a heading with nothing under it reads as an answered
-  question.
-- Report convention drift with the rule it breaks and what applying it would
-  change, and let the user apply it. Read the repository's `DECISIONS.md` first, so
-  a deviation it has already closed is reported as kept on purpose.
-- Refresh a pooled skill only when its copy is byte-identical to the pool at the
-  recorded commit. Otherwise report the pool's diff and change nothing.
-- Advance the recorded commit only when nothing is outstanding, so a second run
-  over an unchanged baseline reports nothing to do and a run with unapplied drift
-  reports it again.
-- Close the `SPEC.md` unresolved question about pool-skill reporting, which this
-  builds, and leave the loop's proof on a scratch repository to the task that owns
-  it.
+- Add one step to `adopt-baseline`, between the project-scoped configuration step
+  and the step that writes the marker, so what it propagates is recorded like
+  everything else. Renumber the two steps after it and the three references to
+  them.
+- Install `.gitattributes` unconditionally, and add only the missing lines where
+  the repository already has one. Give the renormalisation its own commit and the
+  working-tree refresh after it, both as the verified commands.
+- Identify the host from the remote before offering either host-specific
+  artifact, and ask rather than infer wherever the hostname names no product.
+  Offer neither and record the reason on a host that has no counterpart.
+- Derive the CI definition rather than copy it: keep the parts that are baseline
+  convention -- the triggers, the least-privilege permission block, the
+  concurrency group, actions pinned by commit SHA, the timeout -- and write the
+  check steps from the checks the repository actually has. Add no workflow to a
+  repository with no check to run, because a green run that runs nothing reports
+  success it did not earn.
+- Ask once whether the repository accepts pull requests from bots, and let that
+  one answer decide both Dependabot and the `pull_request` trigger. Where the
+  answer is no, the action pins are maintained by hand, which is an accepted
+  exception with a reason, an owner, and a review date rather than an unnamed gap.
+- Record all three in the marker, adopted or declined with a reason, and extend
+  the marker example so an adopting repository sees the shape.
+- Extend `update-baseline` in two places only: the sentence that points at the
+  offerable set, so the new section is in scope, and the additive rule, so a
+  repository that changed host is reported rather than handed a second CI
+  definition.
 
 ## Trade-offs
 
-- A ninth installed skill costs a description line in every session and an
-  installer rerun. Accepted on the user's decision, and it buys two triggers that
-  do not compete: adopt and standardise against update, refresh, and drift.
-- Reading `adopt-baseline` for the offerable set couples the two skills, so the
-  update skill is incomplete on its own. Accepted because the alternative is two
-  lists that disagree, and the propagation task would have to update both.
-- Reporting rather than applying convention drift leaves a repository able to stay
-  non-conformant indefinitely. That is the point: each deviation has a legitimate
-  reason a repository might hold it, and the alternative is a skill that edits
-  files nobody asked it to touch.
-- Holding the recorded commit back while drift is outstanding means a repository
-  that never applies anything re-reads the same diff every run. Accepted, because
-  the alternative loses the finding entirely.
-- Nothing here is verified against a real repository. The phase already carries
-  the scratch-repository proof as its own task, and this change is the thing that
-  proof needs to exist first.
+- Deriving the CI definition means the adopting repository's workflow is written
+  rather than copied, so two adopting repositories will not get identical files.
+  Accepted: the alternative is a workflow whose steps name checks the repository
+  does not have.
+- No template asset is added for the workflow. A template would be a second copy
+  of the shape this repository's own workflow already carries, and the two would
+  drift with nothing comparing them, which is the argument this baseline has
+  already accepted twice for instructions and for skills.
+- Asking two questions during adoption -- the host where it is not readable, and
+  bot pull requests -- costs an interactive step in a workflow that otherwise
+  reads the repository. Both change what is written, and guessing either wrong
+  writes a file that fails or a file nobody wanted.
+- `.gitattributes` is installed rather than offered, so a repository that
+  deliberately commits CRLF has to remove it afterwards. Accepted on the failure
+  behind it, and the file is one line plus per-extension exemptions.
+- Nothing here is verified against a real repository. The phase's
+  scratch-repository proof is the task that does that, and this is the last piece
+  it needs to exist first.
 
 ## Verification
 
-- `./scripts/validate.sh` under WSL. Adding a skill makes it check the new front
-  matter, that `name` equals the directory, that no `[TODO:` marker survives, and
-  that the `docs/SKILLS.md` inventory matches the directories, which fails until
-  that list is updated. Report which checks the run performed, since it skips
-  ShellCheck, the Node syntax check, `codex execpolicy`, and both PowerShell checks
-  where those tools are absent.
-- Check that the paths the new skill names exist where it says: the pool's
-  `skills/<name>/` layout and the template path under `ai-project-manager`. A
-  reusable skill naming a path that is not there is a defect an adopting
-  repository inherits.
-- Read both skills after editing and confirm the boundary is stated in each and
-  that no rule is duplicated in a form that could drift.
+- `./scripts/validate.sh` under WSL. It checks both skills' front matter, that
+  each `name` matches its directory, that no `[TODO:` marker survives, and that
+  the `docs/SKILLS.md` inventory still matches the directories. Report which
+  checks the run performed, since it skips ShellCheck, the Node syntax check,
+  `codex execpolicy`, and both PowerShell checks where those tools are absent.
+- Check that every path the new step names exists in this repository:
+  `.gitattributes`, `.github/workflows/validate.yml`, `.github/dependabot.yml`,
+  and `azure-pipelines.yml`. A reusable skill naming a path that is not there is a
+  defect every adopting repository inherits.
+- Re-parse the marker example with `json.loads` after editing it, and check that
+  every declined artifact still carries a non-empty reason. A malformed example is
+  the one defect no check here would catch and every adopting repository would
+  copy.
+- Read both skills end to end and confirm every existing rule survives, the
+  boundary is still stated in each, and the offerable set is named in one place.
 - No three-platform run is requested. The change touches no script, no workflow,
-  and no installer behavior; it adds a skill directory, which the installer links
+  and no installer behavior; it edits two skill files the installer links
   identically on every platform.

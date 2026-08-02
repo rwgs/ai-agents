@@ -8,6 +8,111 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-02 Adoption installs line endings and derives the host's CI definition
+
+Status: Accepted. Settles how the development infrastructure is propagated, which
+Phase 6 named and left to whichever host branch Phase 8 produced.
+
+### Decision
+
+`.gitattributes` is installed in every adopting repository, with the
+renormalisation as a commit of its own and the working-tree refresh after it. The
+CI definition and the dependency-update configuration are offered rather than
+installed, and each is the one belonging to the repository's host: the Actions
+workflow and Dependabot on GitHub, `azure-pipelines.yml` and no Dependabot on
+Azure DevOps, neither on a host with no counterpart, with the reason recorded
+either way.
+
+The CI definition is derived from this repository's own, never copied. Its shape
+is convention and travels: the triggers, the least-privilege permission block, the
+concurrency group, actions pinned by commit SHA, the timeout. Its steps do not,
+because they run checks only this repository has, so they are written from what the
+adopting repository actually has, and no workflow is added to a repository with no
+check to run.
+
+The host is read from the remote and asked for wherever the hostname names no
+product. One question, whether the repository accepts a pull request from a bot,
+decides both Dependabot and the `pull_request` trigger; where the answer is no, the
+action pins are refreshed by hand and that is recorded as an accepted exception.
+
+### Why
+
+The three artifacts look like one propagation task and behave like three. Line
+endings have a failure rather than a gap behind them: a Bash script checked out
+with CRLF fails with `syntax error near unexpected token`, which this repository
+hit in its own checkout, so the file is not a preference to offer. A CI definition
+is the opposite: its value is entirely in the checks it runs, and this
+repository's are `shellcheck scripts/*.sh`, `./scripts/validate.sh`, and the
+PowerShell installer test under both editions. Copied anywhere else that is a
+workflow that fails on its first run, so what propagates is the shape.
+
+Deriving also settles what a green run means. A workflow whose steps were copied
+and then emptied reports success it did not earn, and it does that on every push,
+which is worse than an absent workflow because the repository looks validated.
+
+Asking for the host rather than deducing it follows from what the URLs can carry.
+`github.com`, `dev.azure.com`, and `*.visualstudio.com` name a product; an
+on-premise Azure DevOps Server answers at whatever hostname its organisation gave
+it, and a repository may have no remote yet. Guessing wrong writes the wrong CI
+definition into the repository, which is a file the maintainer then has to notice.
+
+Tying Dependabot and the `pull_request` trigger to one answer is the same reason
+this repository keeps both under "Bots may open pull requests, humans may not".
+The condition behind that entry is not a preference about bots; it is whether
+anyone merges what a bot opens. A repository where nobody does wants neither the
+configuration that opens them nor the trigger that validates them, and it still
+has to keep its pins current, which is why the refusal carries an accepted
+exception rather than silence.
+
+The renormalisation is separated from the file because the two are separate
+operations, verified in a scratch repository on 2026-08-02. Committing
+`.gitattributes` changes nothing already committed; `git add --renormalize .`
+stages the conversion and touches every affected file; the working tree keeps its
+old endings until `git rm --cached -r .` and `git reset --hard` check them out
+again; and a rerun that stages nothing is what proves the tree converged.
+
+### Rejected alternatives
+
+- Ship a workflow template as a skill asset, so the shape has one authored
+  source: it is a second copy of what `.github/workflows/validate.yml` already
+  carries, with nothing comparing the two, which is the drift argument this
+  baseline has already accepted for instructions and for skills.
+- Copy the workflow verbatim and let the adopting repository delete the steps it
+  cannot run: every adoption starts with a red build, and the steps most likely to
+  be left behind are the ones naming scripts that do not exist.
+- Generate the adopting repository's workflow from a detected project type: it
+  needs a matrix of ecosystems and check commands, guesses the build for every
+  project it has not seen, and the skill already reads the repository for
+  everything else it writes.
+- Offer `.gitattributes` alongside the other two, for symmetry: symmetry bought by
+  making the one artifact with a reproducible failure behind it optional.
+- Detect the host from the remote alone, with no question: shorter, and an
+  on-premise Azure DevOps Server is indistinguishable from any other private
+  hostname, so the quiet answer would be to offer neither artifact to exactly the
+  host that needs its pipeline most.
+- Offer Dependabot independently of the `pull_request` trigger: two questions with
+  one answer between them, and the failure mode is a repository configured to
+  receive pull requests nothing validates.
+
+### Consequences
+
+`adopt-baseline` gains a step between project-scoped configuration and the
+marker, so what it propagates is recorded like everything else, and the marker
+records a host-specific artifact under the path it takes on that host.
+`update-baseline` needs no list of its own: it reads the offerable set from
+`adopt-baseline`, and gains one rule, that a host-specific artifact is added only
+for the host the repository is on now, so a repository that moved host is reported
+rather than given a second CI definition.
+
+Two adopting repositories will not end up with identical workflow files. That is
+the intended outcome of deriving rather than copying, and it means a future change
+to this repository's workflow shape propagates as convention rather than as a
+diff.
+
+The phase's remaining work is unchanged: an entry point for a new repository, and
+the scratch-repository proof, which is now the only thing standing between this
+loop and evidence that it works.
+
 ## 2026-08-01 Updating is a sibling skill, and only a verbatim copy is refreshed
 
 Status: Accepted. Settles the choice the task left open between an update mode

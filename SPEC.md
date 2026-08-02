@@ -48,7 +48,9 @@ the agent state already on the machine at risk.
   readiness.
 - Adopt the baseline into a repository, and bring an already-adopted repository
   up to date when the baseline changes, without overwriting what that repository
-  customised.
+  customised. Adoption carries the development infrastructure as well as the
+  documents: line-ending normalisation everywhere, and the CI and
+  dependency-update configuration that matches the repository's host.
 - Check the repository's own structure, configuration syntax, skill metadata,
   documentation consistency, and installer behavior.
 - Stop managing a permission when it is removed from the curated rule source.
@@ -105,6 +107,13 @@ the agent state already on the machine at risk.
   everything else rather than rewriting a line an adopted document already carries.
   The recorded commit advances only when nothing the run surfaced is outstanding,
   so drift that was reported and not applied is found again.
+- Adoption installs `.gitattributes` in every repository, and offers the CI
+  definition and the dependency-update configuration belonging to that
+  repository's host, declining with a reason where the host has no counterpart.
+  Both host-specific artifacts are derived from this repository's own rather than
+  copied, because those run checks only this repository has. Whether the
+  repository accepts a pull request from a bot decides both Dependabot and the
+  `pull_request` trigger.
 - `scripts/install.sh` and `scripts/install.ps1` install into the user's own
   directories. `scripts/bootstrap.sh` and `scripts/bootstrap.ps1` obtain the
   clone they install from, so a machine with nothing checked out can run one

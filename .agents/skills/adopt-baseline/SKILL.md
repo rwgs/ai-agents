@@ -1,6 +1,6 @@
 ---
 name: adopt-baseline
-description: Standardise an existing repository on the shared agent baseline, reconciling AGENTS.md and CLAUDE.md without losing content, selecting the planning documents that suit the repository type, deciding which existing skills stay local or move to the baseline, wiring project-local skills for both agents, and recording what was adopted, declined, and copied in so a later update can tell customisation from drift. Use once per repository when asked to adopt, standardise, align, or roll out the shared conventions.
+description: Standardise an existing repository on the shared agent baseline, reconciling AGENTS.md and CLAUDE.md without losing content, selecting the planning documents that suit the repository type, deciding which existing skills stay local or move to the baseline, wiring project-local skills for both agents, propagating the line-ending, CI, and dependency-update configuration that matches the repository's host, and recording what was adopted, declined, and copied in so a later update can tell customisation from drift. Use once per repository when asked to adopt, standardise, align, or roll out the shared conventions.
 ---
 
 # adopt-baseline
@@ -9,7 +9,7 @@ description: Standardise an existing repository on the shared agent baseline, re
 
 One repository, once. This adopts conventions into a project. Bringing an
 already-adopted repository up to date is `update-baseline`, which reads the marker
-step 7 writes; hand over whenever that file already exists.
+step 8 writes; hand over whenever that file already exists.
 
 It does not install the machine-wide configuration; `scripts/install.sh` and
 `scripts/install.ps1` in the baseline repository do that, and they are unrelated
@@ -23,8 +23,9 @@ to anything here.
 4. Decide keep-or-promote for each existing skill.
 5. Wire project-local skills so both agents find them.
 6. Add project-scoped configuration only where the project needs it.
-7. Record what was adopted, declined, and copied in.
-8. Verify each agent loads what is expected.
+7. Propagate the development infrastructure, matched to the repository's host.
+8. Record what was adopted, declined, and copied in.
+9. Verify each agent loads what is expected.
 
 ## 1. Inventory
 
@@ -123,7 +124,7 @@ single directory link rather than duplicating files.
 
 A skill copied in from the `rwgs/ai-skills` pool is one of these. Copy it to
 `.agents/skills/<name>` and nowhere else, record the pool commit it came from in
-the marker step 7 writes, and let the same link expose it to Claude Code. A second
+the marker step 8 writes, and let the same link expose it to Claude Code. A second
 copy under `.claude/skills/<name>` drifts from the first, and only one copy can be
 compared against the recorded commit.
 
@@ -172,7 +173,115 @@ Two asymmetries matter:
 - `.codex/config.toml` is honored only in projects Codex trusts, so a setting
   placed there silently does nothing in an untrusted project.
 
-## 7. Record what was adopted
+## 7. Propagate the development infrastructure
+
+Three artifacts, and they are not one decision. `.gitattributes` is installed in
+every repository. The CI definition and the dependency-update configuration are
+offered, and both are host-specific, so identify the host before offering either.
+
+### `.gitattributes`, unconditionally
+
+Copy the baseline's file, and where the repository already has one, add the
+missing lines and rewrite none of the existing ones. Without it a contributor on
+Windows commits CRLF, and a Bash script checked out with CRLF fails with `syntax
+error near unexpected token`, which is a failure rather than a preference.
+
+Adding the file changes nothing already committed, so converting the history's
+line endings is a separate step. Give it a commit of its own, because it touches
+every affected file:
+
+```bash
+git add --renormalize .
+git status --porcelain          # what the conversion changes
+git commit -m "Normalize line endings"
+```
+
+Where that stages nothing the repository is already normalised and needs only the
+file itself. Commit adoption's own changes before running it either way, so the
+conversion is the only thing in that commit.
+
+The working tree keeps its old endings after that commit until the paths are
+checked out again, so refresh it and confirm the tree converged. `git reset --hard`
+discards uncommitted work, so commit or stash first:
+
+```bash
+git status --porcelain          # must print nothing before the next two commands
+git rm --cached -r .
+git reset --hard
+git add --renormalize .         # must stage nothing
+```
+
+### Identify the host
+
+```bash
+git remote -v
+```
+
+- `github.com`: the CI definition is `.github/workflows/validate.yml` and
+  Dependabot is `.github/dependabot.yml`.
+- `dev.azure.com` or a `*.visualstudio.com` host: Azure DevOps Services. The CI
+  definition is `azure-pipelines.yml` and there is no Dependabot.
+- Anything else, including an on-premise Azure DevOps Server, which answers at
+  whatever hostname its organisation gave it: ask. A hostname that names no
+  product is a question rather than a default, and so is a repository with no
+  remote yet.
+- A host with no counterpart to either artifact: offer neither, say so, and record
+  the reason naming the host.
+
+`docs/WORKFLOW.md` in the baseline states each security rule as the capability it
+needs and names the mechanism per host, including the rows where a host offers
+nothing. Read it rather than telling a repository to configure another host's
+product.
+
+### Ask once whether the repository accepts pull requests from bots
+
+That single answer decides two things: whether Dependabot is offered at all, and
+whether the CI definition carries a `pull_request` trigger. Neither has a purpose
+in a repository where nobody merges a bot's pull request.
+
+Where the answer is no, the action pins are refreshed by hand. Record that as an
+accepted exception with its reason, its owner, and the date it comes up for review
+again, so the gap is named rather than silent.
+
+### Derive the CI definition, never copy it
+
+The baseline's workflow runs the baseline's own checks, so a verbatim copy fails
+on its first run anywhere else. Take the shape and write the steps.
+
+Keep, because it is convention rather than content: the push trigger on the
+default branch, manual dispatch, the `pull_request` trigger where bot pull
+requests are accepted, a `permissions` block granting only what the job needs, a
+concurrency group that cancels a superseded run, third-party actions pinned by
+commit SHA with the version in a trailing comment, and a per-job timeout.
+
+Write from the repository: the steps that run its own checks -- its tests, its
+linter, its type checker, its build -- read from the repository rather than
+assumed, and a platform matrix only where the project genuinely runs on more than
+one.
+
+Add no workflow to a repository that has no automated check to run. A green run
+that runs nothing reports success it did not earn. Say so, and record the decline
+reason.
+
+On Azure DevOps, derive from `azure-pipelines.yml` the same way and keep the two
+things that are not stylistic: the parameterised agent pool, because Azure DevOps
+Server has no Microsoft-hosted pool, and `pr: none`, because Azure Repos ignores a
+YAML `pr` trigger and pull-request validation is a build validation branch policy
+instead. Say in the file that it is unverified against a live instance, as the
+baseline's own copy does.
+
+### Dependency updates
+
+On GitHub, give Dependabot one entry per ecosystem the repository actually
+declares, and none for an ecosystem it does not. `github-actions` applies as soon
+as the repository has a workflow, which is what keeps the pins above current.
+
+On any other host, record the decline with the host named. Azure DevOps has no
+Dependabot: the hosted service brings security updates through Advanced Security,
+and routine version bumps need a third-party runner, which nothing here has
+verified.
+
+## 8. Record what was adopted
 
 Write `.agents/baseline.json` and commit it. Everything above is a decision that
 leaves no evidence of itself: a declined document and a document the baseline
@@ -188,13 +297,20 @@ tell the two apart.
     "commit": "0000000000000000000000000000000000000000",
     "taken": "2026-01-01"
   },
-  "adopted": ["AGENTS.md", "CLAUDE.md", "TASKS.md"],
+  "adopted": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "TASKS.md",
+    ".gitattributes",
+    ".github/workflows/validate.yml"
+  ],
   "declined": {
     "SPEC.md": "one deployment script; the requirements are three lines of AGENTS.md",
     "ROADMAP.md": "nothing to order into phases",
     "PLAN.md": "declined with DECISIONS.md, because the two are one mechanism",
     "DECISIONS.md": "no change here has been large enough to need one",
-    "CHANGELOG.md": "nobody installs this independently of its source"
+    "CHANGELOG.md": "nobody installs this independently of its source",
+    ".github/dependabot.yml": "no bot pull requests here; the pins are refreshed by hand, recorded as an accepted exception in AGENTS.md"
   },
   "skills": {
     "linux-sysadmin": {
@@ -214,6 +330,10 @@ tell the two apart.
   gives every one it refused a reason. The reason is the point: without it an
   update run cannot tell a deliberate refusal from a document that has not been
   offered yet, so it offers the refused document again every time.
+- A host-specific artifact is recorded under the path it takes on this
+  repository's host, so the record also says which host was in use when it was
+  written. A repository that later moves host is a report rather than a second CI
+  definition.
 - `skills` holds only the skills copied from the pool. A skill authored in this
   repository has no upstream to compare against and gets no entry, and the
   keep-or-promote-or-retire decisions from step 4 belong in `DECISIONS.md`.
@@ -244,6 +364,16 @@ do not ignore it: a fresh clone has to be able to say what the repository adopte
   `.agents/skills/`.
 - Never commit `.claude/skills` when it is a link.
 - Never commit `.claude/settings.local.json`. Ignore it before it exists.
+- Never rewrite a line an existing `.gitattributes` carries, and never fold the
+  renormalising commit into another change.
+- Never run the working-tree refresh over uncommitted work. `git reset --hard`
+  discards it.
+- Never copy a CI definition that runs the baseline's own checks into another
+  repository, and never add one to a repository with no check to run.
+- Never infer a host from a hostname that names no product, and never offer a
+  host's artifact to a repository on another host.
+- Never offer Dependabot or a `pull_request` trigger to a repository that accepts
+  no pull request from a bot.
 - Never adopt a second time over an existing `.agents/baseline.json`.
 - Never record a commit read from a clone with uncommitted changes.
 - Never leave a declined artifact without a reason, and never ignore the marker.
@@ -263,6 +393,12 @@ do not ignore it: a fresh clone has to be able to say what the repository adopte
 - Project-local skills resolve under both `.agents/skills/` and
   `.claude/skills/`.
 - `.claude/skills` is ignored by Git when it is a link.
+- `.gitattributes` exists, and `git add --renormalize .` stages nothing, so the
+  tracked content already matches it.
+- Any CI definition added names only checks this repository has, and a dispatched
+  or pushed run passes rather than being assumed to.
+- Any Dependabot configuration added lists only ecosystems the repository
+  declares.
 - `.agents/baseline.json` parses, is committed, and holds the baseline commit,
   every adopted artifact, a reason for every declined one, and a pool commit for
   each copied skill.

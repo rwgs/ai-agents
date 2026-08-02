@@ -454,10 +454,10 @@ unauthenticated with no token in the environment.
 
 ## Current phase: Re-appliable repository baseline
 
-The marker and the update skill that reads it are both in place. `PLAN.md` carries
-the update skill's approach. What is left is the propagation adoption still skips,
-an entry point for a new repository, and the proof of the loop on a scratch
-repository, which is the only one of the three that verifies any of this against a
+The marker, the update skill that reads it, and the development infrastructure both
+propagate are all in place. `PLAN.md` carries the propagation approach. What is
+left is an entry point for a new repository and the proof of the loop on a scratch
+repository, which is the only one of the two that verifies any of this against a
 real repository.
 
 - [x] Reconcile the reusable workflows before building update mode.
@@ -584,13 +584,60 @@ real repository.
 
   Remaining for the phase: this is unverified against a real repository, which is
   what the scratch-repository proof below is for.
-- [ ] Extend adoption to install `.gitattributes` and offer the validation
+- [x] Extend adoption to install `.gitattributes` and offer the validation
   workflow and the Dependabot configuration. There is no pull-request template
   to propagate any more, and an adopting repository that accepts no bot pull
   requests should be offered neither Dependabot nor the `pull_request` trigger.
   Both artifacts are host-specific, so adoption offers the one matching the
   adopting repository's host and says so when the host has no equivalent. This
   is why the phase depends on the host-neutral phase above.
+
+  It is one new `adopt-baseline` step, placed between the project-scoped
+  configuration step and the marker so that what it propagates is recorded like
+  everything else, and recorded in `DECISIONS.md` as "Adoption installs line
+  endings and derives the host's CI definition". The three artifacts turned out to
+  be three decisions rather than one. `.gitattributes` is installed
+  unconditionally, because a Bash script checked out with CRLF fails outright and
+  this repository hit that in its own checkout. The CI definition is derived rather
+  than copied, because this repository's workflow runs `shellcheck scripts/*.sh`,
+  `./scripts/validate.sh`, and the PowerShell installer test under both editions,
+  so a verbatim copy fails on its first run anywhere else: the shape travels and
+  the steps are written from the checks the adopting repository has. No workflow is
+  added to a repository with no check to run, because a green run that runs nothing
+  reports success it did not earn.
+
+  The host is read from the remote and asked for whenever the hostname names no
+  product, which an on-premise Azure DevOps Server always is and a repository with
+  no remote also is. One question, whether the repository accepts a pull request
+  from a bot, decides both Dependabot and the `pull_request` trigger, and a no
+  carries an accepted exception for the pins it leaves to be refreshed by hand.
+  `update-baseline` needed no list of its own: it reads the offerable set from
+  `adopt-baseline`, so it gained the pointer to the new section and one rule, that
+  a host-specific artifact is added only for the host the repository is on now.
+
+  Verification: WSL `./scripts/validate.sh` passed on 2026-08-02, reporting
+  `installer integration test passed` and `validation passed: 9 skills checked`,
+  which is what covers both skills' front matter, each `name` matching its
+  directory, the absence of a `[TODO:` marker, and the `docs/SKILLS.md` inventory
+  still matching the directories. Of the tools it probes, this WSL installation has
+  only `python3` and `git`, so it skipped ShellCheck, `node --check`, `codex
+  execpolicy`, and both PowerShell checks, none of which reads a file this change
+  touches. Every path the new step names was checked to exist here:
+  `.gitattributes`, `.github/workflows/validate.yml`, `.github/dependabot.yml`,
+  `azure-pipelines.yml`, and `docs/WORKFLOW.md`. The marker example was re-parsed
+  with `json.loads` and still holds a 40-character commit in both places and a
+  non-empty reason on every decline.
+
+  The line-ending commands were run in a scratch repository before they were
+  written, which is what separated them into three operations. Committing
+  `.gitattributes` changes nothing already committed, `git status` printing nothing
+  even where the index holds CRLF; `git add --renormalize .` stages the conversion
+  and touches every affected file, so it needs a commit of its own; the working
+  tree still reports `w/crlf` from `git ls-files --eol` after that commit until
+  `git rm --cached -r .` and `git reset --hard` check the paths out again; and a
+  rerun of `git add --renormalize .` staging nothing is what proves the tree
+  converged. No three-platform run was asked for: the change touches no script, no
+  workflow, and no installed path.
 - [ ] Give a new repository its own entry point instead of a skill named for
   adopting an existing one.
 - [ ] Prove the loop on a scratch repository: adopt, change the baseline,

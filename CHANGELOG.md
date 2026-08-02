@@ -8,6 +8,26 @@ are in the commit history.
 This repository publishes no versioned releases, so entries are grouped by date,
 newest first. Version headings replace the dates if tagging begins.
 
+## 2026-08-02
+
+- `adopt-baseline` now carries the development infrastructure into a repository as
+  well as the documents and skills. It installs `.gitattributes` unconditionally,
+  with the renormalising commit and the working-tree refresh that adding the file
+  to an existing history needs, because a Bash script checked out with CRLF fails
+  outright. It then offers the CI definition and the dependency-update
+  configuration belonging to the repository's host, reading the host from the
+  remote and asking wherever the hostname names no product, as an on-premise Azure
+  DevOps Server never does. The CI definition is derived rather than copied: the
+  triggers, permission block, concurrency group, pinned actions, and timeout
+  travel, while the steps are written from the checks the repository actually has,
+  and no workflow is added to a repository with no check to run. One question,
+  whether the repository accepts a pull request from a bot, decides both Dependabot
+  and the `pull_request` trigger. `update-baseline` offers the same three artifacts
+  because it reads the offerable set from `adopt-baseline`, and adds a
+  host-specific one only for the host the repository is on now. Both skills are
+  linked rather than copied, so pulling is enough; there is no reason to rerun the
+  installer.
+
 ## 2026-08-01
 
 - Added `update-baseline`, a ninth installed skill, so a repository that adopted

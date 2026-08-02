@@ -77,9 +77,11 @@ finding rather than something to quietly normalise.
 ## 3. Sort what is on offer
 
 `adopt-baseline` defines what a repository may take: its selection table for the
-planning documents, `CHANGELOG.md` on its own condition, and its wiring and
-configuration rules. Read that skill rather than keeping a second list here, so
-anything the baseline starts offering is offered by both skills at once.
+planning documents, `CHANGELOG.md` on its own condition, its wiring and
+configuration rules, and its development-infrastructure step, which covers
+`.gitattributes`, the CI definition, and the dependency-update configuration. Read
+that skill rather than keeping a second list here, so anything the baseline starts
+offering is offered by both skills at once.
 
 Put each artifact in one group and act on the last three only:
 
@@ -94,7 +96,7 @@ Put each artifact in one group and act on the last three only:
 
 ## 4. Add what is missing
 
-Additive only. Two things are added and nothing else.
+Additive only. Three things are added and nothing else.
 
 - A document the selection table calls for, that the marker does not decline, and
   that does not exist. Adapt the template to this repository as adoption would, and
@@ -103,6 +105,15 @@ Additive only. Two things are added and nothing else.
   not. Write it for this repository from what the repository shows. Where it cannot
   be written that way, report it as drift instead: a heading with nothing under it
   reads as an answered question.
+- An infrastructure artifact the marker does not decline and the repository does
+  not have, written the way `adopt-baseline` writes it: the line normalisation that
+  follows `.gitattributes`, and check steps derived from the checks this repository
+  actually has rather than copied from the baseline's.
+
+A host-specific artifact is added only for the host the repository is on now, read
+the way `adopt-baseline` reads it. Where the marker records one for a different
+host, the repository moved: report that, and never leave it carrying two CI
+definitions.
 
 Compare headings, not prose. The templates carry stable headings, and the prose
 below them is meant to have been rewritten:
@@ -136,6 +147,9 @@ decision, so report it as kept on purpose rather than as drift.
   interactively approved permissions and absolute paths.
 - An adopted planning document is a stub: headings with nothing written under
   them. It teaches an agent nothing and reads as answered.
+- `git add --renormalize .` stages changes, so the tracked content disagrees with
+  the repository's own `.gitattributes`. The file was added and the conversion never
+  committed, which leaves the failure it exists to prevent in place.
 
 Correct none of these silently. Each has a reason a repository might legitimately
 hold it, and the report is what lets the user say which.
