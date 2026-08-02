@@ -46,11 +46,12 @@ the agent state already on the machine at risk.
 - Run repeatedly without rewriting a link that is already correct.
 - Ship project-planning templates, and keep planning separate from pull-request
   readiness.
-- Adopt the baseline into a repository, and bring an already-adopted repository
-  up to date when the baseline changes, without overwriting what that repository
-  customised. Adoption carries the development infrastructure as well as the
-  documents: line-ending normalisation everywhere, and the CI and
-  dependency-update configuration that matches the repository's host.
+- Start a repository on the baseline, adopt the baseline into a repository that
+  already holds work, and bring an already-adopted repository up to date when the
+  baseline changes, without overwriting what that repository customised. All three
+  carry the development infrastructure as well as the documents: line-ending
+  normalisation everywhere, and the CI and dependency-update configuration that
+  matches the repository's host.
 - Check the repository's own structure, configuration syntax, skill metadata,
   documentation consistency, and installer behavior.
 - Stop managing a permission when it is removed from the curated rule source.
@@ -101,12 +102,22 @@ the agent state already on the machine at risk.
   the pool commit behind each skill copied from `rwgs/ai-skills`. It is what an
   update compares against, so every entry names something checkable in that
   repository. This repository has no marker, because it is the baseline.
-- Adoption and update are separate skills, separated by whether the marker exists.
-  An update adds a missing document or template section, refreshes a pooled skill
+- Starting, adopting, and updating are three skills with three preconditions. The
+  marker separates the first pass from every later one, and whether the repository
+  holds work separates the two first passes: a repository with nothing to
+  reconcile is started rather than adopted. What a repository may take is defined
+  in `adopt-baseline` alone, so extending the baseline extends one list.
+- An update adds a missing document or template section, refreshes a pooled skill
   only while its copy is byte-identical to the commit recorded for it, and reports
   everything else rather than rewriting a line an adopted document already carries.
   The recorded commit advances only when nothing the run surfaced is outstanding,
   so drift that was reported and not applied is found again.
+- A repository started on the baseline records its deferrals in the marker's
+  declined field with the condition that reopens each one, because at creation
+  almost everything left out is missing for want of content rather than refused: a
+  `CHANGELOG.md` has no consumers yet and a CI definition has no check to run. An
+  update reports each with its recorded reason and says whether the condition is
+  now met.
 - Adoption installs `.gitattributes` in every repository, and offers the CI
   definition and the dependency-update configuration belonging to that
   repository's host, declining with a reason where the host has no counterpart.

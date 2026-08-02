@@ -10,6 +10,21 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-08-02
 
+- Added `start-repository`, a tenth installed skill, so a project that holds no
+  work yet has an entry point of its own instead of a skill named for adopting an
+  existing one. Rerun the installer to add its link in both agents. It creates the
+  repository where there is none, puts `.gitattributes` and the required ignore
+  rules in the first commit so nothing is ever committed under the wrong line
+  endings and the conversion adoption needs never happens, writes the instruction
+  files, and creates the planning documents that can be written at creation:
+  `SPEC.md`, `ROADMAP.md`, `TASKS.md`, and `DECISIONS.md`, whose first entries are
+  the stack, host, and shape being chosen right then. `PLAN.md`, `CHANGELOG.md`,
+  and usually the CI definition are deferred rather than declined, each recorded in
+  `.agents/baseline.json` with the condition that reopens it, and `update-baseline`
+  now reads a decline reason and says whether the repository meets that condition
+  yet. What a repository may take is still defined in `adopt-baseline` alone, which
+  hands over whenever an inventory finds nothing to reconcile.
+
 - `adopt-baseline` now carries the development infrastructure into a repository as
   well as the documents and skills. It installs `.gitattributes` unconditionally,
   with the renormalising commit and the working-tree refresh that adding the file

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Start Repository"
+  short_description: "Start a new repository on the shared agent baseline"
+  default_prompt: "Use $start-repository to set this new repository up on the shared instructions, planning documents, and conventions."

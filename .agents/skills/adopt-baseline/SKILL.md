@@ -1,15 +1,20 @@
 ---
 name: adopt-baseline
-description: Standardise an existing repository on the shared agent baseline, reconciling AGENTS.md and CLAUDE.md without losing content, selecting the planning documents that suit the repository type, deciding which existing skills stay local or move to the baseline, wiring project-local skills for both agents, propagating the line-ending, CI, and dependency-update configuration that matches the repository's host, and recording what was adopted, declined, and copied in so a later update can tell customisation from drift. Use once per repository when asked to adopt, standardise, align, or roll out the shared conventions.
+description: Standardise an existing repository on the shared agent baseline, reconciling AGENTS.md and CLAUDE.md without losing content, selecting the planning documents that suit the repository type, deciding which existing skills stay local or move to the baseline, wiring project-local skills for both agents, propagating the line-ending, CI, and dependency-update configuration that matches the repository's host, and recording what was adopted, declined, and copied in so a later update can tell customisation from drift. Use once per repository when asked to adopt, standardise, align, or roll out the shared conventions. A repository that holds no work yet is `start-repository`; one carrying `.agents/baseline.json` is `update-baseline`.
 ---
 
 # adopt-baseline
 
 ## Scope
 
-One repository, once. This adopts conventions into a project. Bringing an
-already-adopted repository up to date is `update-baseline`, which reads the marker
-step 8 writes; hand over whenever that file already exists.
+One repository, once. This adopts conventions into a project that already holds
+work, whatever its age. Hand over rather than continue where another workflow owns
+the repository:
+
+- It holds no work yet, so there is nothing to reconcile: `start-repository`,
+  which creates what this skill would otherwise inventory as absent.
+- It carries `.agents/baseline.json`, the marker step 8 writes: `update-baseline`,
+  which brings an already-adopted repository up to date.
 
 It does not install the machine-wide configuration; `scripts/install.sh` and
 `scripts/install.ps1` in the baseline repository do that, and they are unrelated
@@ -45,6 +50,11 @@ Stop if `.agents/baseline.json` exists. The repository has already adopted, so
 this is the wrong workflow for it: bringing an adopted repository up to date is
 `update-baseline`, working against that marker, not a second adoption. Report what
 the marker records and hand over.
+
+Stop equally if the inventory finds no work at all. A repository holding nothing
+but what its host's create command left -- a README, a licence, a `.gitignore` --
+has nothing for the next four steps to reconcile, and `start-repository` writes
+those files rather than reporting them absent. Count content, not commits.
 
 ## 2. Reconcile instruction files
 

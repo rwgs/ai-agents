@@ -8,6 +8,116 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-02 A new repository is started, and its refusals carry a reopening condition
+
+Status: Accepted. Implements the third workflow the entry below on sibling skills
+left named and unwritten, and settles what an empty repository can take.
+
+### Decision
+
+`start-repository` is a tenth installed skill. Three workflows, three
+preconditions: the marker separates a first pass from every later one, and whether
+the repository holds work separates the two first passes. A repository holding
+nothing but what its host's create command left is started; one holding a source
+file, an instruction file, or a planning document is adopted.
+
+It keeps no list of what a repository may take. `adopt-baseline` holds that, and
+this skill points at it for the selection table, the skill wiring, the host
+reading, the CI derivation, and the marker's fields. What it decides differently
+is what an empty repository can take yet, in three rules.
+
+- The line-ending and ignore rules are the first commit, ahead of the instruction
+  files.
+- A document that states intent is written now, and a document that records
+  history waits. `SPEC.md`, `ROADMAP.md`, and `TASKS.md` are writable at creation;
+  `PLAN.md` and `CHANGELOG.md` are not. `DECISIONS.md` is the exception among the
+  history documents and is written now.
+- Every artifact left out records the condition that reopens it, in the marker's
+  existing `declined` field. `update-baseline` reads the reason and says whether
+  the repository now meets it.
+
+### Why
+
+The two existing skills both mismatch a new repository, and not cosmetically.
+`adopt-baseline` opens by inventorying files that do not exist, reconciling a
+`CLAUDE.md` nobody wrote, and deciding keep-or-promote for skills nobody authored,
+so four of its steps are no-ops before it reaches anything useful; `update-baseline`
+refuses to run without a marker. The result was a project set up by hand and never
+recorded, which leaves it outside the update loop this phase exists to close.
+
+Putting `.gitattributes` in the first commit is the one thing a new repository gets
+cheaply that an adopting one cannot. Verified in a scratch repository on
+2026-08-02: with the file committed first, a file subsequently written with CRLF is
+staged as LF and `git add --renormalize .` stages nothing, so the renormalising
+commit and the working-tree refresh that adoption needs never happen at all.
+
+The intent-against-history split is what stops the planning set becoming stubs. It
+is tempting to read "no code yet" as "no documents yet", and the opposite is true
+for three of them: the requirements, the phase order, and the first phase's tasks
+are the reason the repository is being created. `PLAN.md` and `CHANGELOG.md` have
+nothing to hold, because one describes a change in flight and the other what
+changed for consumers who do not exist. `DECISIONS.md` inverts again, and is the
+strongest case of all: the language, the framework, the host, and the shape are
+chosen while the repository is created, and those are exactly the choices whose
+rationale cannot be recovered from the code a year later.
+
+The reopening condition is the load-bearing part, and it follows from what the
+update skill already does with a decline. It reports one once per run with its
+recorded reason and never adds it, which is right when the reason is "this
+repository does not want it" and wrong when the reason is "there is nothing to put
+in it yet". At creation almost every refusal is the second kind, most sharply for
+the CI definition: no workflow is added to a repository with no check to run, so
+the usual new repository declines it on day one and would never be offered it
+again. A reason naming the condition turns that into a report that becomes
+actionable the moment the first test lands.
+
+### Rejected alternatives
+
+- Extend `adopt-baseline` to handle an empty repository, branching per step: no
+  growth in the installed set and no installer rerun. Rejected on the rule
+  recorded below, that this is a third precondition rather than a mode, and
+  because the branches would land in the four steps that exist to reconcile
+  content, which is precisely what an empty repository has none of.
+- Leave new repositories to `adopt-baseline` unchanged and accept the no-op steps:
+  cheapest, and it is the state that produced the problem. An agent asked to start
+  a project reaches for the skill named for adopting an existing one, or sets the
+  project up by hand and writes no marker.
+- Repeat the offerable set in the new skill so it stands alone: rejected for the
+  third time, and the argument gets stronger with each skill. Three lists disagree
+  sooner than two, and the last change to extend the set would have had to edit all
+  three.
+- Ship a template repository to clone instead of a skill: one command, and it
+  freezes the baseline at the moment the template was written, has no marker, and
+  needs its own update mechanism, which is the whole of Phase 6 rebuilt for a
+  second artifact.
+- Add a `deferred` field to the marker beside `declined`: honest about the
+  difference, and it teaches `update-baseline` a second vocabulary in a record
+  whose entries are otherwise all checkable paths. The same argument already sent
+  intentional convention deviations to the repository's own `DECISIONS.md`. The
+  reason text carries the distinction at no schema cost, and a marker written by
+  either skill reads the same way.
+- Create every planning document at creation and let them fill in later: uniform,
+  and it produces exactly the stub this baseline reports as drift. A document of
+  headings reads as an answered question.
+- Write a CI definition with no steps, so the file exists from day one: it reports
+  a green run it did not earn, on every push, which is the case already rejected
+  when the CI definition was made derived rather than copied.
+
+### Consequences
+
+The installed set is ten, so the installer has to be rerun to add the link.
+`docs/SKILLS.md` lists the skill, the `docs/WORKFLOW.md` lifecycle names which of
+the three to run, and `CHANGELOG.md` says why a rerun is needed.
+
+`update-baseline` gains one clause: it reads a decline reason before reporting it
+and says whether a reopening condition is now met. `adopt-baseline` gains the
+handover at its inventory step and the boundary in its scope and description.
+Nothing else about either changes, and the offerable set is still in one place.
+
+Phase 6 has one task left, the scratch-repository proof, and it now has three
+workflows to exercise rather than two. Nothing here is verified against a real
+repository either; that task is what changes it.
+
 ## 2026-08-02 Adoption installs line endings and derives the host's CI definition
 
 Status: Accepted. Settles how the development infrastructure is propagated, which

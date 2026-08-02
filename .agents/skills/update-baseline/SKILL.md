@@ -1,6 +1,6 @@
 ---
 name: update-baseline
-description: Bring a repository that already adopted the shared agent baseline up to date with it, reading the recorded baseline and pool commits, adding the documents and sections that are missing without overwriting anything customised, reporting convention drift and stale pooled skills for a human to apply, and rewriting the record. Use when asked to update, refresh, re-apply, or check drift against the baseline in a repository carrying `.agents/baseline.json`.
+description: Bring a repository that already adopted the shared agent baseline up to date with it, reading the recorded baseline and pool commits, adding the documents and sections that are missing without overwriting anything customised, reporting convention drift and stale pooled skills for a human to apply, and rewriting the record. Use when asked to update, refresh, re-apply, or check drift against the baseline in a repository carrying `.agents/baseline.json`. A repository with no marker has not been through a first pass yet: that is `start-repository` where it holds no work and `adopt-baseline` where it does.
 ---
 
 # update-baseline
@@ -8,9 +8,11 @@ description: Bring a repository that already adopted the shared agent baseline u
 ## Scope
 
 One already-adopted repository, as often as the baseline changes.
-`.agents/baseline.json` is what separates this from `adopt-baseline`: no marker
-means the repository never adopted, and that skill owns the first pass. This one
-performs no first adoption and overwrites nothing the repository customised.
+`.agents/baseline.json` is what separates this from the two skills that write it:
+no marker means the repository has never been through either, and the first pass
+belongs to `start-repository` where the repository holds no work yet and to
+`adopt-baseline` where it does. This one performs no first pass and overwrites
+nothing the repository customised.
 
 `ai-project-manager` owns the content of the planning documents once they exist.
 This skill decides which are missing and reports where they have drifted; it does
@@ -32,9 +34,11 @@ not plan the work they describe.
 cat .agents/baseline.json
 ```
 
-Stop and hand over to `adopt-baseline` when there is no marker. Stop and report
-when it does not parse or its `version` is one you do not know: everything below
-trusts these fields, so a half-read marker is worse than none.
+Stop when there is no marker and hand over to whichever skill owns the first
+pass: `start-repository` if the repository holds no work yet, `adopt-baseline` if
+it does. Stop and report when the marker does not parse or its `version` is one
+you do not know: everything below trusts these fields, so a half-read marker is
+worse than none.
 
 Compare against a clone of the recorded `baseline.repository`. An existing clone
 will do when `git -C "$clone" status --porcelain` prints nothing; otherwise clone
@@ -89,6 +93,10 @@ Put each artifact in one group and act on the last three only:
   below.
 - **Recorded as declined.** Never added. Report it once with its recorded reason,
   so the decision can be revisited deliberately rather than re-argued every run.
+  Read the reason before reporting it: a repository set up by `start-repository`
+  records a deferral in this field, and the reason names the condition that
+  reopens it, such as the first automated check for a CI definition. Say whether
+  the repository now meets that condition, and offer the artifact where it does.
 - **Recorded nowhere and absent.** New since adoption. Offer it against the
   selection table, and record the answer either way.
 - **Recorded nowhere and present.** The repository added it by hand. Offer to
@@ -204,7 +212,8 @@ Finish by reporting four things, and say plainly when a group is empty:
 
 ## Safety rules
 
-- Never run this without `.agents/baseline.json`. That is `adopt-baseline`.
+- Never run this without `.agents/baseline.json`. That is `start-repository` or
+  `adopt-baseline`, whichever the repository's contents call for.
 - Never rewrite or remove a line an adopted document already carries.
 - Never add an artifact the marker declines.
 - Never add a heading without content written for this repository.

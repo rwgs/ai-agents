@@ -109,6 +109,7 @@ Installed into both agents by the installer.
 - `pr-readiness`
 - `python-scripting`
 - `show-codex-reset-expiries`
+- `start-repository`
 - `update-baseline`
 - `web-verification`
 

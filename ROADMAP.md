@@ -147,8 +147,8 @@ validation automatically on every push to `main`.
 
 ## Phase 5: A tree of its own
 
-Status: In progress. It runs alongside Phase 4's remainder, which is blocked on
-a token, a repository setting, and Windows Developer Mode.
+Status: Complete. Every restatement is done, and push run `30720357277` proved the
+four restated installer functions on all three platforms.
 
 ### Outcome
 
@@ -179,10 +179,11 @@ functional to have an author, so publishing it depends on nobody else's licence.
 
 ## Phase 6: Re-appliable repository baseline
 
-Status: In progress. The workflows agree with the recorded decisions, adoption now
-writes `.agents/baseline.json`, and `update-baseline` reads it. None of it has been
-run against a real repository yet, which is what the scratch-repository exit
-criterion is for.
+Status: In progress. Three skills now partition the work by precondition:
+`start-repository` for a repository with nothing to reconcile, `adopt-baseline` for
+one that already holds work, and `update-baseline` for one carrying the marker the
+first two write. None of it has been run against a real repository yet, which is
+what the scratch-repository exit criterion is for.
 
 ### Outcome
 
@@ -263,10 +264,10 @@ without gates a single maintainer committing to `main` cannot satisfy.
 
 ## Phase 8: Host-neutral version control
 
-Status: Blocked on the three-platform run that closes it. Everything
-implementable is done and validated locally. It ran before Phase 6's propagation
-work despite the higher number, because that work is host-specific and the
-numbering is historical.
+Status: Complete. Push run `30724005165` on `3749b3e` passed `ubuntu-latest`,
+`macos-latest`, and `windows-latest`, which was the last thing outstanding. It ran
+before Phase 6's propagation work despite the higher number, because that work is
+host-specific and the numbering is historical.
 
 ### Outcome
 

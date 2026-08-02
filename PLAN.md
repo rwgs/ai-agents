@@ -1,131 +1,117 @@
-# Propagate the development infrastructure adoption skips
+# An entry point for a repository that holds no work yet
 
 Approach for the change currently in flight. Replaced when the next non-trivial
 change begins, so anything that must outlive it is promoted first: verified
 product facts to `SPEC.md`, actionable work to `TASKS.md`, and closed choices to
 `DECISIONS.md`.
 
-The update-skill plan this replaces was already promoted. Its decision is in
-`DECISIONS.md` as "Updating is a sibling skill, and only a verbatim copy is
-refreshed", the marker and the update semantics are in `SPEC.md`, and its
-evidence is recorded against the closed task in `TASKS.md`.
+The propagation plan this replaces was already promoted. Its decision is in
+`DECISIONS.md` as "Adoption installs line endings and derives the host's CI
+definition", the propagated set is in `SPEC.md`, and its evidence is recorded
+against the closed task in `TASKS.md`.
 
 ## Problem
 
-Adoption reconciles instructions, planning documents, and skills, and stops
-there. Three things this repository depends on are never propagated:
-`.gitattributes`, the CI definition that validates a change, and the
-dependency-update configuration that keeps the CI definition's action pins
-current. An adopted repository therefore gets the conventions and none of the
-machinery that enforces them.
-
-`.gitattributes` is the one with a failure rather than a gap behind it. Without
-it a contributor on Windows commits CRLF, and a Bash script checked out with CRLF
-fails with `syntax error near unexpected token`. This repository hit exactly that
-in its own checkout, which is why the file exists here at all.
+Someone starting a project has two skills to choose between, and neither fits.
+`adopt-baseline` is named, described, and written for a repository that already
+holds work: it opens by inventorying files that do not exist, reconciling a
+`CLAUDE.md` that was never written, and deciding keep-or-promote for skills
+nobody has authored. `update-baseline` refuses to run without a marker. So a new
+repository is either pushed through a workflow whose first four steps are no-ops,
+or set up by hand and never recorded, which leaves it outside the update loop
+this phase exists to close.
 
 ## Constraints discovered
 
-- The CI definition cannot be copied. This repository's
-  `.github/workflows/validate.yml` runs `shellcheck scripts/*.sh`,
-  `./scripts/validate.sh`, and the PowerShell installer test under both editions.
-  Every one of those is a check only this repository has, so a verbatim copy is a
-  workflow that fails on its first run in the adopting repository.
-- Two of the three artifacts are host-specific, which is why `ROADMAP.md`
-  sequences this behind Phase 8. `azure-pipelines.yml` is the Azure DevOps
-  counterpart of the workflow, and `docs/WORKFLOW.md`'s table records that Azure
-  DevOps has no Dependabot counterpart at all.
-- The host cannot always be read from the remote. `github.com`, `dev.azure.com`,
-  and `*.visualstudio.com` name a product; an on-premise Azure DevOps Server is
-  reached at whatever hostname the organisation gave it, and a repository may
-  have no remote yet. A hostname that names no product is a question, not a
-  default.
-- Dependabot and the `pull_request` trigger stand or fall together. `DECISIONS.md`
-  keeps both here under "Bots may open pull requests, humans may not", and the
-  reason is one condition: whether the repository accepts a pull request a bot
-  opens. A repository that does not wants neither.
+- The shape is already settled. `DECISIONS.md` records under "Updating is a
+  sibling skill" that this work "is a third workflow with a third precondition,
+  an empty repository, not a mode of either of these two". So the question is
+  what the third skill contains, not whether it exists.
+- The offerable set of artifacts lives in `adopt-baseline` alone. That rule was
+  recorded when the update skill was written, and it was the right call for the
+  same reason twice: this phase's propagation task had to extend one list rather
+  than two. A third skill repeating the set would guarantee three lists disagree.
+- What an empty repository can take divides differently from what it wants, and
+  it divides only at creation. A document that states intent -- `SPEC.md`,
+  `ROADMAP.md`, `TASKS.md` -- has its content before any code exists. A document
+  that records history -- `PLAN.md`, `CHANGELOG.md` -- has none yet.
+  `DECISIONS.md` is the exception, and writable now for the opposite reason: the
+  stack, the host, and the shape are chosen while the repository is created, and
+  those are precisely the choices whose rationale cannot be recovered from the
+  code later.
+- Almost every artifact a new repository leaves out is "not yet" rather than
+  "no", and the marker has one field for both. `update-baseline` reports a
+  declined artifact once per run with its recorded reason, so a reason that names
+  the condition reopening it arrives back in front of someone when the condition
+  is met, and a flat "not needed" reads as closed and stays closed.
+- A new repository has no automated check, and `adopt-baseline` forbids adding a
+  workflow to a repository with no check to run. So the usual outcome is that
+  both host-specific artifacts wait for the first test, which is a deferral with a
+  condition rather than a refusal.
 - Verified this session in a scratch repository, because the sequence is what the
-  skill will tell an agent to run. Adding `.gitattributes` to a repository that
-  already has commits changes nothing already committed: `git status` prints
-  nothing. `git add --renormalize .` is what stages the conversion, and it touches
-  every affected file, so it belongs in a commit of its own. After that commit
-  `git ls-files --eol` still reports `w/crlf`, because the working tree keeps its
-  old endings until the paths are checked out again, and
-  `git rm --cached -r . && git reset --hard` is what refreshes them. Rerunning
-  `git add --renormalize .` on a converged tree stages nothing, which is the
-  check.
-- `update-baseline` deliberately keeps no list of its own, so it reads
-  `adopt-baseline` for what is on offer. Adding a section there is enough for the
-  update half to offer these three, provided the sentence that enumerates the
-  offerable set names the new section.
+  skill will tell an agent to run. `git init -b main` works on Git 2.55, and
+  `git log` in a repository with no commits exits non-zero, so an inventory
+  command has to tolerate that. With `.gitattributes` in the first commit, a file
+  subsequently written with CRLF is staged as LF and `git add --renormalize .`
+  stages nothing, so the conversion `adopt-baseline` documents never has to
+  happen. `git check-ignore -v` names the matching rule for a path that does not
+  exist yet, which is what makes the ignore rules checkable in the first commit.
 
 ## Approach
 
-- Add one step to `adopt-baseline`, between the project-scoped configuration step
-  and the step that writes the marker, so what it propagates is recorded like
-  everything else. Renumber the two steps after it and the three references to
-  them.
-- Install `.gitattributes` unconditionally, and add only the missing lines where
-  the repository already has one. Give the renormalisation its own commit and the
-  working-tree refresh after it, both as the verified commands.
-- Identify the host from the remote before offering either host-specific
-  artifact, and ask rather than infer wherever the hostname names no product.
-  Offer neither and record the reason on a host that has no counterpart.
-- Derive the CI definition rather than copy it: keep the parts that are baseline
-  convention -- the triggers, the least-privilege permission block, the
-  concurrency group, actions pinned by commit SHA, the timeout -- and write the
-  check steps from the checks the repository actually has. Add no workflow to a
-  repository with no check to run, because a green run that runs nothing reports
-  success it did not earn.
-- Ask once whether the repository accepts pull requests from bots, and let that
-  one answer decide both Dependabot and the `pull_request` trigger. Where the
-  answer is no, the action pins are maintained by hand, which is an accepted
-  exception with a reason, an owner, and a review date rather than an unnamed gap.
-- Record all three in the marker, adopted or declined with a reason, and extend
-  the marker example so an adopting repository sees the shape.
-- Extend `update-baseline` in two places only: the sentence that points at the
-  offerable set, so the new section is in scope, and the additive rule, so a
-  repository that changed host is reported rather than handed a second CI
-  definition.
+- Add `.agents/skills/start-repository/`, a tenth installed skill, with the same
+  `SKILL.md` plus `agents/openai.yaml` shape as its two siblings. Seven numbered
+  body sections, a verify item covered by the validation section, safety rules.
+- Keep it to what differs for an empty repository, and point at `adopt-baseline`
+  for the selection table, the skill wiring, the host reading, the CI derivation,
+  and the marker's fields. No second copy of the offerable set.
+- Order the steps so the line-ending and ignore rules are the first commit, ahead
+  of the instruction files. That is the concrete payoff of a new repository over
+  an adopting one: nothing is ever committed under the wrong endings, so the
+  renormalising commit and the working-tree refresh never happen.
+- State the intent-against-history split as the rule for which documents are
+  created, with `DECISIONS.md` named as the exception and its first entries being
+  the creation choices themselves.
+- Write every deferral into the marker's `declined` field with the condition that
+  reopens it, and show the shape rather than duplicating the whole example.
+- Name the new skill at both siblings' boundaries, in `docs/SKILLS.md`, in the
+  `docs/WORKFLOW.md` lifecycle, and in `SPEC.md` where the two-skill split is
+  stated.
 
 ## Trade-offs
 
-- Deriving the CI definition means the adopting repository's workflow is written
-  rather than copied, so two adopting repositories will not get identical files.
-  Accepted: the alternative is a workflow whose steps name checks the repository
-  does not have.
-- No template asset is added for the workflow. A template would be a second copy
-  of the shape this repository's own workflow already carries, and the two would
-  drift with nothing comparing them, which is the argument this baseline has
-  already accepted twice for instructions and for skills.
-- Asking two questions during adoption -- the host where it is not readable, and
-  bot pull requests -- costs an interactive step in a workflow that otherwise
-  reads the repository. Both change what is written, and guessing either wrong
-  writes a file that fails or a file nobody wanted.
-- `.gitattributes` is installed rather than offered, so a repository that
-  deliberately commits CRLF has to remove it afterwards. Accepted on the failure
-  behind it, and the file is one line plus per-extension exemptions.
-- Nothing here is verified against a real repository. The phase's
-  scratch-repository proof is the task that does that, and this is the last piece
-  it needs to exist first.
+- A tenth installed skill costs a description in every agent's always-loaded set
+  and an installer rerun. Accepted on the recorded decision, and the triggers
+  separate cleanly: start, create, scaffold, and initialise against adopt,
+  standardise, and roll out against update, refresh, and drift.
+- Pointing at `adopt-baseline` for five sections means an agent starting a
+  repository loads two skills. Accepted for the same reason the update skill
+  keeps no list: three copies of the offerable set would disagree by the next
+  change that extends it.
+- The usual new repository gets no CI definition on the first day. Accepted,
+  because the alternative is a workflow with no step in it, and the deferral is
+  recorded with the condition that reopens it rather than forgotten.
+- Deferrals share the marker's `declined` field rather than getting one of their
+  own. A second field would need `update-baseline` to learn a second vocabulary,
+  which is the argument already accepted for keeping convention deviations in the
+  repository's own `DECISIONS.md`. The reason text carries the difference.
 
 ## Verification
 
-- `./scripts/validate.sh` under WSL. It checks both skills' front matter, that
-  each `name` matches its directory, that no `[TODO:` marker survives, and that
-  the `docs/SKILLS.md` inventory still matches the directories. Report which
-  checks the run performed, since it skips ShellCheck, the Node syntax check,
-  `codex execpolicy`, and both PowerShell checks where those tools are absent.
-- Check that every path the new step names exists in this repository:
-  `.gitattributes`, `.github/workflows/validate.yml`, `.github/dependabot.yml`,
-  and `azure-pipelines.yml`. A reusable skill naming a path that is not there is a
-  defect every adopting repository inherits.
-- Re-parse the marker example with `json.loads` after editing it, and check that
-  every declined artifact still carries a non-empty reason. A malformed example is
-  the one defect no check here would catch and every adopting repository would
-  copy.
-- Read both skills end to end and confirm every existing rule survives, the
-  boundary is still stated in each, and the offerable set is named in one place.
-- No three-platform run is requested. The change touches no script, no workflow,
-  and no installer behavior; it edits two skill files the installer links
-  identically on every platform.
+- `./scripts/validate.sh` under WSL. It checks the new skill's front matter, that
+  its `name` matches its directory, that no `[TODO:` marker survives, and that the
+  `docs/SKILLS.md` inventory matches the skill directories, which is what catches
+  the tenth entry being missed. Report which checks the run performed, since it
+  skips ShellCheck, the Node syntax check, `codex execpolicy`, and both PowerShell
+  checks where those tools are absent.
+- Run every command the skill tells an agent to run, in a scratch repository,
+  before it ships. Done for the create, first-commit, renormalise, and
+  check-ignore sequences above.
+- Parse the marker fragment with `json.loads` and check every deferral carries a
+  non-empty reason, as the two existing marker examples are checked.
+- Read all three skills afterwards and confirm the three preconditions partition
+  cleanly, each names the other two where a reader could land in the wrong one,
+  and the offerable set is still stated in exactly one place.
+- No three-platform run is requested. The change adds a skill file and edits
+  documentation; it touches no script, no workflow, and no installer behavior. The
+  installer links a skill directory identically on every platform.

@@ -23,8 +23,10 @@ says which gates apply to a repository rather than which ones exist.
 ## Complete lifecycle
 
 1. Install this repository's global instructions, configuration, rules, and
-   reusable skills. Run `$adopt-baseline` once per repository to bring an
-   existing project onto these conventions.
+   reusable skills. Then run the one skill the repository's state calls for, once:
+   `$start-repository` for a project that holds no work yet, `$adopt-baseline` to
+   bring an existing project onto these conventions, and `$update-baseline`
+   afterwards, as often as the baseline changes.
 2. Read the real repository first: its branch, worktree, architecture, runtime
    paths, and the validation it already has.
 3. Write the durable project conventions and boundaries into `AGENTS.md`.

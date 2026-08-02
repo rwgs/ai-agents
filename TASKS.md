@@ -137,9 +137,12 @@
 
 ## Blocked phase: State-preserving installation and reliable validation
 
-Everything implementable here is done and verified on three platforms. The three
-items left need an action outside this environment: a personal access token, a
-repository setting, and Windows Developer Mode or an elevated shell.
+Everything implementable here is done and verified on three platforms. One item is
+left, and it needs an action outside this environment: Windows Developer Mode or
+an elevated shell, so that symbolic links can be created. The token that made CI
+runs unreadable is no longer a factor, `gh` having been authenticated on
+2026-08-02, and the code-scanning repository setting belongs to the governance
+phase below.
 
 - [x] Restore automatic validation on pushes to `main`. It works: the runs list
   now holds `push` events for `be8b8ea` at 04:54Z and `397241b` at 12:43Z on
@@ -225,12 +228,11 @@ repository setting, and Windows Developer Mode or an elevated shell.
   changes, the real install preserves the pre-existing Codex and Claude state,
   and both agents report the expected instructions and skills after restart.
 
-## Blocked phase: A tree of its own
+## Completed phase: A tree of its own
 
-Every restatement is done and committed. What is left is the three-platform run
-that proves the four restated functions, which needs a push and a run to read.
-`gh` is installed here but unauthenticated, with no token in the environment, so
-the run cannot be read from this session.
+Every restatement is done, committed, and proved on three platforms. The last
+item waited on nothing but readable CI: `gh` was authenticated on 2026-08-02, and
+the push runs it then exposed had already validated the restated code.
 
 
 This repository began as a copy of the unlicensed public `ChrisTitusTech/titus-ai`
@@ -319,7 +321,7 @@ are deliberately left alone.
   restatement because both installer tests match the installer's exact output,
   so a reworded message is a four-file edit with no new evidence behind it.
 
-- [ ] Restate the four selected functions, bodies only. `resolve_path` and
+- [x] Restate the four selected functions, bodies only. `resolve_path` and
   `link_managed_path` in `scripts/install.sh` first, because WSL
   `./scripts/validate.sh` runs `bash -n`, ShellCheck, and the whole Bash
   installer integration test locally, so a defect surfaces in the pass that
@@ -349,10 +351,18 @@ are deliberately left alone.
   One behavior changed, on a path no call site reaches: `link_managed_path` now
   evaluates `backup_path_for` once and lets `set -e` propagate its `exit 1`,
   where three separate command substitutions used to discard that status. Every
-  target passed to it is built from one of the three managed homes. Remaining:
-  the three-platform run, which needs a push.
+  target passed to it is built from one of the three managed homes.
 
-## Blocked phase: Host-neutral version control
+  Proved on three platforms on 2026-08-02, when `gh` was authenticated and the
+  runs became readable. The restatement is `e02540b`; push run `30720357277` on
+  `048309a`, the first commit pushed after it, passed `ubuntu-latest`,
+  `macos-latest`, and `windows-latest`, and the Windows job ran the installer
+  integration test under both PowerShell editions, each step asserting the
+  edition it was on. The current tip `e98a58b` carries the same four functions and
+  its push run `30732673451` passes the same three platforms, so the evidence is
+  not a one-off.
+
+## Completed phase: Host-neutral version control
 
 The baseline must serve a repository hosted on Azure DevOps, hosted service or
 on-premise server, as well as one on GitHub. Neither Azure DevOps variant is in
@@ -361,9 +371,9 @@ and ships the Azure DevOps side labelled unverified. `DECISIONS.md` records the
 choice as "Both hosts are supported, only GitHub is verified"; the approach and
 the seven couplings it addressed were in the `PLAN.md` since replaced.
 
-Everything implementable is done, committed, and validated locally. What is left
-is the three-platform run, which needs a push and a run to read. `gh` here is
-unauthenticated with no token in the environment.
+Everything is done, committed, validated locally, and proved on three platforms.
+The run was already there when `gh` was authenticated on 2026-08-02; nothing
+needed pushing.
 
 - [x] Record the requirement and the closed choice: `DECISIONS.md`, `SPEC.md`
   required behavior, compatibility, non-goals, acceptance criteria and two
@@ -431,7 +441,7 @@ unauthenticated with no token in the environment.
   since it is a silent gap rather than a visible one. Revisit when Azure DevOps
   is actually in use, or when multi-token derivation exists; the cost meanwhile
   is one approval prompt per `az` command.
-- [ ] Run WSL `./scripts/validate.sh` and report which checks it performed, then
+- [x] Run WSL `./scripts/validate.sh` and report which checks it performed, then
   ask to push and read a three-platform run. Acceptance: the run passes
   `ubuntu-latest`, `macos-latest`, and `windows-latest`, with the Windows job
   green under both PowerShell editions.
@@ -448,17 +458,21 @@ unauthenticated with no token in the environment.
   execpolicy`, the PowerShell parser check, and PSScriptAnalyzer. The two
   PowerShell checks were run from Windows instead, as `AGENTS.md` requires: both
   installers parse under 5.1 and 7, and PSScriptAnalyzer reports nothing.
-  Remaining: the three-platform run. `3749b3e` is already on `origin/main`, and
-  `gh` here is unauthenticated with no token in the environment, so no run can
-  be read from this session.
+
+  The three-platform run needed no push. `3749b3e` was already on `origin/main`
+  and its push had already produced run `30724005165`, which passed
+  `ubuntu-latest`, `macos-latest`, and `windows-latest` with the Windows job
+  running the installer test under both PowerShell editions. It was unreadable
+  until `gh` was authenticated on 2026-08-02, which is the only thing that was
+  ever blocking this item.
 
 ## Current phase: Re-appliable repository baseline
 
-The marker, the update skill that reads it, and the development infrastructure both
-propagate are all in place. `PLAN.md` carries the propagation approach. What is
-left is an entry point for a new repository and the proof of the loop on a scratch
-repository, which is the only one of the two that verifies any of this against a
-real repository.
+The marker, the two skills that write it, the update skill that reads it, and the
+development infrastructure all three propagate are in place. `PLAN.md` carries the
+entry-point approach. What is left is the proof of the loop on a scratch
+repository, which is the only thing here that verifies any of it against a real
+repository.
 
 - [x] Reconcile the reusable workflows before building update mode.
   `adopt-baseline` now inventories `DECISIONS.md` and `CHANGELOG.md`, notes
@@ -638,8 +652,56 @@ real repository.
   rerun of `git add --renormalize .` staging nothing is what proves the tree
   converged. No three-platform run was asked for: the change touches no script, no
   workflow, and no installed path.
-- [ ] Give a new repository its own entry point instead of a skill named for
-  adopting an existing one.
+- [x] Give a new repository its own entry point instead of a skill named for
+  adopting an existing one. It is `start-repository`, a tenth installed skill,
+  recorded in `DECISIONS.md` as "A new repository is started, and its refusals
+  carry a reopening condition". The shape needed no deciding: the sibling-skill
+  entry had already settled that this is a third workflow with a third
+  precondition, an empty repository, rather than a mode of either existing one.
+  Three preconditions now partition cleanly, and each skill names the other two
+  where a reader could land in the wrong one: the marker separates a first pass
+  from every later one, and whether the repository holds work separates the two
+  first passes. The offerable set of artifacts is still in `adopt-baseline` alone,
+  so this skill points at it for the selection table, the skill wiring, the host
+  reading, the CI derivation, and the marker's fields.
+
+  Three rules are its own, and each came out of the design rather than into it.
+  The line-ending and ignore rules are the first commit, ahead of the instruction
+  files, which is the one thing a new repository gets cheaply that an adopting one
+  cannot: the renormalising commit and the working-tree refresh never happen at
+  all. What can be written at creation divides into intent and history, so
+  `SPEC.md`, `ROADMAP.md`, and `TASKS.md` are written and `PLAN.md` and
+  `CHANGELOG.md` are not, with `DECISIONS.md` the exception among the history
+  documents because the stack, host, and shape are being chosen right then and are
+  unrecoverable from the code later. And almost everything a new repository leaves
+  out is "not yet" rather than "no", so each is recorded in the marker's existing
+  `declined` field with the condition that reopens it. That last one closes a real
+  hole: `update-baseline` reports a decline once per run and never adds it, so a CI
+  definition declined on day one for having no check to run would never have been
+  offered again. It now reads the reason and says whether the condition is met.
+
+  Verification: WSL `./scripts/validate.sh` passed on 2026-08-02, reporting
+  `installer integration test passed` and `validation passed: 10 skills checked`,
+  which is what covers the new skill's front matter, its `name` matching its
+  directory, the absence of a `[TODO:` marker, and the `docs/SKILLS.md` inventory
+  matching the skill directories. Of the tools it probes, this WSL installation has
+  only `python3` and `git`, confirmed rather than assumed this session, so it
+  skipped ShellCheck, `node --check`, `codex execpolicy`, and both PowerShell
+  checks; none of them reads a file this change touches, which adds one Markdown
+  skill, one YAML metadata file, and edits Markdown documents.
+
+  Every command the skill tells an agent to run was run in a scratch repository
+  first. `git init -b main` works on Git 2.55; `git log` exits non-zero in a
+  repository with no commits, so the inventory tolerates that. With
+  `.gitattributes` in the first commit, a file then written with CRLF is staged as
+  LF and `git add --renormalize .` stages nothing, which is what proves the claim
+  that a repository starting with the file never converts anything. `git
+  check-ignore -v` names the matching rule for a path that does not exist yet,
+  which is what makes the ignore rules checkable in that first commit. The marker
+  fragment was parsed with `json.loads` and every deferral checked for a non-empty
+  reason. No three-platform run was asked for: the change touches no script, no
+  workflow, and no installed path beyond the skill directory the installer links
+  identically everywhere.
 - [ ] Prove the loop on a scratch repository: adopt, change the baseline,
   re-apply, and confirm no customisation is lost and a second re-apply reports
   nothing to do.
