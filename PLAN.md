@@ -1,100 +1,80 @@
-# Prove the adoption loop on a scratch repository
+# Reconcile the readiness gate with the single-maintainer path
 
 Approach for the change currently in flight. Replaced when the next non-trivial
 change begins, so anything that must outlive it is promoted first: verified
 product facts to `SPEC.md`, actionable work to `TASKS.md`, and closed choices to
 `DECISIONS.md`.
 
-The entry-point plan this replaces was already promoted. Its decision is in
-`DECISIONS.md` as "A new repository is started, and its refusals carry a reopening
-condition", the three-skill split is in `SPEC.md`, and its evidence is recorded
-against the closed task in `TASKS.md`.
+The scratch-repository plan this replaces was already promoted. Its decision is in
+`DECISIONS.md` as "Heading text is the contract between a template and an adopted
+document", its four defects and their fixes are recorded against the closed task
+in `TASKS.md`, and the two branches it did not exercise are named there too.
 
 ## Problem
 
-Three skills now describe a loop -- start or adopt, record a marker, re-apply as
-the baseline changes -- and not one line of it had ever been run against a
-repository. Every rule in them was reasoned from this repository's own history.
-`ROADMAP.md` names the risk directly: an update that overwrites destroys work, and
-a marker that drifts from the repository is worse than no marker, because it
-reports an update as applied when it was not.
+`pr-readiness` step 7 says "Require a fresh independent review", with no condition
+on it. `DECISIONS.md` records that this repository has one maintainer and that
+preserving the shape of a review gate by self-approval is worse than having no
+gate. The skill is installed into every repository, so it currently states a gate
+that this repository cannot satisfy and that a single maintainer anywhere can only
+satisfy by faking.
+
+The contradiction has been recorded twice without being resolved: once when the
+no-pull-request decision was taken, and again when the skill was restated, where
+it was deliberately left for the task that owns it. Phase 7's exit criteria
+include that no documented gate depends on a second reviewer.
+
+`docs/WORKFLOW.md` step 12 points at "the skill's no-pull-request path", which the
+skill does not name as a path. That is the same misalignment in the other
+direction, and it is on a different axis: whether a pull request exists and
+whether a second party exists are independent of each other.
 
 ## Approach
 
-Run the loop for real, in a scratch repository, acting as the agent the skills are
-written for, and fix what it exposes rather than what it might expose.
+Make the gate conditional on something readable, and replace it with named
+substitutes rather than removing it.
 
-- Build a project that fires the interesting branches rather than a clean one: a
-  `CLAUDE.md` carrying content and no `AGENTS.md`, a real `.claude/skills`
-  directory holding a project-specific skill, a file committed with CRLF so the
-  renormalisation has work, a GitHub remote, and real checks so the CI definition
-  is derived rather than declined.
-- Clone the baseline and the pool, then move both forward *after* cloning, so the
-  update run has to fast-forward an existing clone rather than read a fresh one.
-- Change the baseline in a way that tests both halves of the additive rule: one
-  new template section that can be written from what the repository shows, and one
-  that cannot.
-- Follow each skill step by step and record every command's real output. A step
-  that cannot be performed as written is a defect in the skill, not something to
-  work around.
-- Re-apply until it converges, which is the exit criterion, and treat failure to
-  converge as a defect rather than as the loop's nature.
+- Keep the strong gate wherever an independent review is genuinely required, and
+  say what makes it required: the repository's own instructions or decisions, or
+  an enforcement its host applies to the changed paths.
+- Where nothing settles the question, report the requirement as undetermined. An
+  agent picking whichever answer suits the change under review is the failure to
+  design against.
+- Where the author is the only party, define what local readiness requires
+  instead. The substitutes must be things a single maintainer can actually
+  produce, and none of them may be called a review.
+- Report the absence as a limitation of the readiness claim. This is the part
+  `DECISIONS.md` already argues for and the skill does not say: a gate whose shape
+  survives without its substance reads like one that held.
+- Name the path in the skill so `docs/WORKFLOW.md` can point at it, and correct
+  that pointer to name both reduced paths, since this repository is on both.
 
-## Findings and fixes
-
-Four defects, all in the instructions rather than in the design.
-
-- The Windows wiring command never worked. `New-Item -ItemType Junction -Path
-  .claude/skills -Target .agents/skills` fails with "Creating a junction requires
-  an absolute path for the target" and creates nothing. Fixed with `(Resolve-Path
-  .agents/skills)`, and the asymmetry with the deliberately relative `ln -s` form
-  is now stated. Both forms were then run: junction on Windows, symbolic link under
-  WSL.
-- Adoption never said to keep the template's heading text. It said to adapt the
-  template and delete what does not apply, so an adapted `AGENTS.md` came out with
-  `## Scope`, `## Working style`, and `## Verification` against the template's six
-  headings, and the update run reported the entire template as missing. Heading
-  text is the only join left once the prose beneath is rewritten, so adoption now
-  requires it, `start-repository` says the same, and renaming a kept heading is a
-  safety rule.
-- The heading comparison is valid for four of the seven templates.
-  `DECISIONS.md` and `CHANGELOG.md` are append-only logs whose template holds one
-  placeholder entry heading, and `ROADMAP.md`'s headings are example phase names, so
-  comparing those three reports noise that reads exactly like a missing section.
-  `update-baseline` now names the four it applies to and how to check the other
-  three.
-- The loop could not converge. "Read `DECISIONS.md` before calling it drift" sat
-  only in the convention-drift section, so a template section the repository
-  deliberately does not have was re-reported on every run, and the recorded commit
-  could never advance past it. Since adoption tells a repository to delete the
-  sections that do not apply, that affects every adopting repository. The rule now
-  covers missing sections too, and the outstanding test in the marker step with it.
+Every existing rule survives. The change is a condition on one workflow step, one
+new section, and the two places that report the outcome.
 
 ## Trade-offs
 
-- The proof uses local paths as the recorded baseline and pool URLs, because the
-  baseline commit under test is not on `origin`. The skills say the recorded URL is
-  the one to use whatever host it names, so this exercises the same code path, but
-  it does not prove an HTTPS clone of either repository.
-- One scratch repository cannot cover every branch. This one adopted; it did not
-  start from empty, and the host was read rather than asked for. Those paths are
-  still unexercised, and saying so is worth more than a second scratch repository
-  built to make the coverage claim look complete.
-- The fixes were verified by re-reading the same scratch repository rather than by
-  a second adoption from scratch. Each one is an instruction defect whose correction
-  is checkable directly: the junction command runs, the heading sets match, the
-  three excluded templates are excluded, and the converged run reports nothing
-  outstanding.
+- The condition is read rather than configured. A repository that has reviewers
+  and never wrote that down gets the reduced path, which is the wrong answer for
+  it. Configuring it would mean a field in a marker that this repository has no
+  business writing into every adopting repository, and the undetermined case is
+  reported rather than assumed, so the wrong answer is visible in the report.
+- A separate pass over the finished diff is weaker than a second reader and is
+  worth having anyway. It is placed and worded so it cannot be reported as a
+  review, which is the whole risk it carries.
+- An agent review is not promoted to the independent one. In this repository the
+  agent is usually the author, and a rule that depends on which session wrote the
+  code is not checkable from the diff.
 
 ## Verification
 
-- Every command in the three skills, run against the scratch repository, with its
-  real output read rather than assumed.
-- Adoption checked against `adopt-baseline`'s own validation list, including that
-  every path the marker records as adopted exists and every declined one does not.
-- `git diff --numstat` on the adopted documents after the update run, to show
-  additions only. It reported `6 0 AGENTS.md`.
-- A third pass under the corrected rules, which must report nothing to add and
-  nothing outstanding.
-- `./scripts/validate.sh` under WSL after the skill fixes, reporting which checks
-  it performed.
+- Read the skill end to end after the edit and confirm every rule that was there
+  before is still there, since no automated check reads its prose.
+- `./scripts/validate.sh` under WSL, reporting which checks it performed. It
+  covers the skill's front matter, its `name` matching its directory, the absence
+  of a `[TODO:` marker, and the `docs/SKILLS.md` inventory.
+- Check that no file still states the gate unconditionally, by searching for the
+  terms the old wording used.
+- No three-platform run is expected: the change touches no script, no workflow,
+  and no installed path beyond a skill file the installer links identically
+  everywhere.

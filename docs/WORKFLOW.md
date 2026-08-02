@@ -44,8 +44,9 @@ says which gates apply to a repository rather than which ones exist.
     into `DECISIONS.md` with the alternatives they rejected, and verified facts
     into `SPEC.md` or `AGENTS.md`.
 12. Use `$pr-readiness` to inspect the final diff and confirm the local gate. This
-    repository has one maintainer, so use the skill's no-pull-request path and
-    stop at local readiness.
+    repository has one maintainer and no pull requests, so both of the skill's
+    reduced paths apply: stop at local readiness, and report the review nobody
+    was available to give as a limitation rather than as a gate that passed.
 13. Fix actionable findings, rerun validation, and repeat until clean or every
     remaining item has a documented reason.
 14. Commit the focused change to `main` once its verification passes. Neither a

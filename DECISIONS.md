@@ -8,6 +8,92 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-02 Local readiness names the review it did not get
+
+Status: Accepted. Settles the contradiction between `pr-readiness` and "No
+branches and no pull requests in this repository" below, which that entry left
+standing and the skill's restatement deliberately did not fix.
+
+### Decision
+
+The independent-review gate stays, and gains a condition. It applies where the
+repository asks for one in its instructions or its recorded decisions, or where
+its host enforces one over the changed paths. Where nothing settles the question,
+the requirement is reported as undetermined and the readiness claim stays
+conditional on it.
+
+Where the author is the only party, the gate is not skipped and not faked. Four
+substitutes take its place, none of them called a review: the complete required
+gate run and reported by command, every automated review the repository does have
+confirmed against the commit under review, a separate pass over the finished diff
+read against the requirements rather than the intent, and the leftover risk named.
+
+The result is reported as local readiness, with the missing review stated as a
+limitation of that claim. No approval, review state, or reviewer that does not
+exist is ever recorded, and a maintainer never approves their own change.
+
+### Why
+
+The skill is installed into every repository, and it stated a gate this
+repository cannot satisfy. That leaves an agent three options and two of them are
+bad: fake the review, ignore a hard gate, or block a change that is finished.
+Ignoring it is the one that spreads, because a gate an agent learns to step over
+teaches that the rest of the list is advisory too.
+
+The condition has to be read rather than assumed, because both defaults are wrong
+somewhere. Requiring a reviewer everywhere is the state being fixed. Assuming
+nobody reviews would quietly weaken every repository that does have reviewers and
+happens to load this skill, which is all of them.
+
+The substitutes are chosen for being producible by one person and for failing
+visibly. Three of the four are commands and their output. The fourth, a separate
+pass over the finished diff, is the only judgment in the set, and it is worded so
+it cannot be reported as a review: it is placed after the change is finished and
+read against the requirements, because the defect it catches is the one the
+author's intent papered over while writing.
+
+Naming the absence is the part that carries the earlier entry's argument. That
+entry rejected self-approval on the grounds that a gate whose shape survives
+without its substance is worse than a missing gate, because it reads like one
+that held. A readiness report that lists a review path and its evidence lets a
+reader tell a change nobody else read from one that was reviewed, which is the
+only honest output available when there is no second party.
+
+### Rejected alternatives
+
+- Drop the gate from the skill: it fits this repository exactly and makes the
+  skill wrong for every repository with reviewers, which is the population the
+  gate exists for.
+- Keep it unconditional and let a single maintainer ignore it in practice: it was
+  the state, it had been recorded as a contradiction twice, and an ignored hard
+  gate costs more than the review it stands in for.
+- Let a review by an agent count as the independent one: attractive, because a
+  session with no authoring context does read the diff differently. Rejected
+  because in this repository the agent is usually the author, and a rule whose
+  answer depends on which session wrote the code cannot be checked from the diff.
+- Have the maintainer self-approve to keep the gate's shape: already rejected in
+  the entry this one settles, and the reasoning is quoted rather than repeated.
+- Record the requirement in a field of `.agents/baseline.json`: configured rather
+  than read, and it writes a claim about a repository's review culture into a
+  marker whose every other entry is a checkable path.
+- Leave the condition to each repository's own instructions and say nothing in
+  the skill: the repositories that never wrote the rule down are exactly the ones
+  reaching for guidance, and they would get the unconditional gate again.
+
+### Consequences
+
+`pr-readiness` gains a `Readiness without an independent reviewer` section and a
+condition on its seventh workflow step, and its final report says which review
+path applied and on what evidence. Every other rule in the skill is unchanged.
+
+`docs/WORKFLOW.md` step 12 names both reduced paths rather than one. This
+repository is on both, and they are independent: a repository can have pull
+requests and one maintainer, or reviewers and no pull requests.
+
+Phase 7's exit criterion that no documented gate depends on a human pull request
+or a second reviewer is met for the reusable guidance. What is left in that phase
+is repository settings that have to be changed outside this environment.
+
 ## 2026-08-02 Heading text is the contract between a template and an adopted document
 
 Status: Accepted. Settles what the update workflow compares, which the scratch

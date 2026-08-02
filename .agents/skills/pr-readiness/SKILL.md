@@ -14,6 +14,11 @@ uncommitted work as much as to a published pull request, and a repository whose
 workflow has no pull requests still uses everything up to the point where a
 remote is involved.
 
+Two things vary between repositories, independently of each other: whether there
+is a pull request, and whether there is anyone but the author to review the
+change. Neither changes what is checked. Both change what can be claimed, and an
+absent gate is reported as absent rather than quietly passed.
+
 ## Workflow
 
 1. Read the repository instructions, the requirements, the accepted plan, and
@@ -32,8 +37,10 @@ remote is involved.
 6. Fix what CI and review actually found, add regression coverage where it is
    practical, rerun the affected validation, and push again. Where a finding is a
    verified false positive, explain it instead of changing correct code.
-7. Require a fresh independent review. The author's own read of the diff and a
-   green CI run are not a substitute for it.
+7. Establish whether an independent review is required here, and obtain a fresh
+   one where it is. The author's own read of the diff and a green CI run are not
+   a substitute for it. Where the repository has no second party, take the path
+   below instead of skipping the step.
 8. Work through the repository's manual-test checklist on the real target
    environment where that is practical, and write down what was run.
 9. After every push, recheck the final diff, the required checks, the reviews,
@@ -56,6 +63,35 @@ unrun. For uncommitted work, report `HEAD` alongside the worktree and
 untracked-file state, since `HEAD` alone describes none of what was reviewed.
 Where no pull request exists, report the remote checks, reviews, threads, and
 pull-request status as not applicable rather than as passing.
+
+## Readiness without an independent reviewer
+
+An independent review is required where the repository asks for one in its
+instructions or its recorded decisions, or where its host enforces one over the
+changed paths: a required-reviewer branch policy, a ruleset demanding an
+approval, or a code-owner rule. Read that before choosing a path. Where nothing
+settles it, report the requirement as undetermined and leave the readiness claim
+conditional on it, rather than picking the answer that suits the change.
+
+Where the author is the only party, a second look from the same person does not
+satisfy the gate and nothing else pretends to. Four things stand in its place:
+
+- the repository's complete required gate, run to completion, reported by the
+  exact command rather than by name, with anything skipped named as skipped
+- every automated review the repository does have, by name, each confirmed to
+  have run against the commit under review: a scanner, a linter, a type checker,
+  a CI job
+- a separate pass over the whole diff, made after the change is finished rather
+  than while writing it, read against the requirements and the plan rather than
+  against the intent that produced the code
+- the risk left over, named: what this change could break, what is untested, and
+  what a reviewer would have been asked to look at hardest
+
+Report the result as local readiness, and report the missing review as a stated
+limitation of that claim. Never record an approval, a review state, or a
+reviewer that does not exist, and never approve your own change to give the
+report the shape of a reviewed one. A gate whose shape survives without its
+substance is worse than a missing gate, because it reads like one that held.
 
 ## Diagnostics
 
@@ -117,6 +153,7 @@ The pull request itself should record:
 ## Final report
 
 Report `HEAD`, the worktree and untracked-file state, the changed-file scope, the
-local checks, the manual-test state, and every remaining blocker. For a published
-pull request also report its latest commit, the remote checks, the review state,
-the unresolved threads, and whether it is draft, review-ready, or merge-ready.
+local checks, the manual-test state, which review path applied and on what
+evidence, and every remaining blocker. For a published pull request also report
+its latest commit, the remote checks, the review state, the unresolved threads,
+and whether it is draft, review-ready, or merge-ready.

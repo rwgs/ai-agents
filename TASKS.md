@@ -820,11 +820,42 @@ cross-machine MCP requirement justifies it.
   workflow is dispatch-only meanwhile, so it does not fail on a schedule the way
   the `dependency-review` job silently never ran. Acceptance: a dispatched run
   uploads results and the alerts endpoint stops returning HTTP 403.
-- [ ] Reconcile `pr-readiness` with the single-maintainer path. Its workflow
-  currently requires a fresh independent review while `DECISIONS.md` rejects a
-  gate that needs a second party. Define what local readiness requires when no
-  independent reviewer exists, and keep the stronger gate for repositories that
-  do require one.
+- [x] Reconcile `pr-readiness` with the single-maintainer path. Its workflow
+  required a fresh independent review while `DECISIONS.md` rejects a gate that
+  needs a second party. Recorded in `DECISIONS.md` as "Local readiness names the
+  review it did not get": the gate keeps its strength and gains a condition, which
+  is that the repository asks for a review in its instructions or decisions, or
+  its host enforces one over the changed paths. Where nothing settles the
+  question, the requirement is reported as undetermined rather than resolved to
+  whichever answer suits the change.
+
+  Where the author is the only party, a new `Readiness without an independent
+  reviewer` section replaces the gate with four things one person can produce: the
+  complete required gate run and reported by command, every automated review the
+  repository does have confirmed against the commit under review, a separate pass
+  over the finished diff read against the requirements rather than the intent, and
+  the leftover risk named. Three of the four are commands and their output; the
+  fourth is the only judgment in the set, and it is worded so it cannot be reported
+  as a review. The result is local readiness with the missing review stated as a
+  limitation, and self-approval is refused outright, which is the argument the
+  superseded no-pull-request entry already made and the skill did not carry.
+
+  `docs/WORKFLOW.md` step 12 pointed at "the skill's no-pull-request path", which
+  the skill never named and which is a different axis anyway; it now names both
+  reduced paths, because this repository is on both and a repository can be on
+  either alone.
+
+  Verification: the skill was read end to end after the edit, because no check
+  reads its prose, and every rule that was there before is still there. WSL
+  `./scripts/validate.sh` passed on 2026-08-02, reporting `installer integration
+  test passed` and `validation passed: 10 skills checked`, which is what covers the
+  skill's front matter, its `name` matching its directory, the absence of a
+  `[TODO:` marker, and the `docs/SKILLS.md` inventory. Of the tools it probes, this
+  WSL installation has only `python3` and `git`, so it skipped ShellCheck, `node
+  --check`, `codex execpolicy`, and both PowerShell checks, none of which reads a
+  file this change touches. No three-platform run was asked for: the change touches
+  no script, no workflow, and no installed path beyond one skill file the installer
+  links identically everywhere.
 - [ ] Decide whether a default-branch ruleset is worth configuring at all. Every
   gate previously planned here required a pull request or a second reviewer, and
   neither exists in a single-maintainer flow.

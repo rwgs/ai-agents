@@ -10,6 +10,20 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-08-02
 
+- `pr-readiness` no longer demands a review that a single maintainer cannot get.
+  The independent-review gate now applies where the repository asks for one or its
+  host enforces one over the changed paths, and says the requirement is
+  undetermined where nothing settles it. Where the author is the only party, a new
+  `Readiness without an independent reviewer` section replaces the gate with four
+  things one person can produce: the complete required gate run and reported by
+  command, every automated review the repository does have confirmed against the
+  commit under review, a separate pass over the finished diff read against the
+  requirements rather than the intent, and the leftover risk named. The result is
+  reported as local readiness with the missing review stated as a limitation, and
+  approving your own change to give the report the shape of a reviewed one is
+  refused outright. Every other rule in the skill is unchanged, and it is linked
+  rather than copied, so pulling is enough.
+
 - Fixed four defects in the adoption skills, found by running the whole loop on a
   scratch repository rather than by reading it. The Windows wiring command never
   worked: `New-Item -ItemType Junction` rejects a relative `-Target`, so every
