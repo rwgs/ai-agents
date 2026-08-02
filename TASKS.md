@@ -226,7 +226,34 @@ phase below.
   This is a first install, and symbolic links still require enabling Developer
   Mode or using an elevated shell. Acceptance: dry-run reports the intended
   changes, the real install preserves the pre-existing Codex and Claude state,
-  and both agents report the expected instructions and skills after restart.
+  the trust roots cover where this machine's repositories actually live, and both
+  agents report the expected instructions and skills after restart.
+
+  The dry-run half is done, on 2026-08-02, against this machine's real `~/.codex`
+  and `~/.claude` rather than a copy. It touched nothing: a SHA-256 inventory of
+  both homes taken before and after is identical, excluding only the runtime
+  databases the agents were writing while it ran. What it reports it would do is
+  back up the empty `~/.codex/AGENTS.md` and link it to `ai-home/AGENTS.md`, link
+  the two model profiles and `~/.claude/CLAUDE.md`, set ten `config.toml` keys,
+  add 139 curated rules to `~/.codex/rules/default.rules`, add 278 derived
+  permissions to `~/.claude/settings.json`, and create `~/.agents/skills` and link
+  all ten skills into it and into `~/.claude/skills`.
+
+  It found the one thing a dry run is for. The default trust root is wrong for
+  this machine: `~/github` does not exist, and nine Git worktrees live under
+  `~/Development`. So the real install has to set `AI_TRUST_ROOTS`, and that is
+  now part of the acceptance above rather than something to notice afterwards.
+  Re-run with `AI_TRUST_ROOTS` set to `~/Development`, it generates the root plus
+  six worktrees, and the three it leaves out -- `ai`, `fabled-lands`, and
+  `wealthfolio` -- are exactly the three Codex has already trusted itself,
+  recorded lower-case in literal-string form. That is the duplicate matching the
+  provenance decision describes, confirmed against real machine state rather than
+  against a copy of it for the first time.
+
+  Still blocked on the same thing. `AllowDevelopmentWithoutDevLicense` is absent
+  from `HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock`, checked
+  on 2026-08-02, so Developer Mode is off and every `New-Item -ItemType
+  SymbolicLink` the dry run listed would fail.
 
 ## Completed phase: A tree of its own
 
