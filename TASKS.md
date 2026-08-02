@@ -255,6 +255,13 @@ phase below.
   on 2026-08-02, so Developer Mode is off and every `New-Item -ItemType
   SymbolicLink` the dry run listed would fail.
 
+  That last clause was an inference from the registry, and it is now an
+  observation. `New-Item -ItemType SymbolicLink` was attempted in a scratch
+  directory on 2026-08-02 and failed with `Administrator privilege required for
+  this operation.`, in a shell that reports itself outside the `Administrator`
+  role. So the blocker is the link operation itself refusing, not a setting read
+  as a proxy for it.
+
 ## Completed phase: A tree of its own
 
 Every restatement is done, committed, and proved on three platforms. The last
@@ -839,6 +846,41 @@ cross-machine MCP requirement justifies it.
   these two products, which are sold separately as GitHub Secret Protection and
   GitHub Code Security, but it is the same boundary and it says what to expect
   before the settings are opened.
+
+  Both reads were repeated on 2026-08-02 rather than carried forward:
+  `security_and_analysis` is still `null`, the secret-scanning alerts endpoint still
+  returns HTTP 404 `Secret scanning is disabled on this repository`, and the
+  code-scanning alerts endpoint still returns HTTP 403.
+
+  The Dependabot half of this item is no longer waiting on anything. It was gated
+  behind deciding how updates could be delivered under the accepted workflow, and
+  "Bots may open pull requests, humans may not" settled that on 2026-07-31. Read on
+  2026-08-02: the dependency graph detects all three pinned actions in its SBOM,
+  which is the prerequisite Dependabot reads manifests through, and Dependabot
+  alerts are on, `GET /repos/rwgs/ai/vulnerability-alerts` returning HTTP 204 with
+  no open alerts. Every pin is already at the newest release and pinned to that
+  release's own commit: `actions/checkout` at `3d3c42e5` is the `v7.0.1` tag object
+  and `v7.0.1` is the latest release, and both `github/codeql-action` entries at
+  `18420e32` are the `codeql-bundle-v2.26.2` tag, which is the latest release.
+
+  So Dependabot has opened no pull request, and that is the expected result rather
+  than evidence it is not running: there is nothing to bump. Nothing available here
+  distinguishes the two, because no REST endpoint exposes a Dependabot
+  version-update job, only the repository's Dependabot tab does. Real operational
+  proof needs a pin deliberately moved backwards and a wait for the weekly
+  schedule, which means committing a known-stale pin to `main`; that has not been
+  done and is not assumed either way.
+
+  One gap was found rather than confirmed.
+  `GET /repos/rwgs/ai/automated-security-fixes` returns
+  `{"enabled":false,"paused":false}`, so Dependabot security updates are off while
+  alerts are on and version updates are configured. The security baseline and
+  `DECISIONS.md` both say "Dependabot" as one mechanism, and on GitHub it is two
+  switches: `dependabot.yml` for routine bumps, a repository setting for
+  advisory-driven ones. Unlike secret scanning and code scanning, this one is
+  reachable from the API with the current token and is not plan-gated. The cost of
+  leaving it off is bounded: an advisory against a pinned action waits for the
+  weekly version bump instead of getting a pull request when it lands.
 - [x] Reconcile the no-branch, no-pull-request decision with all PR-only
   artifacts. Recorded in `DECISIONS.md` as "Bots may open pull requests, humans
   may not": Dependabot stays and the `Validate` workflow keeps its
