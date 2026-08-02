@@ -432,6 +432,22 @@ carries the approach and the seven couplings it addresses.
   `ubuntu-latest`, `macos-latest`, and `windows-latest`, with the Windows job
   green under both PowerShell editions.
 
+  The local run passed on 2026-08-01 at `3749b3e`, reporting `installer
+  integration test passed` and `validation passed: 8 skills checked`. Of the
+  optional tools it probes, this WSL installation has only `python3` and `git`,
+  so the run performed the required-file and host-CI-file checks, both plugin
+  manifests, the `CLAUDE.md` import and size checks, the `default.rules` syntax
+  and derived-rule checks, the skill tree against `docs/SKILLS.md`, the tracked
+  runtime-file, executable-bit, and carriage-return checks, the Python compile
+  and the three TOML parses, `bash -n` over the four Bash scripts, and the whole
+  Bash installer integration test. It skipped ShellCheck, `node --check`, `codex
+  execpolicy`, the PowerShell parser check, and PSScriptAnalyzer. The two
+  PowerShell checks were run from Windows instead, as `AGENTS.md` requires: both
+  installers parse under 5.1 and 7, and PSScriptAnalyzer reports nothing.
+  Remaining: the three-platform run. `3749b3e` is already on `origin/main`, and
+  `gh` here is unauthenticated with no token in the environment, so no run can
+  be read from this session.
+
 ## Later phase: Re-appliable repository baseline
 
 - [ ] Record in an adopting repository which baseline commit it took, which
