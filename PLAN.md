@@ -1,80 +1,78 @@
-# Reconcile the readiness gate with the single-maintainer path
+# Decide the default-branch ruleset question
 
 Approach for the change currently in flight. Replaced when the next non-trivial
 change begins, so anything that must outlive it is promoted first: verified
 product facts to `SPEC.md`, actionable work to `TASKS.md`, and closed choices to
 `DECISIONS.md`.
 
-The scratch-repository plan this replaces was already promoted. Its decision is in
-`DECISIONS.md` as "Heading text is the contract between a template and an adopted
-document", its four defects and their fixes are recorded against the closed task
-in `TASKS.md`, and the two branches it did not exercise are named there too.
+The readiness-gate plan this replaces was already promoted. Its decision is in
+`DECISIONS.md` as "Local readiness names the review it did not get", and its
+evidence is recorded against the closed task in `TASKS.md`.
 
 ## Problem
 
-`pr-readiness` step 7 says "Require a fresh independent review", with no condition
-on it. `DECISIONS.md` records that this repository has one maintainer and that
-preserving the shape of a review gate by self-approval is worse than having no
-gate. The skill is installed into every repository, so it currently states a gate
-that this repository cannot satisfy and that a single maintainer anywhere can only
-satisfy by faking.
+`TASKS.md` asks whether a default-branch ruleset is worth configuring at all, on
+the premise that "every gate previously planned here required a pull request or a
+second reviewer, and neither exists in a single-maintainer flow". The premise is
+worth testing before the question is answered from it, because a ruleset is not
+only a merge gate.
 
-The contradiction has been recorded twice without being resolved: once when the
-no-pull-request decision was taken, and again when the skill was restated, where
-it was deliberately left for the task that owns it. Phase 7's exit criteria
-include that no documented gate depends on a second reviewer.
-
-`docs/WORKFLOW.md` step 12 points at "the skill's no-pull-request path", which the
-skill does not name as a path. That is the same misalignment in the other
-direction, and it is on a different axis: whether a pull request exists and
-whether a second party exists are independent of each other.
+`docs/WORKFLOW.md` has a `Default-branch enforcement` row in its per-host table
+with no capability rule above it, so the one thing the table says about branch
+protection is unattached to any rule the baseline asks a repository to meet.
 
 ## Approach
 
-Make the gate conditional on something readable, and replace it with named
-substitutes rather than removing it.
+Read the two facts the decision turns on rather than recalling either.
 
-- Keep the strong gate wherever an independent review is genuinely required, and
-  say what makes it required: the repository's own instructions or decisions, or
-  an enforcement its host applies to the changed paths.
-- Where nothing settles the question, report the requirement as undetermined. An
-  agent picking whichever answer suits the change under review is the failure to
-  design against.
-- Where the author is the only party, define what local readiness requires
-  instead. The substitutes must be things a single maintainer can actually
-  produce, and none of them may be called a review.
-- Report the absence as a limitation of the readiness claim. This is the part
-  `DECISIONS.md` already argues for and the skill does not say: a gate whose shape
-  survives without its substance reads like one that held.
-- Name the path in the skill so `docs/WORKFLOW.md` can point at it, and correct
-  that pointer to name both reduced paths, since this repository is on both.
+- What a ruleset can enforce, and specifically which rules apply to a direct push
+  rather than to a pull-request merge. Read from GitHub's own rule reference.
+- Whether this repository can configure one at all. Read from the API with the
+  authenticated token, not from an assumption about the plan.
 
-Every existing rule survives. The change is a condition on one workflow step, one
-new section, and the two places that report the outcome.
+Then answer both halves separately: whether the mechanism is worth having, and
+whether this repository can have it. Where those two answers disagree, the result
+is an accepted exception with a reopening condition, which is what the security
+baseline already asks for wherever a host provides nothing.
+
+Close the gap the question exposed in the baseline: give the
+`Default-branch enforcement` row the capability rule it lacks, stated so a
+single-maintainer repository can meet it.
+
+## Findings
+
+Both reads changed the answer.
+
+Nine of the sixteen branch rules GitHub documents are enforced on a direct push
+and need neither a pull request nor a reviewer, so the premise is wrong. The
+seven that need a pull request are the merge gates: linear history, deployments,
+a pull request itself, status checks, code scanning, code quality, and coverage.
+The push-enforced nine include the two an accident-guard actually wants, blocking
+a force push and blocking deletion, and those matter *more* without a reviewer
+rather than less, because nothing else stands between a mistyped command and the
+history.
+
+This repository cannot configure any of it. Read on 2026-08-02 with a token
+carrying `repo` scope, three endpoints return the same HTTP 403 with the message
+`Upgrade to GitHub Pro or make this repository public to enable this feature.`:
+`GET /repos/rwgs/ai/rulesets`, `GET /repos/rwgs/ai/rules/branches/main`, and
+`GET /repos/rwgs/ai/branches/main/protection`. The account is a `User` with no
+plan visible to the token, and the repository is private.
 
 ## Trade-offs
 
-- The condition is read rather than configured. A repository that has reviewers
-  and never wrote that down gets the reduced path, which is the wrong answer for
-  it. Configuring it would mean a field in a marker that this repository has no
-  business writing into every adopting repository, and the undetermined case is
-  reported rather than assumed, so the wrong answer is visible in the report.
-- A separate pass over the finished diff is weaker than a second reader and is
-  worth having anyway. It is placed and worded so it cannot be reported as a
-  review, which is the whole risk it carries.
-- An agent review is not promoted to the independent one. In this repository the
-  agent is usually the author, and a rule that depends on which session wrote the
-  code is not checkable from the diff.
+- The rule split is read from GitHub's documentation and cannot be tested here,
+  because the API refuses the read that would show it. That is recorded rather
+  than implied.
+- The exception is the outcome for this repository, and an exception is weaker
+  than a control. Making the repository public or buying a plan would both
+  resolve it, and neither is worth doing for this reason alone, so the reopening
+  condition names both.
 
 ## Verification
 
-- Read the skill end to end after the edit and confirm every rule that was there
-  before is still there, since no automated check reads its prose.
-- `./scripts/validate.sh` under WSL, reporting which checks it performed. It
-  covers the skill's front matter, its `name` matching its directory, the absence
-  of a `[TODO:` marker, and the `docs/SKILLS.md` inventory.
-- Check that no file still states the gate unconditionally, by searching for the
-  terms the old wording used.
+- `./scripts/validate.sh` under WSL, reporting which checks it performed.
+- Re-read the security baseline after the edit, so the new rule and its table row
+  agree and no rule is left without a mechanism.
 - No three-platform run is expected: the change touches no script, no workflow,
-  and no installed path beyond a skill file the installer links identically
-  everywhere.
+  and no installed path.

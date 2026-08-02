@@ -804,6 +804,14 @@ cross-machine MCP requirement justifies it.
   needs the repository settings changed outside this environment. Whether either
   product is available for a private repository on this account's plan was not
   established here and is the first thing to check in those settings.
+
+  A related boundary was established on 2026-08-02 by the ruleset task below:
+  rulesets and branch protection both return HTTP 403 on this repository with
+  `Upgrade to GitHub Pro or make this repository public to enable this feature.`,
+  so this account has no paid repository features here. That is not proof about
+  these two products, which are sold separately as GitHub Secret Protection and
+  GitHub Code Security, but it is the same boundary and it says what to expect
+  before the settings are opened.
 - [x] Reconcile the no-branch, no-pull-request decision with all PR-only
   artifacts. Recorded in `DECISIONS.md` as "Bots may open pull requests, humans
   may not": Dependabot stays and the `Validate` workflow keeps its
@@ -856,9 +864,43 @@ cross-machine MCP requirement justifies it.
   file this change touches. No three-platform run was asked for: the change touches
   no script, no workflow, and no installed path beyond one skill file the installer
   links identically everywhere.
-- [ ] Decide whether a default-branch ruleset is worth configuring at all. Every
-  gate previously planned here required a pull request or a second reviewer, and
-  neither exists in a single-maintainer flow.
+- [x] Decide whether a default-branch ruleset is worth configuring at all. Both
+  halves of the question were read rather than recalled, and both answers moved.
+  Recorded in `DECISIONS.md` as "The default branch is worth protecting and cannot
+  be protected here".
+
+  The premise is wrong. Nine of the sixteen branch rules GitHub documents are
+  enforced when a commit is pushed and need neither a pull request nor a reviewer:
+  restricting creations, updates, and deletions, requiring signed commits,
+  blocking force pushes, and the four file restrictions on path, path length,
+  extension, and size. The seven that need a pull request are the merge gates, and
+  they are not the useful part. Blocking a force push and blocking deletion matter
+  more without a reviewer, not less, because nothing else stands between a
+  mistyped command and the history.
+
+  This repository can configure none of it. Read on 2026-08-02 with a token
+  carrying `repo` scope, `GET /repos/rwgs/ai/rulesets`,
+  `GET /repos/rwgs/ai/rules/branches/main`, and
+  `GET /repos/rwgs/ai/branches/main/protection` each return HTTP 403 with
+  `Upgrade to GitHub Pro or make this repository public to enable this feature.`
+  The account is a `User` and the repository is private. That is an accepted
+  exception with the maintainer as owner, reopened if the repository is made
+  public or the account moves to a plan that includes the feature. Neither is
+  worth doing for two branch rules.
+
+  `docs/WORKFLOW.md` gained the capability rule its `Default-branch enforcement`
+  row never had, so the baseline asks for the protection rather than only naming
+  the mechanism, and the row and the paragraph under the table now state the plan
+  boundary and the push-against-merge split. Nothing about that split is verified
+  here, because the API refuses the read that would show it.
+
+  Verification: WSL `./scripts/validate.sh` passed on 2026-08-02, reporting
+  `installer integration test passed` and `validation passed: 10 skills checked`.
+  This WSL installation has only `python3` and `git` of the tools it probes, so
+  ShellCheck, `node --check`, `codex execpolicy`, and both PowerShell checks were
+  skipped, and none of them reads a file this change touches. The security
+  baseline was re-read afterwards to confirm every rule has a mechanism in the
+  table and every row has a rule above it.
 
 ## Completion rule
 

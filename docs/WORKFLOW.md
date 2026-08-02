@@ -78,6 +78,10 @@ exception, not to configure the other host's product.
   through whichever update path the repository's workflow accepts.
 - Validate every change that reaches the default branch, and validate a bot's
   pull request before it merges.
+- Protect the default branch's history: block a force push and block deletion.
+  Neither needs a pull request or a second reviewer, so this applies to a
+  single-maintainer flow committing straight to the default branch, where nothing
+  else stands between a mistyped command and the history.
 - Document an accepted exception with its reason, its owner, and the date it
   comes up for review again.
 
@@ -87,9 +91,17 @@ exception, not to configure the other host's product.
 | Dependency updates | Dependabot | No native equivalent. Advanced Security brings Dependabot security updates; routine version bumps need a third-party runner | Self-hosted third-party runner, unverified here |
 | Code scanning | CodeQL; free on a public repository, and sold as GitHub Code Security on a private one | GitHub Code Security for Azure DevOps, a paid add-on | None |
 | Dependency review gating a pull request | `dependency-review-action` | Advanced Security dependency scanning | None |
-| Default-branch enforcement | Rulesets and branch protection | Branch policies: build validation, required reviewers | Branch policies |
+| Default-branch enforcement | Rulesets and branch protection; free on a public repository, and requiring GitHub Pro or above on a private one | Branch policies: build validation, required reviewers | Branch policies |
 | CI on a change | Actions workflow | Pipeline on Microsoft-hosted or self-hosted agents | Pipeline on self-hosted agents only |
 | Immutable pin for third-party automation | Action pinned by commit SHA | Task pinned by version; marketplace extensions are versioned | As Services |
+
+A GitHub ruleset's rules divide into the ones enforced when a commit is pushed
+and the ones enforced when a pull request merges, and only the first group is
+reachable in a flow with no pull requests. Configure that group and expect the
+merge gates to do nothing. This repository configures no ruleset at all: both
+rulesets and branch protection are unavailable on its plan for a private
+repository, recorded as an accepted exception in `DECISIONS.md` with the
+condition that reopens it.
 
 Microsoft states that Advanced Security and its standalone products are for
 Azure DevOps Services and that there are no current plans to bring them to

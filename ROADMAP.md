@@ -232,7 +232,12 @@ forked and since developed further.
 
 ## Phase 7: Enforced repository governance
 
-Status: Planned
+Status: Blocked on repository settings. The reusable guidance is reconciled: the
+readiness gate no longer demands a reviewer a single maintainer cannot produce,
+and the ruleset question is closed, with the push-enforced rules judged worth
+having and unavailable on this account's plan for a private repository. What is
+left is secret scanning, push protection, and code scanning, each of which needs
+a setting changed outside this environment and a plan question answered first.
 
 ### Outcome
 

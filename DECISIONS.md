@@ -8,6 +8,94 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-02 The default branch is worth protecting and cannot be protected here
+
+Status: Accepted. Answers the ruleset question Phase 7 left open, and rejects the
+premise it was asked on.
+
+### Decision
+
+A default-branch ruleset is worth configuring, including in a flow with one
+maintainer and no pull requests. The half worth having is the push-enforced half,
+and the two rules that carry it are blocking a force push and blocking deletion.
+
+This repository configures none of it, because it cannot. That is recorded as an
+accepted exception rather than as a decision against the control: the reason is
+that the feature is not available on this account's plan for a private
+repository, the owner is the maintainer, and it comes up for review again if the
+repository is made public or the account moves to a plan that includes it.
+
+`docs/WORKFLOW.md` gains the capability rule its `Default-branch enforcement` row
+was missing, so the baseline asks for the protection rather than only naming the
+mechanism, and the row states the plan boundary.
+
+### Why
+
+The question was asked on the premise that every gate a ruleset offers needs a
+pull request or a second reviewer. Read from GitHub's rule reference on
+2026-08-02, that is wrong for nine of the sixteen branch rules. Restricting
+creations, updates, and deletions, requiring signed commits, blocking force
+pushes, and the four file restrictions on path, path length, extension, and size
+are all enforced when a commit is pushed. The seven that need a pull request are
+the merge gates: linear history, deployments, a pull request itself, status
+checks, code scanning, code quality, and coverage.
+
+The distinction matters most in exactly the flow the premise assumed it away in.
+A repository where every change is pushed straight to `main` has nothing between
+a mistyped `git push --force` and the history it overwrites, and no reviewer who
+would have seen it. The merge gates are genuinely unreachable here, and they are
+not the useful part.
+
+Availability is a separate answer and it is empirical. `GET
+/repos/rwgs/ai/rulesets`, `GET /repos/rwgs/ai/rules/branches/main`, and `GET
+/repos/rwgs/ai/branches/main/protection` each return HTTP 403 with `Upgrade to
+GitHub Pro or make this repository public to enable this feature.`, read with a
+token carrying `repo` scope on the repository. So there is nothing to configure,
+partially configure, or configure later without changing the plan or the
+visibility.
+
+An exception is the honest record of that, and the baseline already has the
+mechanism: it asks for a reason, an owner, and a review date wherever a host
+provides nothing, and a host that provides it only on a paid plan is the same
+gap. Recording it here rather than in `AGENTS.md` follows this repository having
+a decision log; the guidance for an adopting repository is unchanged.
+
+### Rejected alternatives
+
+- Answer the question as asked and drop the ruleset from the roadmap: it is the
+  answer the premise leads to, and it would have closed a control this
+  repository wants on reasoning that a five-minute read disproves.
+- Make the repository public to obtain the feature: it is free and it decides a
+  much larger question, publication, on the strength of two branch rules. The
+  restatement phase exists so that publishing is possible, not so that it is
+  forced by a settings limitation.
+- Buy GitHub Pro for it: defensible, and it is the maintainer's call rather than
+  an implementation decision, so it is named as a reopening condition instead of
+  taken here.
+- Substitute a local `pre-push` hook that refuses a force push to `main`: it runs
+  on the machine that would have made the mistake, it is not installed by this
+  repository's installer, and a hook is bypassed by the same flag it is guarding
+  against. Worth revisiting only as a convenience, never as the control.
+- Record nothing until the plan changes: the gap then reads as an unexamined
+  omission, and the next session re-derives the same three 403s.
+
+### Consequences
+
+`docs/WORKFLOW.md` states protecting the default branch's history as a
+capability, with the condition that makes it apply, and its table row says the
+GitHub mechanism is free on a public repository and needs a paid plan on a
+private one. An adopting repository on any host reads the rule and either meets
+it or records its own exception.
+
+Phase 7 keeps no ruleset task. What is left in it is repository settings that
+have to be changed outside this environment, and the same plan boundary is the
+first thing to check for the secret-scanning and code-scanning items, since both
+products are sold for a private repository too.
+
+Nothing about the rule split has been tested here, because the API refuses the
+read that would show it. It is GitHub's documentation, not an observation, and
+the first person to configure a ruleset should expect to check it.
+
 ## 2026-08-02 Local readiness names the review it did not get
 
 Status: Accepted. Settles the contradiction between `pr-readiness` and "No
