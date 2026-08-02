@@ -1,8 +1,19 @@
 version: 2
 
 updates:
+  # Two third-party actions are the whole dependency surface here, and one of
+  # them ships a release most weeks. Weekly ungrouped updates annualise to about
+  # fifty pull requests for one maintainer, each firing a three-platform run, so
+  # the schedule is monthly and every bump arrives in one pull request. The pins
+  # are a control against an action moving under a mutable ref, not a patch
+  # cadence; Dependabot security updates cover the case where waiting a month is
+  # the wrong answer.
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
     open-pull-requests-limit: 5
+    groups:
+      github-actions:
+        patterns:
+          - "*"

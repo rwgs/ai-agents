@@ -68,14 +68,24 @@ exception, not to configure the other host's product.
 
 - Scan for committed secrets, and block a push that adds one.
 - Keep dependencies current for the ecosystems the repository actually declares,
-  including the CI definition itself when it pins third-party automation.
+  including the CI definition itself when it pins third-party automation. Set the
+  cadence from the dependency surface rather than from the default: a repository
+  whose whole surface is a handful of pinned actions gets a stale pin reported
+  either way, and an ungrouped weekly schedule turns that into a review queue one
+  maintainer will stop reading.
+- Act on a published advisory without waiting for the routine schedule. This is a
+  separate capability from keeping dependencies current, and on some hosts it is
+  a separate switch that can be off while the routine one is configured.
 - Scan the code for vulnerabilities in the languages the repository actually
   contains. Shell and PowerShell are not languages CodeQL supports, so a
   repository written in those relies on ShellCheck and PSScriptAnalyzer instead.
 - Review a dependency change only where pull requests exist for it to gate. It
   does nothing in a flow without one.
 - Pin third-party automation to an immutable version, and keep the pins current
-  through whichever update path the repository's workflow accepts.
+  through whichever update path the repository's workflow accepts. Pin to a ref
+  that path can compare against: an immutable pin the update mechanism cannot
+  place on the project's version stream is silently never updated, and looks
+  identical to a pin that is already current.
 - Validate every change that reaches the default branch, and validate a bot's
   pull request before it merges.
 - Protect the default branch's history: block a force push and block deletion.
@@ -88,7 +98,8 @@ exception, not to configure the other host's product.
 | Capability | GitHub | Azure DevOps Services | Azure DevOps Server |
 | --- | --- | --- | --- |
 | Secret scanning and push protection | Native; free on a public repository, and sold as GitHub Secret Protection on a private one | GitHub Secret Protection for Azure DevOps, a paid add-on | None |
-| Dependency updates | Dependabot | No native equivalent. Advanced Security brings Dependabot security updates; routine version bumps need a third-party runner | Self-hosted third-party runner, unverified here |
+| Routine dependency updates | Dependabot version updates, configured in `.github/dependabot.yml` | No native equivalent; routine version bumps need a third-party runner | Self-hosted third-party runner, unverified here |
+| Advisory-driven dependency updates | Dependabot alerts and Dependabot security updates, two repository settings independent of the version-update configuration | Advanced Security brings Dependabot security updates | None |
 | Code scanning | CodeQL; free on a public repository, and sold as GitHub Code Security on a private one | GitHub Code Security for Azure DevOps, a paid add-on | None |
 | Dependency review gating a pull request | `dependency-review-action` | Advanced Security dependency scanning | None |
 | Default-branch enforcement | Rulesets and branch protection; free on a public repository, and requiring GitHub Pro or above on a private one | Branch policies: build validation, required reviewers | Branch policies |
@@ -118,6 +129,12 @@ Bots may open pull requests even where humans do not: Dependabot has no other
 delivery mechanism, and its pull request is a change to review rather than a
 gate on the maintainer's own work. Keep the validation workflow's
 `pull_request` trigger so those bumps are validated before they are merged.
+
+An absent pull request is not evidence that dependency updates work. It means
+either that nothing needs bumping or that nothing is being produced, and on GitHub
+no REST endpoint distinguishes them: only the repository's Dependabot tab reports
+whether a version-update job ran and what it concluded. Check the pins against
+their upstream tags before reading silence as success.
 
 ## Required change evidence
 

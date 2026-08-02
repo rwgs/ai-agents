@@ -8,6 +8,76 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-02 Dependency updates are monthly, grouped, and pinned to a version tag
+
+Status: Accepted. Extends "Bots may open pull requests, humans may not" below,
+which chose to keep Dependabot and did not say at what cadence or against which
+kind of ref. That entry stands unchanged.
+
+### Decision
+
+Dependabot version updates run monthly with every `github-actions` bump grouped
+into one pull request. Dependabot security updates are enabled as well, which is a
+second repository setting rather than part of `.github/dependabot.yml`. A pinned
+action names a version tag in its trailing comment, not any other tag the upstream
+project happens to publish.
+
+### Why
+
+The cadence was measured rather than assumed. In the thirteen weeks to 2026-07-30,
+`github/codeql-action` published twelve version tags and `actions/checkout`
+published two on the line it tracks. Weekly ungrouped updates over a two-action
+surface annualise to roughly fifty pull requests, each firing a ten-minute
+three-platform run, for one maintainer. Monthly and grouped gives twelve reviews a
+year and still reports every stale pin, because the pins are a control against an
+action moving under a mutable ref rather than a patch cadence.
+
+That trade only holds with security updates on, since they are what does not wait
+up to a month when an advisory lands. They were off while Dependabot alerts were
+on, so the mechanism this repository documented as "Dependabot" was one of the two
+switches GitHub actually has.
+
+The version-tag rule comes from a defect, not a preference. Both
+`github/codeql-action` steps were pinned to the commit behind
+`codeql-bundle-v2.26.2`, which is a real immutable commit and satisfies every
+supply-chain reason for pinning, but is not a point on the semver stream Dependabot
+compares against. Dependabot reads that trailing comment to decide what version an
+action sits at. The pin was five commits behind the `v4.37.4` release commit, in
+`src/defaults.json`, `lib/defaults.json`, and `lib/entry-points.js`, so work was
+available and no pull request had ever been opened. An immutable pin the update
+mechanism cannot place on a version stream is silently never updated and is
+indistinguishable from a pin that is current.
+
+### Rejected alternatives
+
+- Dropping Dependabot because CodeQL generates almost all the churn: the surface
+  without CodeQL is `actions/checkout` at about three bumps a year, which is nearly
+  free, and the entry below already rejected dropping it for the reason that
+  nothing else reports a stale pin.
+- Keeping the weekly ungrouped schedule: maximum freshness, but a queue that gets
+  ignored reports currency it does not deliver, and the pins protect against a
+  moved ref rather than against being a fortnight behind.
+- Excluding `github/codeql-action` to cut the volume while keeping the rest: it is
+  the pin with a real expiry, because GitHub retires action majors and a retired
+  one eventually fails the run.
+- Proving the mechanism by committing a deliberately stale pin and waiting for the
+  bump: the repository already had a stale pin, so the experiment would have
+  measured the same silence more slowly. Correcting the pin is the same test.
+
+### Consequences
+
+`.github/dependabot.yml` carries a `groups` entry and a monthly interval, and
+`.github/workflows/codeql.yml` pins both steps to `f205ea1c` with a `# v4.37.4`
+comment. The security baseline in `docs/WORKFLOW.md` splits routine currency from
+advisory-driven updates, because they are separate capabilities and on GitHub
+separate switches, and states that an absent pull request is not evidence the
+mechanism works.
+
+Whether the pin comment was the cause stays unproven. No REST endpoint exposes a
+Dependabot version-update job, so the fix is also the test: if it was, the next
+monthly run behaves normally, and if nothing appears the remaining explanation is
+that version updates are not running on this repository at all.
+
 ## 2026-08-02 The default branch is worth protecting and cannot be protected here
 
 Status: Accepted. Answers the ruleset question Phase 7 left open, and rejects the

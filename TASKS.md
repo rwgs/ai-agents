@@ -860,28 +860,55 @@ cross-machine MCP requirement justifies it.
   alerts are on, `GET /repos/rwgs/ai/vulnerability-alerts` returning HTTP 204 with
   no open alerts.
 
-  Dependabot has opened no pull request, ever, and the first reading of why was
-  wrong. Checking each pin against the tag it names: `actions/checkout` at
-  `3d3c42e5` is the `v7.0.1` tag object and `v7.0.1` is the latest release, so that
-  one has nothing to bump. Both `github/codeql-action` entries at `18420e32` are the
-  `codeql-bundle-v2.26.2` tag, which is the newest `codeql-bundle-*` tag but is not
-  the newest release of that action: `v4.37.4` was published a day later at a
-  different commit, `ea14db8a`, and neither major stream's tip is the pinned commit
-  either, `v4` being `bce182f8` and `v3` being `47be0dbd`.
+  Dependabot has opened no pull request, ever, and it took two wrong readings to
+  find out why. The first said every pin was current. The second said the CodeQL pin
+  was behind and quoted `ea14db8a` as the newer commit, which is not a commit at
+  all: `v4.37.4` and `v4` are annotated tags, so `git/ref/tags` returns their tag
+  object, and comparing a commit against a tag object is what produced both the
+  wrong SHAs and an HTTP 404 from the compare endpoint. `codeql-bundle-v2.26.2` and
+  `v7.0.1` are lightweight tags pointing straight at commits, which is why they
+  looked comparable.
 
-  So "there is nothing to bump" covers one pin and not the other, and an empty pull
-  request list is no longer the expected result. Two explanations remain open, and
-  nothing readable here separates them: Dependabot may be treating the bundle tag as
-  the version stream to follow, in which case the pin is current and silence is
-  correct, or it may not be producing version updates on this repository at all. No
-  REST endpoint exposes a Dependabot version-update job; only the repository's
-  Dependabot tab shows whether one has run and what it concluded, so that is where
-  this gets settled.
+  Dereferenced properly, the conclusion held and the numbers behind it did not.
+  `v4.37.4` resolves to commit `f205ea1c`, and the moving `v4` tag resolves to the
+  same commit, so the major is at 4.37.4 too. `actions/checkout` is pinned at
+  `3d3c42e5`, which is exactly what `v7.0.1` points at and `v7.0.1` is the latest
+  release, so that pin is current. Both `github/codeql-action` steps were pinned at
+  `18420e32`, the commit behind `codeql-bundle-v2.26.2`, and the compare endpoint
+  reports that commit five behind `f205ea1c` in `CHANGELOG.md`,
+  `src/defaults.json`, `lib/defaults.json`, and `lib/entry-points.js`. The two
+  `defaults.json` files are the action's default CodeQL bundle, so this was a real
+  update and not a tag-shuffling artefact.
 
-  The pins are also inconsistent with each other, which is what made the question
-  ambiguous. One names a version tag and the other names a bundle tag, so there is
-  no single rule for what "current" means across the two, and the answer differs
-  depending on which stream Dependabot follows.
+  So work was available and nothing was produced, which is a defect in this
+  repository's pin rather than a fact about Dependabot. It reads the trailing comment
+  to decide what version an action sits at, and `codeql-bundle-v2.26.2` is not a
+  point on the semver stream it compares against, so the pin was immutable, correct
+  for every supply-chain reason, and invisible to the updater. That is now recorded
+  as a baseline rule: a pin names a ref the update path can compare against, because
+  one that cannot be placed on a version stream is silently never updated and looks
+  exactly like a pin that is current.
+
+  Acted on rather than left as a finding, under "Dependency updates are monthly,
+  grouped, and pinned to a version tag" in `DECISIONS.md`. Both CodeQL steps are
+  repinned to `f205ea1c` with a `# v4.37.4` comment, verified by dereferencing the
+  tag through the API rather than from the edit. `.github/dependabot.yml` is monthly
+  with every `github-actions` bump grouped into one pull request, because the
+  measured cadence -- twelve `codeql-action` version tags and two `actions/checkout`
+  releases in the thirteen weeks to 2026-07-30 -- annualises to roughly fifty pull
+  requests over a two-action surface for one maintainer. Dependabot security updates
+  are enabled: `PUT /repos/rwgs/ai/automated-security-fixes` now reports
+  `{"enabled":true,"paused":false}`, which is what makes a monthly routine cadence
+  safe.
+
+  What stays unproven is whether the comment was the cause. No REST endpoint exposes
+  a Dependabot version-update job, and only the repository's Dependabot tab reports
+  whether one ran and what it concluded, so the fix is also the test: if it was the
+  cause the next monthly run behaves normally, and if nothing appears the remaining
+  explanation is that version updates are not running here at all. The Dependabot tab
+  answers this in one click and is the cheapest next step; a deliberately downgraded
+  pin was considered and rejected, since the repository already had a stale pin and
+  the experiment would have measured the same silence more slowly.
 
   One gap was found rather than confirmed.
   `GET /repos/rwgs/ai/automated-security-fixes` returns
