@@ -109,6 +109,7 @@ Installed into both agents by the installer.
 - `pr-readiness`
 - `python-scripting`
 - `show-codex-reset-expiries`
+- `update-baseline`
 - `web-verification`
 
 Run `./scripts/validate.sh` after adding, moving, or changing a skill.

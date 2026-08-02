@@ -1,127 +1,120 @@
-# Record what an adopting repository took
+# Bring an adopted repository up to date
 
 Approach for the change currently in flight. Replaced when the next non-trivial
 change begins, so anything that must outlive it is promoted first: verified
 product facts to `SPEC.md`, actionable work to `TASKS.md`, and closed choices to
 `DECISIONS.md`.
 
-The reconciliation plan this replaces was promoted before it was overwritten.
-Both its decisions are in `DECISIONS.md`, as "One skill source per repository,
-exposed by an ignored link" and "A skill about the agent's own operation is
-installed, not pooled", and its tasks are closed in `TASKS.md` with the local
-evidence recorded against them.
+The marker plan this replaces was promoted before it was overwritten. Its decision
+is in `DECISIONS.md` as "An adopting repository records what it took in
+`.agents/baseline.json`", the marker itself is in `SPEC.md`, and its evidence is
+recorded against the closed task in `TASKS.md`.
 
 ## Problem
 
-Phase 6's update mode adds missing documents and sections, reports drift, and
-overwrites nothing. It cannot do any of that without knowing what the repository
-took and what it deliberately refused, and nothing an adopting repository
-contains records either.
+A repository adopts the baseline once and the baseline keeps changing. Nothing
+brings the two back together, so an adopted repository silently falls behind: it
+misses a document the baseline added, a section a template gained, and a fix to a
+skill it copied out of the pool.
 
-Two absences look identical in a repository and mean opposite things. A `SPEC.md`
-that is missing because the repository declined it must never be offered again; a
-`SPEC.md` that is missing because the baseline added it after adoption is exactly
-what an update exists to add. The same holds for a skill copied from
-`rwgs/ai-skills`: without the commit it was taken at there is nothing to compare
-the copy against, which `DECISIONS.md` already records as the reason the pool is
-a repository with commits rather than a directory.
-
-`ROADMAP.md` states the risk this change has to avoid: a marker that drifts from
-what is actually in the repository is worse than no marker, because it reports an
-update as applied when it was not.
+The record needed to do that safely now exists. What is missing is the half that
+reads it, and its hard constraint is stated in `ROADMAP.md`: adopted documents are
+customised after they land, so an update that overwrites destroys work. Additive
+semantics are a correctness requirement rather than a preference.
 
 ## Constraints discovered
 
-- Read this session: `adopt-baseline` step 1 does not look for a marker of its
-  own, so a second run on an already-adopted repository has nothing to stop it,
-  and the skill's own scope line says one repository, once.
-- The marker has to exist in a repository that declines every planning document.
-  The `docs/SKILLS.md` table gives a documentation repository nothing beyond
-  `AGENTS.md` and `CLAUDE.md`, so the marker cannot be a section of a document
-  that is itself declinable, which rules out `DECISIONS.md` and every other
-  planning file.
-- `DECISIONS.md` is append-only by its own header, and a re-apply changes the
-  recorded commit. A marker kept there would have to be rewritten, which that
-  file forbids.
-- `SPEC.md` already records that Python's `tomllib` reads TOML and does not write
-  it and that PowerShell has no TOML support at all. JSON is the one format
-  `python3` and Windows PowerShell 5.1 both parse with nothing installed, and
-  both installers already parse JSON for `settings.json`.
-- The installer's own provenance model is the precedent for the shape: one
-  per-machine state file at `~/.agents/ai-install-state.json`, carrying a
-  `version`, recording what was written outside the files it describes. The
-  marker differs in one way that matters, and it is the reason it cannot simply
-  reuse that file: it is per-repository and committed, because a fresh clone must
-  be able to say what the repository adopted.
-- `.claude/skills` is per-clone setup under the wiring decision, so a fresh clone
-  of an adopting repository has no Claude Code skills. A recorded skill list is
-  therefore also what tells an update run that the link is missing rather than
-  the skills.
-- This repository gets no marker. It is the baseline, not an adopter, and nothing
-  here reads or writes one.
+- The user settled the shape this session: a sibling skill, not a second mode
+  inside `adopt-baseline`. That agrees with the `docs/SKILLS.md` authoring rule to
+  keep a skill to one workflow, and with the precedent that split project planning
+  from pull-request readiness.
+- Read this session, the templates carry stable `##` headings, so a missing
+  section is computable by comparing headings rather than prose. The pool's layout
+  is `skills/<name>/`, and its history is two commits with `4c6cf88` at the tip.
+- `adopt-baseline` already defines what is on offer, in its selection table and
+  its wiring and configuration rules. A second list here would drift from it, and
+  the propagation task later in this phase is about to add to that list.
+- The provenance rule this repository already accepted for shared files fits a
+  pooled skill exactly and a document not at all. A pooled skill is copied
+  verbatim, so byte-identical to the recorded commit means nothing here changed it
+  and it is safe to refresh. An adopted document is adapted to the repository as it
+  lands, so it is never byte-identical and the test would be dead code.
+- A convention a repository deliberately keeps needs somewhere to be recorded, or
+  it is reported as drift on every run. `DECISIONS.md` is that place, so this skill
+  reads the repository's own decision log before calling a deviation drift. It
+  needs no new marker field, and a repository that declined `DECISIONS.md` accepts
+  a repeated report.
+- Advancing the recorded commit past drift that was reported and not applied would
+  hide that drift permanently, because the next run diffs from the newer commit.
+  The commit is therefore a claim that nothing is outstanding, not a timestamp.
+  Each pooled skill carries its own commit, so one customised skill does not hold
+  the baseline commit back.
 
 ## Approach
 
-- Add one committed file per adopting repository, `.agents/baseline.json`, beside
-  the `.agents/skills/` directory that adoption already writes into. It carries a
-  `version`, the baseline clone URL, the full commit taken and the date, the
-  artifacts adopted, the artifacts declined with a reason for each, and each
-  skill copied from the pool with its source URL and full commit.
-- Record the clone URL rather than `rwgs/ai`, because the host-neutral phase
-  settled that nothing host-neutral asserts a host and the same content can be
-  cloned from Azure DevOps.
-- Record full 40-character commits. A short hash goes ambiguous as either
-  repository grows, and the marker is read years after it is written.
-- Require a reason on every declined artifact. That string is the only thing that
-  stops update mode offering a declined document on every run, and it is the
-  field the drift risk turns on.
-- Read both commits with `git -C <clone> rev-parse HEAD`, after checking
-  `git -C <clone> status --porcelain` is empty. Content copied out of a dirty
-  clone is not the commit recorded, which is the drift the marker exists to
-  prevent.
-- Record only what came from the baseline or the pool. A skill authored in the
-  repository has no entry, because it has no upstream to compare against, and the
-  keep-or-promote decisions adoption makes stay in that repository's
-  `DECISIONS.md` where the reconciliation already put them.
-- Make step 1 stop when the marker already exists, so adoption is not run twice
-  over a repository that has already adopted.
-- Align the workflow list with the body sections while adding the step, because
-  the list currently omits the project-scoped configuration section and carries a
-  verify step with no section, so a new numbered step cannot be placed correctly
-  without it.
-- Build no update mode here. This change defines and writes the record; reading
-  it is the next task.
+- Add `.agents/skills/update-baseline/`, installed alongside `adopt-baseline`,
+  each naming the other at its boundary. Presence of the marker is what separates
+  them, and it is checkable rather than a matter of interpretation.
+- Stop rather than guess on three inputs: no marker, a marker that does not parse
+  or carries an unknown `version`, and a recorded commit absent from the clone's
+  history. Everything below the read trusts the marker, so a half-read one is
+  worse than none.
+- Check the marker against the working tree before using it, and report every
+  disagreement instead of normalising it. That is the drift `ROADMAP.md` calls
+  worse than no marker.
+- Sort each artifact on offer into adopted, declined, new since adoption, or added
+  by hand, and act only on the last three. A declined artifact is reported once
+  with its recorded reason and never added.
+- Add two things and nothing else: a document the selection table calls for that
+  the marker does not decline, and a section the template has that the adopted
+  document lacks. Write a section for the repository or report it, never leave an
+  empty heading, since a heading with nothing under it reads as an answered
+  question.
+- Report convention drift with the rule it breaks and what applying it would
+  change, and let the user apply it. Read the repository's `DECISIONS.md` first, so
+  a deviation it has already closed is reported as kept on purpose.
+- Refresh a pooled skill only when its copy is byte-identical to the pool at the
+  recorded commit. Otherwise report the pool's diff and change nothing.
+- Advance the recorded commit only when nothing is outstanding, so a second run
+  over an unchanged baseline reports nothing to do and a run with unapplied drift
+  reports it again.
+- Close the `SPEC.md` unresolved question about pool-skill reporting, which this
+  builds, and leave the loop's proof on a scratch repository to the task that owns
+  it.
 
 ## Trade-offs
 
-- A committed JSON file is a fifth artifact adoption leaves behind, in a
-  repository that may have taken only two documents. Accepted because the
-  declined list is the valuable half and it is largest exactly there.
-- JSON holds the decline reasons as strings, which a human reads less easily than
-  a Markdown table. Accepted because a table has no parser in any language here,
-  so every reader would hand-roll one, and the reasons are read by an agent.
-- The marker duplicates facts that are visible in the repository: an adopted
-  document is a file that exists. That duplication is deliberate and is what
-  makes the marker checkable, since a disagreement between the two is reportable
-  where a marker recording only unverifiable facts is not.
-- Requiring a clean clone to read a commit blocks adoption from a working tree
-  mid-change. Accepted: the alternative is a recorded commit that does not
-  describe the content copied.
+- A ninth installed skill costs a description line in every session and an
+  installer rerun. Accepted on the user's decision, and it buys two triggers that
+  do not compete: adopt and standardise against update, refresh, and drift.
+- Reading `adopt-baseline` for the offerable set couples the two skills, so the
+  update skill is incomplete on its own. Accepted because the alternative is two
+  lists that disagree, and the propagation task would have to update both.
+- Reporting rather than applying convention drift leaves a repository able to stay
+  non-conformant indefinitely. That is the point: each deviation has a legitimate
+  reason a repository might hold it, and the alternative is a skill that edits
+  files nobody asked it to touch.
+- Holding the recorded commit back while drift is outstanding means a repository
+  that never applies anything re-reads the same diff every run. Accepted, because
+  the alternative loses the finding entirely.
+- Nothing here is verified against a real repository. The phase already carries
+  the scratch-repository proof as its own task, and this change is the thing that
+  proof needs to exist first.
 
 ## Verification
 
-- `./scripts/validate.sh` under WSL, which checks the skill front matter, that
-  each `name` equals its directory, that no `[TODO:` marker survives, that the
-  `docs/SKILLS.md` inventory matches the skill directories, and the required
-  files, tracked-file, and line-ending rules. Report which checks the run
-  performed, since it skips ShellCheck, the Node syntax check, `codex execpolicy`,
-  and both PowerShell checks where those tools are absent.
-- Parse the marker example in the skill with `python3 -m json.tool`, because a
-  malformed example is the one defect no check here would catch and every
-  adopting repository would copy.
-- Read `adopt-baseline` end to end after editing and confirm every existing rule
-  survives. That is what caught a dropped rule during the restatement passes, and
-  no automated check covers it.
+- `./scripts/validate.sh` under WSL. Adding a skill makes it check the new front
+  matter, that `name` equals the directory, that no `[TODO:` marker survives, and
+  that the `docs/SKILLS.md` inventory matches the directories, which fails until
+  that list is updated. Report which checks the run performed, since it skips
+  ShellCheck, the Node syntax check, `codex execpolicy`, and both PowerShell checks
+  where those tools are absent.
+- Check that the paths the new skill names exist where it says: the pool's
+  `skills/<name>/` layout and the template path under `ai-project-manager`. A
+  reusable skill naming a path that is not there is a defect an adopting
+  repository inherits.
+- Read both skills after editing and confirm the boundary is stated in each and
+  that no rule is duplicated in a form that could drift.
 - No three-platform run is requested. The change touches no script, no workflow,
-  and no installed path, and the checks that read the changed files behave
+  and no installer behavior; it adds a skill directory, which the installer links
   identically on every platform.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Update Baseline"
+  short_description: "Bring an adopted repository up to date with the baseline"
+  default_prompt: "Use $update-baseline to bring this repository up to date with the baseline it adopted and report what has drifted."

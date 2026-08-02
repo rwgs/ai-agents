@@ -99,6 +99,12 @@ the agent state already on the machine at risk.
   the pool commit behind each skill copied from `rwgs/ai-skills`. It is what an
   update compares against, so every entry names something checkable in that
   repository. This repository has no marker, because it is the baseline.
+- Adoption and update are separate skills, separated by whether the marker exists.
+  An update adds a missing document or template section, refreshes a pooled skill
+  only while its copy is byte-identical to the commit recorded for it, and reports
+  everything else rather than rewriting a line an adopted document already carries.
+  The recorded commit advances only when nothing the run surfaced is outstanding,
+  so drift that was reported and not applied is found again.
 - `scripts/install.sh` and `scripts/install.ps1` install into the user's own
   directories. `scripts/bootstrap.sh` and `scripts/bootstrap.ps1` obtain the
   clone they install from, so a machine with nothing checked out can run one
@@ -227,9 +233,6 @@ installer must preserve.
 
 ## Unresolved questions
 
-- How an adopting repository is told that a skill it copied from the pool has
-  changed. Both inputs to the comparison now exist, the pool's commits and the
-  copy's recorded commit in `.agents/baseline.json`; the reporting is not built.
 - How dependency updates and dependency review work after the accepted decision
   to create no branches or pull requests. Dependabot and the current dependency
   review action both deliver through pull requests. Azure DevOps is the same
@@ -241,5 +244,6 @@ installer must preserve.
 
 Closed decisions and the alternatives they rejected are recorded in
 `DECISIONS.md`, including the resolved questions about user-wide Claude Code
-instructions, where the optional skill pool lives, and how managed entries in a
-shared file record their ownership.
+instructions, where the optional skill pool lives, how managed entries in a
+shared file record their ownership, and how an adopting repository is told that a
+document or a pooled skill it took has changed.

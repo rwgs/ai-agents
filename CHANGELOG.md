@@ -10,6 +10,18 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-08-01
 
+- Added `update-baseline`, a ninth installed skill, so a repository that adopted
+  the baseline can be brought back up to date with it. Rerun the installer to add
+  its link in both agents. It reads `.agents/baseline.json`, fast-forwards a clone
+  of the recorded baseline, and works only by addition: it adds a document or a
+  template section that is missing and not declined, refreshes a skill copied from
+  the pool while that copy is still byte-identical to the commit recorded for it,
+  and reports everything else for a human to apply rather than rewriting a line an
+  adopted document already carries. The recorded commit advances only when nothing
+  is left outstanding, so drift that was reported and not applied is found again on
+  the next run, and a deviation the repository closed in its own `DECISIONS.md` is
+  reported as kept on purpose. `adopt-baseline` hands over to it whenever a marker
+  already exists.
 - Adoption now leaves a record of itself. `adopt-baseline` writes a committed
   `.agents/baseline.json` holding the baseline clone URL and the full commit
   taken, the artifacts adopted, the artifacts declined with a reason for each, and

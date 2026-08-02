@@ -454,8 +454,11 @@ unauthenticated with no token in the environment.
 
 ## Current phase: Re-appliable repository baseline
 
-The reconciliation is done and the marker is defined, so update mode has a record
-to compare against. `PLAN.md` carries the marker's approach.
+The marker and the update skill that reads it are both in place. `PLAN.md` carries
+the update skill's approach. What is left is the propagation adoption still skips,
+an entry point for a new repository, and the proof of the loop on a scratch
+repository, which is the only one of the three that verifies any of this against a
+real repository.
 
 - [x] Reconcile the reusable workflows before building update mode.
   `adopt-baseline` now inventories `DECISIONS.md` and `CHANGELOG.md`, notes
@@ -531,10 +534,56 @@ to compare against. `PLAN.md` carries the marker's approach.
   example is the one defect no check here would catch and every adopting
   repository would copy. `adopt-baseline` was then read end to end and every
   existing rule survives.
-- [ ] Add an update mode to `adopt-baseline`, or a sibling skill, that adds
+- [x] Add an update mode to `adopt-baseline`, or a sibling skill, that adds
   missing documents and sections and reports drift without overwriting an
   adopted document. It reads both recorded commits, so a copied pool skill is
   reported alongside a stale document.
+
+  It is a sibling skill, `update-baseline`, chosen by the user when both shapes
+  were put side by side, and recorded in `DECISIONS.md` as "Updating is a sibling
+  skill, and only a verbatim copy is refreshed". Presence of the marker separates
+  the two, and each names the other at its boundary. The offerable set of artifacts
+  stays in `adopt-baseline` alone, so this phase's propagation task extends one list
+  rather than two. The installed set is nine, so the installer needs rerunning, which
+  is the first change in this phase to require it.
+
+  Three rules carry the additive semantics. A missing document or template section
+  is added, and a section that cannot be written for the repository is reported
+  instead of leaving an empty heading. No line an adopted document already carries
+  is rewritten, and convention drift is reported with the rule it breaks. A pooled
+  skill is refreshed only while its copy is byte-identical to the pool at the
+  recorded commit, which is the provenance rule this repository already uses for
+  shared files, applied where it fits: a pooled skill is copied verbatim, where an
+  adopted document is adapted as it lands and so is never byte-identical.
+
+  `baseline.commit` advances only when nothing the run surfaced is outstanding,
+  because it is the point the next run diffs from, so advancing it past unapplied
+  drift would hide that drift for good. A deviation the repository means to keep is
+  recorded in its own `DECISIONS.md`, which the skill reads before calling anything
+  drift; that is what makes the loop converge without a second vocabulary inside the
+  marker.
+
+  Validation: WSL `./scripts/validate.sh` passed on 2026-08-01, reporting
+  `installer integration test passed` and `validation passed: 9 skills checked`,
+  which is what covers the new skill's front matter, its `name` matching its
+  directory, the absence of a `[TODO:` marker, and the `docs/SKILLS.md` inventory
+  matching the directories. This WSL installation has only `python3` and `git` of
+  the tools it probes, so ShellCheck, `node --check`, `codex execpolicy`, and both
+  PowerShell checks were skipped, and none reads a file this change touches.
+
+  Every command the skill tells an agent to run was run against the real pool
+  before it shipped, which caught two defects in what would otherwise have been
+  recalled commands. `git fetch` alone leaves `HEAD` at the old tip, so a clone
+  fetched but not fast-forwarded reports a document as added upstream while that
+  document is absent from the working tree the next two steps read templates out
+  of; the skill fast-forwards instead, verified on a throwaway clone pinned one
+  commit back. And `git archive | tar -xO` concatenates file contents to stdout
+  rather than producing anything comparable, so the byte-identical test extracts to
+  a temporary directory and uses `diff -r`, verified returning clean on an
+  unmodified `skills/hugo` at `3e6d387`.
+
+  Remaining for the phase: this is unverified against a real repository, which is
+  what the scratch-repository proof below is for.
 - [ ] Extend adoption to install `.gitattributes` and offer the validation
   workflow and the Dependabot configuration. There is no pull-request template
   to propagate any more, and an adopting repository that accepts no bot pull

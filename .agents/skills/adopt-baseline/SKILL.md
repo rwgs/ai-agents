@@ -7,8 +7,11 @@ description: Standardise an existing repository on the shared agent baseline, re
 
 ## Scope
 
-One repository, once. This adopts conventions into a project. It does not
-install the machine-wide configuration; `scripts/install.sh` and
+One repository, once. This adopts conventions into a project. Bringing an
+already-adopted repository up to date is `update-baseline`, which reads the marker
+step 7 writes; hand over whenever that file already exists.
+
+It does not install the machine-wide configuration; `scripts/install.sh` and
 `scripts/install.ps1` in the baseline repository do that, and they are unrelated
 to anything here.
 
@@ -37,10 +40,10 @@ Record which files exist and whether each carries real content or is a stub.
 Note whether `.claude/skills` is a real directory or already a link, because step
 5 handles those two cases differently. Report the inventory before editing.
 
-Stop if `.agents/baseline.json` exists. The repository has already adopted, and
-this is the wrong workflow for it: bringing an adopted repository up to date is an
-update against that marker, not a second adoption. Report what the marker records
-and ask before going further.
+Stop if `.agents/baseline.json` exists. The repository has already adopted, so
+this is the wrong workflow for it: bringing an adopted repository up to date is
+`update-baseline`, working against that marker, not a second adoption. Report what
+the marker records and hand over.
 
 ## 2. Reconcile instruction files
 

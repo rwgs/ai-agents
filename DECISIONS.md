@@ -8,6 +8,100 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-01 Updating is a sibling skill, and only a verbatim copy is refreshed
+
+Status: Accepted. Settles the choice the task left open between an update mode
+inside `adopt-baseline` and a skill of its own, and how far additive semantics go.
+
+### Decision
+
+`update-baseline` is a ninth installed skill. Presence of
+`.agents/baseline.json` separates the two: no marker means the repository never
+adopted and `adopt-baseline` owns the pass, a marker means the repository is
+updated against it and never adopted again. Each skill names the other at its
+boundary, and the offerable set of artifacts stays in `adopt-baseline` alone.
+
+Additive semantics are drawn in three places rather than one.
+
+- A missing document or a missing template section is added. A section that cannot
+  be written for the repository is reported instead, because an empty heading reads
+  as an answered question.
+- No line an adopted document already carries is ever rewritten, and convention
+  drift is reported rather than corrected.
+- A skill copied from the pool is refreshed when its copy is byte-identical to the
+  pool at the recorded commit, and reported untouched otherwise.
+
+`baseline.commit` advances only when nothing the run surfaced is still outstanding.
+A pooled skill carries its own commit, so one customised copy does not hold the
+baseline commit back. A deviation the repository intends to keep is recorded in its
+own `DECISIONS.md`, which this skill reads before calling anything drift.
+
+### Why
+
+Two workflows with different preconditions, different semantics, and different
+outputs are two skills under this repository's own authoring rule, and the split
+already has a precedent here in project planning against pull-request readiness.
+The triggers separate cleanly: adopt, standardise, and roll out against update,
+refresh, and drift. A single description covering both would have to be chosen from
+by an agent that then branches inside the skill, and `adopt-baseline`'s scope line
+has said one repository, once, since it was written.
+
+The refresh test is the provenance rule this repository already accepted for shared
+files, applied where it fits. Write only what is absent or still byte-identical to
+what was recorded; preserve and report anything else. A pooled skill is copied
+verbatim, so byte-identical is its normal state and the test does real work. An
+adopted document is adapted to the repository as it lands, so it is never
+byte-identical and the same test would be dead code, which is why documents keep
+the stricter never-overwrite rule that `ROADMAP.md` states as a correctness
+requirement.
+
+Holding the recorded commit back is what stops the report losing a finding. The
+commit is the point a later run diffs from, so advancing it past drift that was
+reported and never applied would hide that drift permanently, in the one file whose
+whole purpose is to make an update honest.
+
+Reading the repository's `DECISIONS.md` before reporting drift is what makes the
+loop converge without inventing a marker field for it. A deviation held on purpose
+is a closed decision, which is exactly what that file records, and the alternative
+was a second vocabulary of convention keys inside a marker whose entries are
+otherwise all checkable paths.
+
+### Rejected alternatives
+
+- A second mode inside `adopt-baseline`, branching on the marker: no growth in the
+  installed set and no installer rerun. Rejected on the authoring rule and the
+  trigger collision; the user chose the sibling when both shapes were put side by
+  side.
+- Repeating the offerable set of artifacts in the update skill so it stands alone:
+  self-contained, and it guarantees the two lists disagree, starting with this
+  phase's own propagation task, which would then have to update both.
+- Applying convention drift automatically, since each rule is one the baseline
+  asserts: it edits files nobody asked it to touch, and every rule in the list has
+  a reason a repository might legitimately hold it.
+- Overwriting an adopted document when it is byte-identical to the template, for
+  symmetry with the skill rule: consistent, and unreachable, because adoption
+  adapts the template as it lands.
+- Advancing the recorded commit on every run and recording outstanding drift in the
+  marker instead: keeps the commit meaning "last compared", at the cost of a second
+  list to maintain in the record and a second way for it to go stale.
+- Overwriting a customised pool copy and leaving the user to recover it from Git:
+  simplest refresh, and it destroys the customisation this phase exists to protect.
+
+### Consequences
+
+The installed set is nine, so the installer has to be rerun to add the link.
+`docs/SKILLS.md` lists the skill and `CHANGELOG.md` says why a rerun is needed,
+which no other change in this phase has required.
+
+The `SPEC.md` question about how an adopting repository is told a pooled skill has
+changed is answered and moves out of the unresolved list. Nothing here is verified
+against a real repository: the phase's scratch-repository proof is the task that
+does that, and it now has something to prove.
+
+The remaining phase task that gives a new repository its own entry point inherits a
+settled rule for where it belongs. It is a third workflow with a third
+precondition, an empty repository, not a mode of either of these two.
+
 ## 2026-08-01 An adopting repository records what it took in `.agents/baseline.json`
 
 Status: Accepted. Gives the update mode planned in Phase 6 something to compare

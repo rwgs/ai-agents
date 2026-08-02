@@ -179,9 +179,10 @@ functional to have an author, so publishing it depends on nobody else's licence.
 
 ## Phase 6: Re-appliable repository baseline
 
-Status: In progress. The two reusable workflow skills have been reconciled with
-the recorded decisions, and one dual-agent skill wiring is settled, so the marker
-and the update mode can be built on workflows that agree with each other.
+Status: In progress. The workflows agree with the recorded decisions, adoption now
+writes `.agents/baseline.json`, and `update-baseline` reads it. None of it has been
+run against a real repository yet, which is what the scratch-repository exit
+criterion is for.
 
 ### Outcome
 
