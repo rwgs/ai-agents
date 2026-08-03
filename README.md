@@ -368,6 +368,8 @@ PSScriptAnalyzer instead, because CodeQL does not support them.
 - `PLAN.md`: the approach behind the change currently in flight, replaced when
   the next non-trivial change begins
 - `DECISIONS.md`: closed decisions and the alternatives they rejected
+- `CHANGELOG.md`: the changes that alter what installation does to a machine;
+  repository-internal changes stay in the commit history
 - `.agents/skills/`: reusable skills installed into both agents. Skills tied to
   one stack, product, or environment live in the separate `rwgs/ai-skills` pool
   and are drawn into the repositories that need them
