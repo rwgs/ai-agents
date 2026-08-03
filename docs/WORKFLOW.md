@@ -92,6 +92,9 @@ exception, not to configure the other host's product.
   Neither needs a pull request or a second reviewer, so this applies to a
   single-maintainer flow committing straight to the default branch, where nothing
   else stands between a mistyped command and the history.
+- Confirm a control from the state the host reports once it is on, not from the
+  response to the request that turned it on. A host can accept a change and apply
+  none of it, which reads exactly like success.
 - Document an accepted exception with its reason, its owner, and the date it
   comes up for review again.
 
@@ -113,6 +116,23 @@ merge gates to do nothing. This repository configures no ruleset at all: both
 rulesets and branch protection are unavailable on its plan for a private
 repository, recorded as an accepted exception in `DECISIONS.md` with the
 condition that reopens it.
+
+This repository also scans for neither committed secrets nor code
+vulnerabilities, recorded as one accepted exception in `DECISIONS.md` with the
+conditions that reopen it. Both products are sold for a private repository and
+neither is bought: `PATCH /repos/{owner}/{repo}` enabling `secret_scanning`
+returns HTTP 422 `Secret scanning is not available for this repository.`, the same
+call for `advanced_security` returns HTTP 422 `Advanced security has not been
+purchased.`, and the CodeQL workflow is dispatch-only because its upload has
+nowhere to go.
+
+The same attempt is where the read-it-back rule comes from. Enabling
+`secret_scanning_push_protection` returns HTTP 200 with the repository object, and
+that object reports push protection still `disabled`, because it depends on the
+secret scanning that is unavailable. On GitHub the per-product statuses live in
+`security_and_analysis`, which `GET /repos/{owner}/{repo}` reports as `null` on a
+repository where none of the paid products applies, so read them from the response
+to a `PATCH` or from the alerts endpoint for the product itself.
 
 Microsoft states that Advanced Security and its standalone products are for
 Azure DevOps Services and that there are no current plans to bring them to

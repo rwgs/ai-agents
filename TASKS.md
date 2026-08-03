@@ -823,9 +823,15 @@ cross-machine MCP requirement justifies it.
 - [ ] Keep tokens, headers, and credentials out of the repository. Record only
   the command, arguments, and non-secret configuration.
 
-## Later phase: Enforced repository governance
+## Completed phase: Enforced repository governance
 
-- [ ] Confirm secret scanning and push protection are enabled.
+Everything reachable is done. The two scanning items were written as settings to
+visit and turned out to be purchases to make: the API refuses to enable either
+product on this private repository, in the product's own words, so both are closed
+as one accepted exception in `DECISIONS.md` with the conditions that reopen them.
+Nothing in this phase now waits on an external setting.
+
+- [x] Confirm secret scanning and push protection are enabled.
 
   Read on 2026-08-02, once `gh` was authenticated, with a token the API reports as
   having `admin` on the repository: neither is on. `GET /repos/rwgs/ai` returns
@@ -849,6 +855,36 @@ cross-machine MCP requirement justifies it.
   `security_and_analysis` is still `null`, the secret-scanning alerts endpoint still
   returns HTTP 404 `Secret scanning is disabled on this repository`, and the
   code-scanning alerts endpoint still returns HTTP 403.
+
+  Closed on 2026-08-03 by writing instead of reading, which is what three identical
+  reads could never settle. A read reports the products off and says nothing about
+  why; the refusal of a write names the reason. `PATCH /repos/rwgs/ai` setting
+  `security_and_analysis.secret_scanning.status` to `enabled` returns HTTP 422
+  `Secret scanning is not available for this repository.`, with the token that
+  carries `repo` scope and `permissions.admin` here and wrote the security-updates
+  switch the day before. So this is not a checkbox nobody had ticked, and the item
+  is an accepted exception rather than an enablement, recorded in `DECISIONS.md` as
+  "Scanning is unavailable here, and an accepted write is not a change" alongside
+  the code-scanning half below.
+
+  Push protection is the half that would have been reported wrongly. The same
+  `PATCH` for `secret_scanning_push_protection` returns HTTP 200 with the full
+  repository object, and that object reports push protection still `disabled`: it
+  depends on the secret scanning that is unavailable, so GitHub accepts the request
+  and applies nothing. The status code alone would have closed this as enabled.
+  That is now a rule in the `docs/WORKFLOW.md` security baseline, because an
+  accepted write that changes nothing is indistinguishable from a successful one at
+  the moment somebody records that a control is on.
+
+  Two smaller things were established on the way. `GET /repos/rwgs/ai` reports
+  `security_and_analysis: null` before and after every attempt, so that field's
+  absence is not evidence about any individual switch, and the per-product statuses
+  appeared only inside the accepted `PATCH` response. That response is also the
+  only confirmation from any endpoint that the Dependabot security-updates switch
+  enabled on 2026-08-02 is still on, reading `enabled` next to four `disabled`
+  secret-scanning keys. And the plan name was not read: `GET /user` returns `plan:
+  null` for a token without `user` scope, so the boundary rests on the refusals
+  rather than on the plan, which is the better evidence of the two.
 
 - [x] Confirm the retained dependency-update mechanism actually delivers. It was
   gated behind deciding how updates could be delivered under the accepted
@@ -946,7 +982,7 @@ cross-machine MCP requirement justifies it.
   `dependency-review` job and `.github/pull_request_template.md` are removed.
   `docs/WORKFLOW.md` now states each security rule with the condition that makes
   it apply.
-- [ ] Enable code scanning for this private repository, then restore the
+- [x] Enable code scanning for this private repository, then restore the
   `CodeQL` workflow's `push` and `schedule` triggers. Confirmed by dispatched run
   `30676585363` on `5ed2536`: both jobs check out, initialise, and build their
   databases, then fail uploading with `Resource not accessible by integration`
@@ -955,6 +991,28 @@ cross-machine MCP requirement justifies it.
   workflow is dispatch-only meanwhile, so it does not fail on a schedule the way
   the `dependency-review` job silently never ran. Acceptance: a dispatched run
   uploads results and the alerts endpoint stops returning HTTP 403.
+
+  That acceptance cannot be met from here, established on 2026-08-03 rather than
+  assumed. "Enabled in settings" was the wrong description: `PATCH /repos/rwgs/ai`
+  setting `security_and_analysis.advanced_security.status` to `enabled` returns HTTP
+  422 `Advanced security has not been purchased.`, and both `GET` and `PATCH
+  /repos/rwgs/ai/code-scanning/default-setup` return HTTP 403 `Code scanning is not
+  enabled for this repository. Please enable code scanning in the repository
+  settings.` The product is sold for a private repository and this account has not
+  bought it, which is the same boundary as the rulesets and the secret scanning
+  above.
+
+  Closed as part of the accepted exception recorded in `DECISIONS.md` as "Scanning
+  is unavailable here, and an accepted write is not a change", with the maintainer
+  as owner and two reopening conditions: the repository is made public, or the
+  product is bought. The workflow stays as it is. Its `push` and `schedule`
+  triggers stay commented, and that comment already names this task as the step
+  that restores them, so the file needs no edit for the exception; deleting the
+  workflow was rejected because it analyses both languages correctly on dispatch
+  and `scripts/validate.sh` requires it. Nothing replaces it: ShellCheck and
+  PSScriptAnalyzer cover the scripts that hold nearly all of this repository's
+  logic, but the two files CodeQL was configured for get `python3 -m py_compile`
+  and `node --check`, which are syntax checks and not analysis.
 - [x] Reconcile `pr-readiness` with the single-maintainer path. Its workflow
   required a fresh independent review while `DECISIONS.md` rejects a gate that
   needs a second party. Recorded in `DECISIONS.md` as "Local readiness names the

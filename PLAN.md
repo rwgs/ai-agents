@@ -1,89 +1,80 @@
-# Make the dependency-update mechanism work and cost what it is worth
+# Ask the API to enable scanning, and record whichever answer comes back
 
 Approach for the change currently in flight. Replaced when the next non-trivial
 change begins, so anything that must outlive it is promoted first: verified
 product facts to `SPEC.md`, actionable work to `TASKS.md`, and closed choices to
 `DECISIONS.md`.
 
-The ruleset plan this replaces was already promoted. Its decision is in
-`DECISIONS.md` as "The default branch is worth protecting and cannot be protected
-here", and its evidence is recorded against the closed task in `TASKS.md`.
+The dependency-update plan this replaces was already promoted. Its decision is in
+`DECISIONS.md` as "Dependency updates are monthly, grouped, and pinned to a
+version tag", and its evidence is recorded against the closed task in `TASKS.md`.
 
 ## Problem
 
-Phase 7 wants the retained dependency-update mechanism verified operational.
-Reading it produced three findings instead of a confirmation.
+Phase 7 has two items left and both are written as a setting to visit: confirm
+secret scanning and push protection, and enable code scanning for this private
+repository. Each has been read three times, on 2026-08-02 twice and again today,
+and every read reports the same disabled state.
 
-Dependabot has never opened a pull request on this repository. The first reading
-attributed that to there being nothing to bump, which was wrong: the pinned
-`github/codeql-action` commit is five commits behind the `v4.37.4` release
-commit, and the difference includes the action's default CodeQL bundle. So the
-mechanism has had work available and has produced nothing.
+The reads cannot answer the question. `security_and_analysis: null`, HTTP 404 from
+the secret-scanning alerts endpoint, and HTTP 403 from the code-scanning alerts
+endpoint say the products are off; none of them distinguishes a switch nobody has
+flipped from a product this account does not have. So the phase has sat blocked on
+a settings visit whose sufficiency was never established, and the ruleset entry in
+`DECISIONS.md` had already predicted the plan boundary would be the first thing to
+check, because both products are sold for a private repository.
 
-The likely cause is in this repository rather than in Dependabot. The two pins
-follow different tag streams: `actions/checkout` names a version tag and
-`github/codeql-action` names `codeql-bundle-v2.26.2`. Dependabot reads the
-trailing comment to decide what version an action is currently pinned at, and a
-bundle tag is not a point on the semver stream it compares against.
-
-Separately, the cadence is wrong for this repository, and the measurement is what
-shows it. In the thirteen weeks to 2026-07-30, `github/codeql-action` published
-twelve version tags and `actions/checkout` published two on the line it tracks.
-Weekly, ungrouped updates over a two-action dependency surface annualise to
-roughly fifty pull requests, each firing a ten-minute three-platform run, on a
-repository with one maintainer.
-
-Dependabot on GitHub is also two switches and the documents here describe one.
-Version updates come from `.github/dependabot.yml`, which is configured; security
-updates are a repository setting, which is off while Dependabot alerts are on.
+Nobody had tried to write them. The same token wrote the Dependabot
+security-updates switch on 2026-08-02, so a write is available and its refusal
+carries a reason where a read carries only a state.
 
 ## Approach
 
-Fix the cause before tuning the cadence, because a mechanism that produces
-nothing cannot be judged by how often it would produce it.
+Attempt the enablement, one product per request so a failure attributes to one
+product, then record whichever answer comes back.
 
-- Repin both `github/codeql-action` steps to the `v4.37.4` release commit with a
-  version comment, so both pins name the same kind of ref and "current" has one
-  meaning. This makes the pin current and removes the suspected reason Dependabot
-  is silent in the same edit.
-- Set the schedule to monthly and group every `github-actions` bump into one pull
-  request, which turns roughly fifty reviews a year into twelve.
-- Enable Dependabot security updates, which matters more once routine bumps are
-  monthly, because it becomes the only thing that will not wait up to a month for
-  an advisory.
-- State the two switches in the security baseline and record the whole shape in
-  `DECISIONS.md`, including the rule that a pin names a version tag.
+- `PATCH /repos/rwgs/ai` for `secret_scanning`, then
+  `secret_scanning_push_protection`, then `advanced_security`, and
+  `PATCH /repos/rwgs/ai/code-scanning/default-setup` for CodeQL, reading the state
+  back after each rather than trusting the status code.
+- If the API enables them, confirm through the alerts endpoints and close both
+  items as the enablements they are.
+- If it refuses, record both as one accepted exception in `DECISIONS.md` with a
+  reason, an owner, and the conditions that reopen it, which is the shape the
+  ruleset entry already uses for the same plan boundary.
+- State in the `docs/WORKFLOW.md` security baseline that a settings change is
+  confirmed by reading the state back, and that this repository has the exception.
+- Restate the Phase 7 exit criterion so a recorded reason can meet it, as its
+  CodeQL criterion already allows, and close the phase if nothing else is
+  outstanding.
 
 ## Trade-offs
 
-- Monthly and grouped means a bump can sit unmerged for up to a month. Accepted:
-  the pins are a supply-chain control against an action moving under a mutable
-  ref, not a patch cadence, and security updates cover the case where waiting is
-  wrong.
-- Repinning to the release commit changes the action's default CodeQL bundle.
-  Nothing observable here depends on which bundle runs, because code scanning is
-  disabled on this repository and the workflow cannot upload results at all.
-- The Dependabot diagnosis was expected to stay a hypothesis for a month, on the
-  belief that no REST endpoint exposes a version-update job. That belief was
-  wrong, and the diagnosis is confirmed instead: a version-update job is an
-  Actions workflow run named `Dependabot Updates`, and the jobs either side of the
-  repin differ exactly as the diagnosis predicted.
+- A write against live repository settings is not a read. Accepted: enabling these
+  two products is what the tasks ask for, each is reversible through the same
+  endpoint, and the token has already been used this way for security updates.
+- An accepted exception leaves this repository with nothing scanning for committed
+  secrets and nothing analysing its Python and JavaScript. Named rather than
+  absorbed: the compensating controls are the `AGENTS.md` rule that no credential
+  belongs here and the `scripts/validate.sh` check that rejects the specific Codex
+  credential and runtime files by name, which is narrower than secret scanning by
+  every measure except those filenames.
+- Closing Phase 7 on a recorded reason means the repository documents a control it
+  does not run. That is the baseline's own answer where a host offers nothing, and
+  the alternative is a phase that stays open until a purchase decision is made.
 
 ## Verification
 
+- Quote each response, not the intent: the status code and the message from the
+  API, and the state read back afterwards.
 - `./scripts/validate.sh` under WSL, reporting which checks it performed.
-- Parse both changed YAML files and confirm the pinned commit is the one the
-  comment names, read from the API rather than from this plan.
-- Confirm the security-updates setting reports enabled after the change.
-- Read the `Dependabot Updates` runs either side of the repin and compare what
-  each job parsed for `github/codeql-action`, with `actions/checkout` as the
-  control.
-- No three-platform run is expected from the configuration edits themselves. The
-  CodeQL workflow is dispatch-only until code scanning is enabled, so the repinned
-  steps are exercised by a dispatch rather than by a push.
+- No three-platform run. The change touches no script, no workflow, and no
+  installed path.
 
-Done. `GET /repos/rwgs/ai/automated-security-fixes` reports
-`{"enabled":true,"paused":false}`, the push run `30762518006` for the change
-passed, and the two Dependabot jobs are recorded against the task in `TASKS.md`:
-no version parsed and the pin resolved as its own latest before, `4.37.4` and the
-release stream after.
+Done. All four writes were refused or ineffective, so the exception is what
+shipped. Secret scanning returns HTTP 422 `Secret scanning is not available for
+this repository.`, advanced security HTTP 422 `Advanced security has not been
+purchased.`, the code-scanning default setup HTTP 403, and push protection returns
+HTTP 200 while leaving itself disabled. The evidence is recorded against both
+closed tasks in `TASKS.md`, and the read-it-back rule the 200 produced is in the
+security baseline.

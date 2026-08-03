@@ -97,8 +97,10 @@ each agent actually reads.
 ## Phase 4: State-preserving installation and reliable validation
 
 Status: Blocked. Everything implementable is done and verified on three
-platforms. What remains needs code scanning enabled on the repository and
-Windows Developer Mode or an elevated shell.
+platforms. What remains is the first install on this machine, which needs Windows
+Developer Mode or an elevated shell so that symbolic links can be created; the
+code scanning this status used to name as well belongs to Phase 7 and is closed
+there as an accepted exception.
 
 ### Outcome
 
@@ -232,12 +234,14 @@ forked and since developed further.
 
 ## Phase 7: Enforced repository governance
 
-Status: Blocked on repository settings. The reusable guidance is reconciled: the
-readiness gate no longer demands a reviewer a single maintainer cannot produce,
-and the ruleset question is closed, with the push-enforced rules judged worth
-having and unavailable on this account's plan for a private repository. What is
-left is secret scanning, push protection, and code scanning, each of which needs
-a setting changed outside this environment and a plan question answered first.
+Status: Complete. The reusable guidance is reconciled: the readiness gate no
+longer demands a reviewer a single maintainer cannot produce, and the ruleset
+question is closed, with the push-enforced rules judged worth having and
+unavailable on this account's plan for a private repository. Secret scanning, push
+protection, and code scanning turned out to be the same boundary rather than
+settings to visit, proved on 2026-08-03 by attempting the writes and reading the
+refusals: they are purchases this account has not made, closed as one accepted
+exception with the conditions that reopen them.
 
 ### Outcome
 
@@ -257,8 +261,9 @@ without gates a single maintainer committing to `main` cannot satisfy.
 
 - Every push to `main` produces a validation run, and its conclusion is visible
   without a manual dispatch.
-- Secret scanning and push protection are confirmed enabled, and the retained
-  dependency-update mechanism is verified operational.
+- Secret scanning and push protection are confirmed enabled, or the reason they
+  cannot be is recorded, and the retained dependency-update mechanism is verified
+  operational.
 - Dependency updates have a documented path that does not contradict the
   accepted workflow.
 - No documented gate or required repository artifact depends on a human pull

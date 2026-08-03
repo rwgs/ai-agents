@@ -8,6 +8,114 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-03 Scanning is unavailable here, and an accepted write is not a change
+
+Status: Accepted. Closes the secret-scanning and code-scanning items Phase 7 held
+open, and answers the plan question "The default branch is worth protecting and
+cannot be protected here" named as the first thing to check for both.
+
+### Decision
+
+This repository runs no secret scanning, no push protection, and no code
+scanning, recorded as one accepted exception rather than as a decision against
+the controls. The reason is that GitHub does not sell them to this account for
+this private repository without a purchase, the owner is the maintainer, and it
+comes up for review again if the repository is made public or either product is
+bought. `.github/workflows/codeql.yml` stays dispatch-only with its `push` and
+`schedule` triggers commented out, since a run that builds a database it cannot
+upload is a ten-minute failure on a schedule.
+
+A repository settings change is confirmed by reading the state back, never by the
+status code of the write that made it.
+
+### Why
+
+Three reads had reported the products off and none of them said why, so the items
+were written as a settings visit whose sufficiency nobody had established. A read
+cannot tell an unflipped switch from an unavailable product. A write can, because
+its refusal carries a reason, and the same token had already written the
+Dependabot security-updates switch on 2026-08-02.
+
+Attempted on 2026-08-03 with that token, which carries `gist`, `read:org`, `repo`,
+and `workflow` scopes and reports `permissions.admin` on the repository, one
+product per request:
+
+- `PATCH /repos/rwgs/ai` setting `security_and_analysis.secret_scanning.status` to
+  `enabled` returns HTTP 422 `Secret scanning is not available for this
+  repository.`
+- The same call for `advanced_security` returns HTTP 422 `Advanced security has
+  not been purchased.`
+- `GET` and `PATCH /repos/rwgs/ai/code-scanning/default-setup` both return HTTP
+  403 `Code scanning is not enabled for this repository. Please enable code
+  scanning in the repository settings.`
+
+So this is the same boundary the ruleset entry below hit, reached through a
+different endpoint and stated in the product's own words. It is not a checkbox
+waiting in the settings page. The account's plan name was not read, because `GET
+/user` returns `plan: null` for a token without `user` scope; the boundary comes
+from the refusals rather than from the plan, which is the stronger of the two
+anyway.
+
+The write rule comes from the third attempt, which is the one that would have
+produced a false confirmation. `PATCH /repos/rwgs/ai` setting
+`security_and_analysis.secret_scanning_push_protection.status` to `enabled`
+returns HTTP 200 with the full repository object, and that object reports
+`secret_scanning_push_protection` still `disabled`. Push protection depends on
+secret scanning, which is unavailable, so GitHub accepts the request and changes
+nothing. Reading only the status code would have closed half this item on a write
+that did nothing.
+
+`GET /repos/rwgs/ai` reports `security_and_analysis: null` before and after all
+four attempts, so that field's absence is not evidence about any individual
+switch. The per-product statuses appeared only inside the accepted PATCH's
+response, where `dependabot_security_updates` reads `enabled` and
+`secret_scanning`, `secret_scanning_push_protection`,
+`secret_scanning_non_provider_patterns`, and `secret_scanning_validity_checks`
+all read `disabled`. That is also the only confirmation to date, from any
+endpoint, that the security-updates switch enabled on 2026-08-02 is still on.
+
+### Rejected alternatives
+
+- Leave both items open until the settings page is visited: the API has now
+  answered what the settings page would show, and an item that cannot be closed
+  by any action available here keeps a phase blocked on nothing.
+- Make the repository public to obtain both products free: it decides
+  publication, a much larger question, on the strength of two scanners. This is
+  the second time that trade has been offered by a settings limitation and
+  rejected for the same reason.
+- Buy GitHub Secret Protection or GitHub Code Security: defensible, and the
+  maintainer's call rather than an implementation decision, so it is a reopening
+  condition instead of a choice taken here.
+- Delete `.github/workflows/codeql.yml` since it cannot upload: it analyses both
+  languages correctly on dispatch and fails only at the upload, so it is the
+  configured control waiting for one setting rather than dead weight, and
+  `scripts/validate.sh` requires it.
+- Restore the `push` and `schedule` triggers anyway, to have the failure on
+  record: the failure is already on record as run `30676585363`, and a scheduled
+  red run trains a single maintainer to ignore the one signal they have.
+- Substitute a local pre-commit secret scan: it runs on the machine that would
+  have committed the secret, this repository installs no hooks, and a hook does
+  not see what is already pushed. Worth revisiting as a convenience, never as the
+  control.
+
+### Consequences
+
+Phase 7 closes with the reason recorded, which its CodeQL exit criterion already
+permitted and its secret-scanning criterion did not; that criterion is restated to
+allow it. Nothing in Phase 7 now waits on an external setting.
+
+The exception is the whole of this repository's answer to two baseline rules. What
+remains against a committed secret is the `AGENTS.md` rule that no credential,
+token, session, history, cache, log, or runtime database belongs here, and the
+`scripts/validate.sh` check that fails on a tracked `auth.json`, `history.jsonl`,
+`installation_id`, or `*.sqlite`. That check names the four Codex artifacts this
+setup could plausibly leak and knows nothing about any other secret, so it is a
+compensating control for one filename list rather than for the rule.
+
+The security baseline gains the read-it-back rule, because an accepted write that
+changes nothing is indistinguishable from a successful one at the point where
+somebody records that a control is on.
+
 ## 2026-08-02 Dependency updates are monthly, grouped, and pinned to a version tag
 
 Status: Accepted. Extends "Bots may open pull requests, humans may not" below,
