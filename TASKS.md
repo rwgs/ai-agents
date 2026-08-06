@@ -262,6 +262,25 @@ phase below.
   role. So the blocker is the link operation itself refusing, not a setting read
   as a proxy for it.
 
+  Re-run on 2026-08-06 rather than carried forward, and the blocker holds: the
+  same attempt fails with the same message, in a shell still outside the
+  `Administrator` role. One detail above is wrong and is corrected here rather
+  than edited away. The `AppModelUnlock` key exists; it is the
+  `AllowDevelopmentWithoutDevLicense` value inside it that is absent. That
+  changes nothing, since the attempted link is the better evidence either way.
+
+  WSL is not a way around it, tested on 2026-08-06 because it is the obvious
+  thing to reach for next and it would have failed silently. `ln -s` under
+  `/mnt/c` succeeds and `ls -l` shows an ordinary symbolic link, so from Linux
+  an install would look like it had worked. Windows cannot follow what it
+  creates: the entry carries reparse tag `0xa000001d`,
+  `IO_REPARSE_TAG_LX_SYMLINK`, which `Get-Item` reports with an empty `LinkType`
+  and `Target` and which `Get-Content` refuses with `The file cannot be accessed
+  by the system.` Installing that way would point both Windows-side agents at
+  instruction and skill paths they cannot read, and nothing would report a
+  failure. So the install waits on Developer Mode or an elevated shell, and on
+  nothing else.
+
 ## Completed phase: A tree of its own
 
 Every restatement is done, committed, and proved on three platforms. The last
