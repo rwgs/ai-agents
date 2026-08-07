@@ -320,6 +320,9 @@ function Set-ManagedFile {
     if ($DryRun) {
         $source = if ($isCopy) { "a copy of '$Source'" } else { 'the generated import' }
         Write-DryRunCommand "Write $source to '$Target'"
+        # Reported like the merges, so the summary a reader scans names every file
+        # the run would write rather than only the ones it merges.
+        Write-Output "would write: $Target"
         return
     }
 
