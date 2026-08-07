@@ -281,7 +281,7 @@ phase below.
   including ShellCheck on Linux. It took three dispatches: the first found a
   PowerShell 7 strict-mode defect and a macOS path-normalisation defect in the
   test, the second found the 5.1 fixture defect.
-- [ ] Install on this machine only after the state-preserving behavior passes.
+- [x] Install on this machine only after the state-preserving behavior passes.
   This is a first install, and symbolic links still require enabling Developer
   Mode or using an elevated shell. Acceptance: dry-run reports the intended
   changes, the real install preserves the pre-existing Codex and Claude state,
@@ -345,6 +345,35 @@ phase below.
   item is ordinary work: the acceptance is unchanged and `AI_TRUST_ROOTS` must
   still be set to `~/Development`, because the default `~/github` does not exist
   here.
+
+  Installed on 2026-08-07, with `AI_TRUST_ROOTS` set to `~/Development`. The
+  machine's state survived, measured against an inventory taken immediately
+  before rather than asserted afterwards. Claude Code's `settings.json` went from
+  1,176 approved permissions to 1,454, and none of the original 1,176 is missing;
+  `model` and all nine `additionalDirectories` are unchanged. `config.toml` went
+  from 20 section headers to 28, keeping its marketplaces, MCP servers, and the
+  trust entry Codex wrote for itself. `~/.codex/rules/default.rules` went from 48
+  lines to 187, which is the machine's own 48 plus the 139 curated rules. Every
+  replaced file was backed up under `~/.codex/backups/ai-20260807-110458-42988/`,
+  including the empty `AGENTS.md` that was there before.
+
+  What it produced is what the per-target decision says it should. Three copies
+  byte-identical to their sources, `~/.claude/CLAUDE.md` holding the generated
+  import of a path that exists, ten junctions in `~/.agents/skills/` and ten in
+  `~/.claude/skills/`, all readable through, and a state file recording the four
+  written files beside the three merged ones. The trust entries are the root plus
+  five worktrees; `ai`, `fabled-lands`, and `wealthfolio` are absent because Codex
+  had already trusted them itself, which is the duplicate matching the provenance
+  decision describes.
+
+  A rerun is a no-op: 27 `already current` or `already linked` lines, no write, no
+  merge, no backup, and the permission count unchanged at 1,454.
+
+  One half of the acceptance is left and needs a restart this session cannot
+  perform: both agents reporting the expected instructions and skills. Claude
+  Code's `/context` lists loaded memory files, which is what confirms the import
+  resolved, and the absolute-path import form is documented but has not been seen
+  to work here.
 
 ## Completed phase: A tree of its own
 
