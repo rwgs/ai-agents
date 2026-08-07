@@ -135,14 +135,73 @@
 - [x] Remove the empty `skills-optional/` directory left on disk by the commit
   that dropped the optional tree. Nothing tracked, ignored, or referenced it.
 
-## Blocked phase: State-preserving installation and reliable validation
+## Current phase: State-preserving installation and reliable validation
 
-Everything implementable here is done and verified on three platforms. One item is
-left, and it needs an action outside this environment: Windows Developer Mode or
-an elevated shell, so that symbolic links can be created. The token that made CI
-runs unreadable is no longer a factor, `gh` having been authenticated on
-2026-08-02, and the code-scanning repository setting belongs to the governance
+Unblocked on 2026-08-06. The item below waited four days on an action outside this
+environment, Windows Developer Mode or an elevated shell, because the blocker was
+recorded as a property of this machine. It was a property of the installer: 20 of
+its 24 Windows links never needed the privilege, and the other four had answers
+that are not symbolic links. The installer now needs no privilege on any Windows
+machine, so the install is ordinary work rather than a blocked item. The token
+that made CI runs unreadable is no longer a factor, `gh` having been authenticated
+on 2026-08-02, and the code-scanning repository setting belongs to the governance
 phase below.
+
+- [x] Stop the Windows installer needing a privilege the machine may withhold.
+  Recorded in `DECISIONS.md` as "Windows installs without a privilege, by method
+  per target", which supersedes in part the entry requiring a symbolic link on
+  every platform. The method follows the target: the 20 skill directories become
+  junctions, `~/.claude/CLAUDE.md` becomes a generated `@` import of
+  `ai-home/AGENTS.md`, and `~/.codex/AGENTS.md` and the two model profiles are
+  copied and recorded in the install state file, so a rerun refreshes one only
+  while it matches what the installer wrote and preserves anything the machine
+  changed. `scripts/install.sh` is untouched, because symbolic links need no
+  privilege on Linux or macOS.
+
+  Three things were established by running them rather than recalled. A junction
+  is created unprivileged and reports `LinkType` `Junction` with a resolved
+  `Target` under both PowerShell editions, which is what the idempotency and
+  pruning checks read. `mklink /J` creates one to a missing target, which is what
+  lets the stale-link fixtures be built without a privilege. And hard links, the
+  obvious way to keep a file tracking its source, are disqualified: after a `git
+  checkout` of the source the source read `version one` while the link still read
+  `version two`, so Codex would silently read stale instructions after a pull.
+  Codex's `model_instructions_file` is the key that looks like the answer and is
+  documented as a "Replacement for built-in instructions instead of `AGENTS.md`",
+  so it would discard the built-in instructions rather than point at a shared
+  file.
+
+  Verification: the complete Windows installer integration test passes locally
+  under both PowerShell 5.1 and PowerShell 7, which had never been possible,
+  because it needed the privilege too and CI was the only place it ran. WSL
+  `./scripts/validate.sh` passed on 2026-08-06, reporting `installer integration
+  test passed` and `validation passed: 10 skills checked`, which is what proves
+  the Bash installer is unaffected; this WSL installation has only `python3` and
+  `git` of the tools it probes, so ShellCheck, `node --check`, `codex execpolicy`,
+  and both PowerShell checks were skipped and run from Windows instead, where both
+  editions parse both installers and PSScriptAnalyzer reports nothing under the
+  validator's own invocation.
+
+  Running the test found one defect, in the test rather than the installer: its
+  provenance harness dot-sources the installer's functions and sets its script
+  variables by name, and did not set the one this change adds.
+
+  Defender was the detour, and it is recorded as a rule in `AGENTS.md` because
+  nothing else catches it. Reading a file into a byte array and writing one back
+  made AMSI block the entire installer as malicious under both editions, reported
+  as a parser error on line 1, invisible to the parser, to PSScriptAnalyzer, and
+  to CI. Bisection against the committed version settled it rather than guesswork:
+  `HEAD` was clean, the byte-array version was blocked, and the same logic written
+  with `Copy-Item`, `WriteAllText`, and `Get-FileHash` is clean. It also corrected
+  a wrong reading made on the way, that the installer test was blocked by a
+  pre-existing condition of this machine; the test invokes the installer, and it
+  has run cleanly ever since the installer stopped being flagged.
+
+  One path stays uncovered rather than implied: `Set-ManagedFile` replacing a
+  pre-existing symbolic link, because fabricating one needs the privilege this
+  change removes. The junction fixture exercises the same branch through
+  `Test-LinkTargetsSource`, and CI's elevated stale-link fixtures cover the
+  symbolic-link branch of pruning.
 
 - [x] Restore automatic validation on pushes to `main`. It works: the runs list
   now holds `push` events for `be8b8ea` at 04:54Z and `397241b` at 12:43Z on
@@ -280,6 +339,12 @@ phase below.
   instruction and skill paths they cannot read, and nothing would report a
   failure. So the install waits on Developer Mode or an elevated shell, and on
   nothing else.
+
+  It waits on neither, as of later the same day. The privilege was removed from
+  the installer rather than acquired for the machine, by the task above, so this
+  item is ordinary work: the acceptance is unchanged and `AI_TRUST_ROOTS` must
+  still be set to `~/Development`, because the default `~/github` does not exist
+  here.
 
 ## Completed phase: A tree of its own
 

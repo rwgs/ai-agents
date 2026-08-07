@@ -56,7 +56,9 @@ function Assert-Link {
     )
 
     $item = Get-Item -LiteralPath $Target -Force
-    Assert-Condition ($item.LinkType -eq 'SymbolicLink') "Expected symbolic link: $Target"
+    # A junction, because it needs neither Developer Mode nor elevation, which is
+    # what lets this test run outside CI.
+    Assert-Condition ($item.LinkType -eq 'Junction') "Expected junction: $Target"
 
     $linkTarget = [string] $item.Target
     if (-not [System.IO.Path]::IsPathRooted($linkTarget)) {
@@ -66,6 +68,51 @@ function Assert-Link {
     $actual = [System.IO.Path]::GetFullPath($linkTarget)
     $expected = [System.IO.Path]::GetFullPath($Source)
     Assert-Condition ($actual -eq $expected) "Unexpected link target: $Target"
+}
+
+function Assert-NotLink {
+    param(
+        [Parameter(Mandatory)]
+        [string] $Target
+    )
+
+    $item = Get-Item -LiteralPath $Target -Force
+    Assert-Condition (
+        [string]::IsNullOrEmpty([string] $item.LinkType)
+    ) "Expected a written file rather than a link: $Target"
+}
+
+function Assert-ManagedCopy {
+    param(
+        [Parameter(Mandatory)]
+        [string] $Target,
+
+        [Parameter(Mandatory)]
+        [string] $Source
+    )
+
+    Assert-NotLink $Target
+    Assert-Condition (
+        [System.Convert]::ToBase64String([System.IO.File]::ReadAllBytes($Target)) -ceq
+        [System.Convert]::ToBase64String([System.IO.File]::ReadAllBytes($Source))
+    ) "Managed copy is not byte-identical to its source: $Target"
+}
+
+function Assert-ImportShim {
+    param(
+        [Parameter(Mandatory)]
+        [string] $Target,
+
+        [Parameter(Mandatory)]
+        [string] $Source
+    )
+
+    Assert-NotLink $Target
+    $expected = '@' + ([System.IO.Path]::GetFullPath($Source)).Replace('\', '/')
+    $lines = @(
+        [System.IO.File]::ReadAllText($Target) -split "`r?`n" | ForEach-Object { $_.Trim() }
+    )
+    Assert-Condition ($lines -ccontains $expected) "Import shim does not import the source: $Target"
 }
 
 try {
@@ -126,10 +173,12 @@ prefix_rule(pattern=["sed"], decision="allow")
     $env:CLAUDE_CONFIG_DIR = $testClaudeHome
     $installLog = @(& (Join-Path $repoRoot 'scripts/install.ps1'))
 
-    Assert-Link (Join-Path $testCodexHome 'AGENTS.md') (Join-Path $repoRoot 'ai-home/AGENTS.md')
+    Assert-ManagedCopy (Join-Path $testCodexHome 'AGENTS.md') (Join-Path $repoRoot 'ai-home/AGENTS.md')
     $installedConfigPath = Join-Path $testCodexHome 'config.toml'
     $installedConfig = Get-Item -LiteralPath $installedConfigPath -Force
-    Assert-Condition ($installedConfig.LinkType -ne 'SymbolicLink') "Expected merged config file: $installedConfigPath"
+    Assert-Condition (
+        [string]::IsNullOrEmpty([string] $installedConfig.LinkType)
+    ) "Expected merged config file: $installedConfigPath"
     $installedConfigContent = [System.IO.File]::ReadAllText($installedConfigPath)
     $escapedGitHubRoot = (Join-Path $testUserHome 'github').Replace('\', '\\')
     $escapedGitHubRepo = $testGitHubRepo.Replace('\', '\\')
@@ -181,7 +230,7 @@ prefix_rule(pattern=["sed"], decision="allow")
     # machine's and the curated rules are merged into its file.
     $rulesDirectory = Get-Item -LiteralPath (Join-Path $testCodexHome 'rules') -Force
     Assert-Condition (
-        $rulesDirectory.PSIsContainer -and $rulesDirectory.LinkType -ne 'SymbolicLink'
+        $rulesDirectory.PSIsContainer -and [string]::IsNullOrEmpty([string] $rulesDirectory.LinkType)
     ) 'Expected a real rules directory'
     $installedRulesPath = Join-Path $testCodexHome 'rules/default.rules'
     $installedRules = [System.IO.File]::ReadAllText($installedRulesPath)
@@ -194,8 +243,8 @@ prefix_rule(pattern=["sed"], decision="allow")
     Assert-Condition (
         Test-Path -LiteralPath (Join-Path $testAgentsHome 'ai-install-state.json') -PathType Leaf
     ) 'Installer recorded no provenance state'
-    Assert-Link (Join-Path $testCodexHome 'ollama.config.toml') (Join-Path $repoRoot 'ai-home/codex/ollama.config.toml')
-    Assert-Link (Join-Path $testCodexHome 'llamacpp.config.toml') (Join-Path $repoRoot 'ai-home/codex/llamacpp.config.toml')
+    Assert-ManagedCopy (Join-Path $testCodexHome 'ollama.config.toml') (Join-Path $repoRoot 'ai-home/codex/ollama.config.toml')
+    Assert-ManagedCopy (Join-Path $testCodexHome 'llamacpp.config.toml') (Join-Path $repoRoot 'ai-home/codex/llamacpp.config.toml')
 
     Get-ChildItem -LiteralPath (Join-Path $repoRoot '.agents/skills') -Directory |
         ForEach-Object {
@@ -203,7 +252,7 @@ prefix_rule(pattern=["sed"], decision="allow")
             Assert-Link (Join-Path (Join-Path $testClaudeHome 'skills') $_.Name) $_.FullName
         }
 
-    Assert-Link (Join-Path $testClaudeHome 'CLAUDE.md') (Join-Path $repoRoot 'ai-home/AGENTS.md')
+    Assert-ImportShim (Join-Path $testClaudeHome 'CLAUDE.md') (Join-Path $repoRoot 'ai-home/AGENTS.md')
 
     $claudeSettingsPath = Join-Path $testClaudeHome 'settings.json'
     # Plain ConvertFrom-Json, because Windows PowerShell 5.1 has no -AsHashtable
@@ -248,7 +297,7 @@ prefix_rule(pattern=["sed"], decision="allow")
     Assert-Condition ($backupContent.Trim() -eq 'original global instructions') 'AGENTS.md backup content changed'
 
     & (Join-Path $repoRoot 'scripts/install.ps1') | Out-Null
-    Assert-Link (Join-Path $testCodexHome 'AGENTS.md') (Join-Path $repoRoot 'ai-home/AGENTS.md')
+    Assert-ManagedCopy (Join-Path $testCodexHome 'AGENTS.md') (Join-Path $repoRoot 'ai-home/AGENTS.md')
     $instructionBackups = @(
         Get-ChildItem -LiteralPath (Join-Path $testCodexHome 'backups') -Filter 'AGENTS.md' -File -Recurse
     )
@@ -263,17 +312,37 @@ prefix_rule(pattern=["sed"], decision="allow")
         [System.IO.File]::ReadAllText($installedRulesPath) -ceq $rulesBefore
     ) 'Idempotent install changed the merged Codex rules'
 
+    # A written file is the machine's to edit, unlike the link it replaced, so an
+    # edit made on the machine must survive the next install and be reported. This
+    # is the provenance rule the merged files already follow, applied to a copy.
+    $codexInstructions = Join-Path $testCodexHome 'AGENTS.md'
+    Set-Content -LiteralPath $codexInstructions -Value 'edited on this machine' -NoNewline
+    $preserveLog = @(& (Join-Path $repoRoot 'scripts/install.ps1'))
+    Assert-Condition (
+        [System.IO.File]::ReadAllText($codexInstructions) -ceq 'edited on this machine'
+    ) 'Installer overwrote a managed file the machine had changed'
+    Assert-Condition (
+        ($preserveLog -join "`n") -match '(?m)^preserved: '
+    ) 'Installer did not report preserving the machine-changed file'
+
+    # Handing it back restores installer ownership, so the copy is refreshed again
+    # rather than preserved for good.
+    Remove-Item -LiteralPath $codexInstructions -Force
+    & (Join-Path $repoRoot 'scripts/install.ps1') | Out-Null
+    Assert-ManagedCopy $codexInstructions (Join-Path $repoRoot 'ai-home/AGENTS.md')
+
     # A previous installation linked the rules directory into this repository,
     # and Codex then wrote its approvals there. Installing must undo that link
-    # and say where those approvals went.
+    # and say where those approvals went. The fixture is a junction because a
+    # symbolic link needs a privilege this test no longer requires.
     Remove-Item -LiteralPath (Join-Path $testCodexHome 'rules') -Recurse -Force
-    New-Item -ItemType SymbolicLink -Force `
+    New-Item -ItemType Junction -Force `
         -Path (Join-Path $testCodexHome 'rules') `
         -Target (Join-Path $repoRoot 'ai-home/rules') | Out-Null
     $migrationLog = @(& (Join-Path $repoRoot 'scripts/install.ps1'))
     $migratedRules = Get-Item -LiteralPath (Join-Path $testCodexHome 'rules') -Force
     Assert-Condition (
-        $migratedRules.PSIsContainer -and $migratedRules.LinkType -ne 'SymbolicLink'
+        $migratedRules.PSIsContainer -and [string]::IsNullOrEmpty([string] $migratedRules.LinkType)
     ) 'Installer left the rules directory linked into this repository'
     Assert-Condition (
         ($migrationLog -join "`n") -match '(?m)^unlinked: '
@@ -291,35 +360,48 @@ prefix_rule(pattern=["sed"], decision="allow")
     # are fabricated rather than made by deleting a real skill, so the test never
     # mutates the repository it is running from.
     #
-    # mklink, not New-Item: Windows PowerShell 5.1 refuses to create a link whose
-    # target does not exist, which is exactly what a stale link is. Both reparse
-    # types are made, because Windows records a link to a missing target as a
-    # file unless the link is created with /D, and pruning has to remove either.
+    # mklink, not New-Item: New-Item refuses a junction whose target is missing
+    # under either edition, and refuses a symbolic link to a missing target under
+    # Windows PowerShell 5.1, which is exactly what a stale link is.
+    #
+    # The junction is what this installer creates and needs no privilege, so it is
+    # required. The two symbolic-link shapes are what an installation predating
+    # that change left behind, and creating one needs Developer Mode or elevation,
+    # so they are attempted and reported rather than required; CI runs elevated and
+    # covers them. Windows records a symbolic link to a missing target as a file
+    # unless /D is given, and pruning has to remove either.
     $claudeSkills = Join-Path $testClaudeHome 'skills'
+    $staleNames = [System.Collections.Generic.List[string]]::new()
     foreach ($stale in @(
-            @{ Name = 'removed-skill'; Option = '/D' },
-            @{ Name = 'removed-file-skill'; Option = '' }
+            @{ Name = 'removed-skill'; Option = '/J'; Required = $true },
+            @{ Name = 'removed-directory-skill'; Option = '/D'; Required = $false },
+            @{ Name = 'removed-file-skill'; Option = ''; Required = $false }
         )) {
         $stalePath = Join-Path $claudeSkills $stale.Name
         $staleTarget = Join-Path $repoRoot ".agents/skills/$($stale.Name)"
         & cmd.exe /c "mklink $($stale.Option) `"$stalePath`" `"$staleTarget`"" | Out-Null
-        Assert-Condition ($LASTEXITCODE -eq 0) "Could not fabricate a stale link: $stalePath"
+        if ($LASTEXITCODE -eq 0) {
+            $staleNames.Add($stale.Name)
+            continue
+        }
+        Assert-Condition (-not $stale.Required) "Could not fabricate a stale link: $stalePath"
+        Write-Output "skipped stale 'mklink $($stale.Option)' fixture: it needs Developer Mode or elevation"
     }
     New-Item -ItemType Directory -Path (Join-Path $claudeSkills 'handmade-skill') -Force | Out-Null
     $foreignDir = Join-Path $taskTestRoot 'foreign skills/foreign-skill'
     New-Item -ItemType Directory -Path $foreignDir -Force | Out-Null
-    New-Item -ItemType SymbolicLink -Force `
+    New-Item -ItemType Junction -Force `
         -Path (Join-Path $claudeSkills 'foreign-skill') -Target $foreignDir | Out-Null
 
     & (Join-Path $repoRoot 'scripts/install.ps1') -DryRun | Out-Null
-    foreach ($staleName in @('removed-skill', 'removed-file-skill')) {
+    foreach ($staleName in $staleNames) {
         Assert-Condition (
             $null -ne (Get-Item -LiteralPath (Join-Path $claudeSkills $staleName) -Force -ErrorAction SilentlyContinue)
         ) "Dry-run pruned a stale skill link: $staleName"
     }
 
     & (Join-Path $repoRoot 'scripts/install.ps1') | Out-Null
-    foreach ($staleName in @('removed-skill', 'removed-file-skill')) {
+    foreach ($staleName in $staleNames) {
         Assert-Condition (
             -not (Get-Item -LiteralPath (Join-Path $claudeSkills $staleName) -Force -ErrorAction SilentlyContinue)
         ) "Stale managed skill link was not pruned: $staleName"
@@ -504,6 +586,9 @@ prefix_rule(pattern=["sed"], decision="allow")
 
         $script:rulesSource = $Source
         $script:mergeReport = [System.Collections.Generic.List[string]]::new()
+        # This harness merges without installing, so no managed file has been
+        # written and the state it contributes is empty.
+        $script:managedFileState = [ordered] @{}
         return @(Invoke-AgentStateMerge)
     }
 

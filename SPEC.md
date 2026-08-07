@@ -85,7 +85,11 @@ the agent state already on the machine at risk.
   shared with the agents, so they are merged entry by entry and never linked or
   replaced. `AGENTS_HOME/ai-install-state.json` records what the installer
   wrote, and that record is what allows a later run to update or withdraw an
-  entry. Everything else managed is a symbolic link.
+  entry. Everything else managed is a symbolic link on Linux and macOS. On
+  Windows, where a symbolic link needs a privilege the machine may withhold, a
+  managed directory is a junction, `~/.claude/CLAUDE.md` is a generated `@`
+  import, and the Codex instruction file and model profiles are copies recorded
+  in the same state file. `docs/AGENT_LAYOUT.md` carries the per-platform table.
 - `scripts/merge-agent-state.py` implements the merge for the shell installer;
   `scripts/install.ps1` implements the same rules natively for Windows.
 - `.agents/skills/` contains reusable workflows linked into `AGENTS_HOME` and
@@ -178,9 +182,9 @@ installer must preserve.
 ## Compatibility
 
 - The shell installer runs under Bash on Linux and macOS.
-- The PowerShell installer targets Windows PowerShell 5.1 and PowerShell 7, in
-  an environment capable of creating symbolic links. Symbolic-link creation
-  requires Developer Mode or elevation in both editions.
+- The PowerShell installer targets Windows PowerShell 5.1 and PowerShell 7, and
+  requires no privilege: it creates junctions, an import, and copies rather than
+  symbolic links, which on Windows would need Developer Mode or elevation.
 - An optional tool may add validation, but ordinary installation must never come
   to depend on unrelated developer tooling.
 - The shell installer's merges into `config.toml`, the Codex rule file, and

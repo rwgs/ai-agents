@@ -96,11 +96,12 @@ each agent actually reads.
 
 ## Phase 4: State-preserving installation and reliable validation
 
-Status: Blocked. Everything implementable is done and verified on three
-platforms. What remains is the first install on this machine, which needs Windows
-Developer Mode or an elevated shell so that symbolic links can be created; the
-code scanning this status used to name as well belongs to Phase 7 and is closed
-there as an accepted exception.
+Status: Unblocked on 2026-08-06 and in progress. The blocker was read as a
+property of this machine for four days and is a property of the installer: the
+Windows installer now creates junctions, an import, and copies rather than
+symbolic links, so it needs no privilege on any Windows machine. What remains is
+the first install itself. The code scanning this status used to name belongs to
+Phase 7 and is closed there as an accepted exception.
 
 ### Outcome
 
@@ -129,8 +130,9 @@ validation automatically on every push to `main`.
 - `config.toml`, Codex rules, and Claude permissions mix repository defaults with
   state written by the applications. Replacing a set or file can silently lose
   data; append-only behavior can silently retain a withdrawn permission.
-- Windows link creation requires Developer Mode or elevation on the reviewed
-  machine.
+- Windows symbolic-link creation requires Developer Mode or elevation, which the
+  reviewed machine grants neither of. Addressed on 2026-08-06 by installing
+  nothing that needs the privilege, rather than by acquiring it.
 - The GitHub Actions automatic check-suite preference has no read endpoint, so
   proving the push trigger requires changing the live setting and observing a
   subsequent push.

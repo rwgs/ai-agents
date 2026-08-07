@@ -45,6 +45,9 @@ else {
     @((Join-Path $userHome 'github'))
 }
 $script:mergeReport = [System.Collections.Generic.List[string]]::new()
+# Provenance for the managed files that are written rather than linked, collected
+# as they are written and recorded by the same state file as the merges.
+$script:managedFileState = [ordered] @{}
 
 if ($Plugins) {
     foreach ($manifest in @($codexPluginManifest, $claudePluginManifest)) {
@@ -104,7 +107,10 @@ function Test-LinkTargetsSource {
         [string] $Source
     )
 
-    if ($Item.LinkType -ne 'SymbolicLink') {
+    # Junctions are what this installer creates on Windows, because they need no
+    # privilege. Symbolic links are still recognised, so an install that predates
+    # that change is left alone instead of backed up and replaced.
+    if ($Item.LinkType -notin @('SymbolicLink', 'Junction')) {
         return $false
     }
 
@@ -168,8 +174,8 @@ function Set-ManagedLink {
         [string] $Target
     )
 
-    if (-not (Test-Path -LiteralPath $Source)) {
-        throw "Managed source does not exist: $Source"
+    if (-not (Test-Path -LiteralPath $Source -PathType Container)) {
+        throw "Managed link source is not a directory: $Source"
     }
 
     New-ManagedDirectory (Split-Path -Parent $Target)
@@ -193,18 +199,139 @@ function Set-ManagedLink {
         Write-Output "backed up: $Target -> $backup"
     }
 
+    # A junction needs no privilege where a symbolic link needs Developer Mode or
+    # elevation, and it refuses a relative target, which the normalised source
+    # rules out. It is a directory-only reparse point, which is why the source is
+    # checked to be one above.
+    $linkSource = Get-NormalizedPath $Source
+
     if ($DryRun) {
-        Write-DryRunCommand "New-Item -ItemType SymbolicLink -Path '$Target' -Target '$Source'"
+        Write-DryRunCommand "New-Item -ItemType Junction -Path '$Target' -Target '$linkSource'"
     }
     else {
         try {
-            New-Item -ItemType SymbolicLink -Path $Target -Target $Source | Out-Null
+            New-Item -ItemType Junction -Path $Target -Target $linkSource | Out-Null
         }
         catch {
-            throw "Failed to create symbolic link '$Target'. Enable Windows Developer Mode or run PowerShell as Administrator. $($_.Exception.Message)"
+            throw "Failed to create junction '$Target'. $($_.Exception.Message)"
         }
     }
     Write-Output "linked: $Target -> $Source"
+}
+
+function Get-PathHash {
+    param(
+        [Parameter(Mandatory)]
+        [string] $Path
+    )
+
+    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+}
+
+# Three managed files cannot be links on Windows without a privilege the machine
+# may not grant, so they are written instead. A written file is machine-writable
+# where a link was not, so each one is recorded in the install state and rewritten
+# only while it still matches that record. Anything else is the machine's, and is
+# preserved and reported rather than overwritten.
+#
+# Copy-Item and WriteAllText, rather than reading and writing byte arrays:
+# Defender's AMSI blocks the whole script when it reads a file into a byte array
+# and writes one back, which is a shape ransomware shares and this installer has
+# no need of.
+function Set-ManagedFile {
+    param(
+        [Parameter(Mandatory)]
+        [string] $Name,
+
+        [Parameter(Mandatory)]
+        [string] $Target,
+
+        [Parameter(Mandatory, ParameterSetName = 'Copy')]
+        [string] $Source,
+
+        [Parameter(Mandatory, ParameterSetName = 'Text')]
+        [string] $Text,
+
+        [Parameter(Mandatory)]
+        [string] $PriorLinkSource
+    )
+
+    $isCopy = $PSCmdlet.ParameterSetName -eq 'Copy'
+    $record = Get-ArtifactState -State (Get-InstallState) -Name $Name -Target $Target
+
+    New-ManagedDirectory (Split-Path -Parent $Target)
+    $existing = Get-Item -LiteralPath $Target -Force -ErrorAction SilentlyContinue
+
+    if ($existing -and (Test-LinkTargetsSource -Item $existing -Source $PriorLinkSource)) {
+        # An install predating this change left a link here. It holds no content
+        # of its own, so it is removed rather than backed up, and Delete on the
+        # entry itself never follows the link to the repository.
+        if ($DryRun) {
+            Write-DryRunCommand "Remove the link '$Target'"
+        }
+        else {
+            $existing.Delete()
+        }
+        Write-Output "unlinked: $Target"
+        $existing = $null
+    }
+
+    if ($existing) {
+        $currentHash = Get-PathHash $Target
+        $current = if ($isCopy) {
+            $currentHash -eq (Get-PathHash $Source)
+        }
+        else {
+            [System.IO.File]::ReadAllText($Target) -ceq $Text
+        }
+
+        if ($current) {
+            Write-Output "already current: $Target"
+            $script:managedFileState[$Name] = [ordered] @{ path = $Target; sha256 = $currentHash }
+            return
+        }
+
+        $owned = $record -and
+            (Test-JsonProperty -Object $record -Name 'sha256') -and
+            $record.sha256 -eq $currentHash
+
+        if ($record -and -not $owned) {
+            Write-Output "preserved: $Target differs from what this installer wrote; not replaced"
+            $script:managedFileState[$Name] = $record
+            return
+        }
+
+        # Either the file predates the installer or it is byte-identical to what
+        # the installer last wrote. Only the first is worth a backup.
+        if (-not $owned) {
+            $backup = Get-BackupPath $Target
+            New-ManagedDirectory (Split-Path -Parent $backup)
+
+            if ($DryRun) {
+                Write-DryRunCommand "Copy-Item -LiteralPath '$Target' -Destination '$backup'"
+            }
+            else {
+                Copy-Item -LiteralPath $Target -Destination $backup
+            }
+            Write-Output "backed up: $Target -> $backup"
+        }
+    }
+
+    if ($DryRun) {
+        $source = if ($isCopy) { "a copy of '$Source'" } else { 'the generated import' }
+        Write-DryRunCommand "Write $source to '$Target'"
+        return
+    }
+
+    if ($isCopy) {
+        Copy-Item -LiteralPath $Source -Destination $Target -Force
+    }
+    else {
+        [System.IO.File]::WriteAllText($Target, $Text, [System.Text.UTF8Encoding]::new($false))
+    }
+
+    Write-Output "wrote: $Target"
+    $script:managedFileState[$Name] = [ordered] @{ path = $Target; sha256 = (Get-PathHash $Target) }
 }
 
 function ConvertTo-TomlBasicString {
@@ -1155,7 +1282,7 @@ function Initialize-RulesDirectory {
     $existing = Get-Item -LiteralPath $Path -Force -ErrorAction SilentlyContinue
     $unlinked = $false
 
-    if ($existing -and $existing.LinkType -eq 'SymbolicLink') {
+    if ($existing -and $existing.LinkType -in @('SymbolicLink', 'Junction')) {
         $linkTarget = [string] $existing.Target
 
         if ($DryRun) {
@@ -1210,15 +1337,23 @@ function Invoke-AgentStateMerge {
         $rules.State['path'] = $rulesTarget
         $claude.State['path'] = $claudeSettings
 
+        $record = [ordered] @{
+            version        = $stateVersion
+            codexConfig    = $config.State
+            codexRules     = $rules.State
+            claudeSettings = $claude.State
+        }
+
+        # The written files record themselves as they are written, and every one
+        # of them runs before this merge, so the state file carries them all.
+        foreach ($name in $script:managedFileState.Keys) {
+            $record[$name] = $script:managedFileState[$name]
+        }
+
         New-ManagedDirectory (Split-Path -Parent $stateFile)
         [System.IO.File]::WriteAllText(
             $stateFile,
-            (ConvertTo-PortableJson -Value ([pscustomobject] [ordered] @{
-                        version        = $stateVersion
-                        codexConfig    = $config.State
-                        codexRules     = $rules.State
-                        claudeSettings = $claude.State
-                    })),
+            (ConvertTo-PortableJson -Value ([pscustomobject] $record)),
             [System.Text.UTF8Encoding]::new($false)
         )
     }
@@ -1244,7 +1379,7 @@ function Remove-StaleManagedSkill {
     Get-ChildItem -LiteralPath $SkillsDirectory -Force | ForEach-Object {
         # Only ever consider links this installer could have created. A real
         # directory, or a link pointing anywhere else, belongs to the user.
-        if ($_.LinkType -ne 'SymbolicLink' -or -not $_.Target) {
+        if ($_.LinkType -notin @('SymbolicLink', 'Junction') -or -not $_.Target) {
             return
         }
 
@@ -1374,14 +1509,35 @@ function Install-ClaudePlugin {
         }
 }
 
-Set-ManagedLink (Join-Path $repoRoot 'ai-home/AGENTS.md') (Join-Path $codexHome 'AGENTS.md')
+$instructionSource = Join-Path $repoRoot 'ai-home/AGENTS.md'
+
+# Codex offers no include mechanism for AGENTS.md, and model_instructions_file
+# replaces the built-in instructions rather than pointing at these, so its copy is
+# refreshed by re-running the installer.
+Set-ManagedFile -Name 'codexInstructions' `
+    -Target (Join-Path $codexHome 'AGENTS.md') `
+    -Source $instructionSource `
+    -PriorLinkSource $instructionSource
 
 Get-ChildItem -LiteralPath (Join-Path $repoRoot 'ai-home/codex') -Filter '*.config.toml' -File |
     ForEach-Object {
-        Set-ManagedLink $_.FullName (Join-Path $codexHome $_.Name)
+        Set-ManagedFile -Name "codexProfile-$($_.Name)" `
+            -Target (Join-Path $codexHome $_.Name) `
+            -Source $_.FullName `
+            -PriorLinkSource $_.FullName
     }
 
-Set-ManagedLink (Join-Path $repoRoot 'ai-home/AGENTS.md') (Join-Path $claudeHome 'CLAUDE.md')
+# Claude Code resolves an import at session start, so this shim tracks the
+# repository where a copy would go stale, and its own documentation prescribes it
+# for Windows. Forward slashes keep the path clear of Markdown escaping, and the
+# comment is block-level HTML, which Claude Code strips before loading the file.
+$importPath = (Get-NormalizedPath $instructionSource).Replace('\', '/')
+$importShim = "<!-- Written by the ai installer. Edit ai-home/AGENTS.md in the repository. -->`n@$importPath`n"
+Set-ManagedFile -Name 'claudeInstructions' `
+    -Target (Join-Path $claudeHome 'CLAUDE.md') `
+    -Text $importShim `
+    -PriorLinkSource $instructionSource
+
 Invoke-AgentStateMerge
 
 Get-ChildItem -LiteralPath (Join-Path $repoRoot '.agents/skills') -Directory |

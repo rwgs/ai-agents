@@ -8,6 +8,95 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-06 Windows installs without a privilege, by method per target
+
+Status: Accepted. Removes the blocker Phase 4's last item has carried since
+2026-08-02. Supersedes in part "Files this repository fully owns are installed as
+symbolic links" below, which required a link on every platform; it stands
+unchanged for Linux and macOS.
+
+### Decision
+
+The Windows installer creates nothing that needs Developer Mode or elevation. The
+method is chosen by what the target is, not by what the machine allows, so one
+install produces one result on every Windows machine:
+
+- A managed directory becomes a junction. The 20 skill links are all of them.
+- `~/.claude/CLAUDE.md` becomes a real file holding one `@` import of
+  `ai-home/AGENTS.md`, by absolute path with forward slashes.
+- `~/.codex/AGENTS.md` and the two `*.config.toml` model profiles are copied.
+
+A copied or generated file is machine-writable where a link was not, so each is
+recorded in the install state file and governed by the provenance model already
+in force for `config.toml`, the Codex rules, and `settings.json`: rewritten only
+when absent or byte-identical to what the installer recorded writing, otherwise
+preserved and reported.
+
+`scripts/install.sh` is unchanged. Symbolic links need no privilege on Linux or
+macOS, and the platforms that work are not made worse to match the one that did
+not.
+
+### Why
+
+The blocker was recorded as a property of this machine for four days. It is a
+property of the installer, and a baseline meant to be portable cannot require a
+privilege that a locked-down Windows machine will never grant.
+
+How much of the install actually needed it had never been measured. Of 24 links,
+20 are skill directories, and junctions cover every one of them without a
+privilege. Both PowerShell editions report a junction as `LinkType` `Junction`
+with a resolved `Target`, which is what the installer's idempotency and pruning
+checks already read, so those widen rather than change shape.
+
+Claude Code's documentation prescribes the import for exactly this case: "On
+Windows, creating a symlink requires Administrator privileges or Developer Mode,
+so use the `@AGENTS.md` import instead." It is also better than a link, because
+the import resolves at session start and cannot go stale.
+
+Codex has no equivalent. It offers no include mechanism for `AGENTS.md`, and
+`model_instructions_file`, the key that looks like the answer, is documented as a
+"Replacement for built-in instructions instead of `AGENTS.md`", so using it would
+discard Codex's built-in instructions rather than point at a shared file.
+
+### Rejected alternatives
+
+Hard links. They create unprivileged and would have needed no state records, but
+they are orphaned by an ordinary `git` update: tested on 2026-08-06, after `git
+checkout` of the source the source read `version one` while the link still read
+`version two`. Codex would silently read stale instructions after every `git
+pull`, which is worse than not installing.
+
+A symbolic link first, falling back when it is refused. It makes the installed
+result depend on machine state, doubles what the tests must cover, and leaves two
+shapes in the field for every later run to recognise.
+
+Junctions only, leaving the four files to need the privilege. It fixes 20 of 24
+links and still refuses to complete on a machine without Developer Mode, which is
+the entire failure being removed.
+
+Requiring one elevated run. It is the cheapest fix for this machine and no fix at
+all for the baseline, which is the thing being installed.
+
+The superseded entry rejected "copying only where symbolic links are unavailable"
+because a fallback "would have to report which files are links and which are
+copies for drift to stay visible". That objection is answered rather than
+overruled: there is no fallback, so the shape is fixed per platform and known
+before the run; the state file records every written file; and each run reports
+what it wrote, refreshed, or preserved. Its other two arguments for links are
+untouched, because both concern the skills, which stay links: pruning still
+recognises a managed entry by its link target, and the instruction file that most
+needs immediate propagation is the one that now uses an import, which propagates
+immediately for the same reason a link does.
+
+### Consequences
+
+Editing `ai-home/AGENTS.md` no longer reaches Codex until the installer is re-run.
+That is stated in `README.md` rather than left to be discovered, and it is the
+only behavior this decision makes worse.
+
+`scripts/test-install.ps1` no longer needs symbolic-link permission, so the
+complete Windows installer test becomes runnable outside CI, including here.
+
 ## 2026-08-03 Scanning is unavailable here, and an accepted write is not a change
 
 Status: Accepted. Closes the secret-scanning and code-scanning items Phase 7 held
@@ -1997,7 +2086,10 @@ there where Codex would never see them.
 
 Status: Superseded in part by "Shared files are merged against a recorded
 provenance manifest" above, which stops linking the Codex rules directory because
-Codex writes interactive approvals into it. The rest stands.
+Codex writes interactive approvals into it, and in part by "Windows installs
+without a privilege, by method per target" above, which stops using symbolic
+links on Windows. The principle stands and the mechanism is per platform: on
+Linux and macOS every file named here is still a symbolic link.
 
 ### Decision
 

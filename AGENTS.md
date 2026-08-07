@@ -98,11 +98,17 @@ Read the documents the task needs, and no others:
 - Run `./scripts/validate.sh` after touching configuration, a skill, an install
   script, or the repository layout.
 - Run `./scripts/test-install.sh` on its own when diagnosing Linux or macOS
-  installer behavior. The Windows equivalent, `./scripts/test-install.ps1`, runs
-  in CI.
-- Run validation from an environment that can create symbolic links. Git Bash on
-  Windows cannot, so the installer integration test fails there on a clean tree;
-  WSL passes in full.
+  installer behavior. Run `./scripts/test-install.ps1` from Windows for the
+  Windows installer, under both editions; it needs no privilege and no longer
+  depends on CI. It reports the two stale-link fixtures it skips when the shell
+  cannot create a symbolic link, which CI covers because it runs elevated.
+- The Bash installer integration test creates symbolic links, so run
+  `./scripts/validate.sh` from an environment that can. Git Bash on Windows
+  cannot, so it fails there on a clean tree; WSL passes in full.
+- Avoid reading a file into a byte array and writing one back in the PowerShell
+  installer. Defender's AMSI blocks the whole script as malicious when it does,
+  which reads as a parser error on line 1. `Copy-Item`, `WriteAllText`, and
+  `Get-FileHash` do the same work and are not flagged.
 - `./scripts/validate.sh` skips ShellCheck, the Node syntax check, and both
   PowerShell checks wherever those tools are absent, and the WSL installation
   here has none of the three. Report which checks a run performed rather than

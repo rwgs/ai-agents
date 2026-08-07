@@ -8,6 +8,32 @@ are in the commit history.
 This repository publishes no versioned releases, so entries are grouped by date,
 newest first. Version headings replace the dates if tagging begins.
 
+## 2026-08-06
+
+- Installing on Windows no longer needs Developer Mode or an elevated shell.
+  A symbolic link there requires one of the two, so a machine granting neither
+  could install nothing at all. The installer now picks its method by what the
+  target is: the ten skill directories become junctions in both
+  `~/.agents/skills/` and `~/.claude/skills/`, `~/.claude/CLAUDE.md` becomes a
+  one-line `@` import of `ai-home/AGENTS.md`, and `~/.codex/AGENTS.md` and the two
+  model profiles are copied. Linux and macOS are unchanged and still use symbolic
+  links throughout.
+
+  **Rerun the installer on Windows after pulling**, and rerun it whenever you edit
+  `ai-home/AGENTS.md`: the Codex instruction file is a copy on that platform, so
+  an edit does not reach Codex until you do. Claude Code resolves its import at
+  session start and needs no rerun.
+
+  An existing Windows installation is recognised rather than disturbed. A managed
+  symbolic link left by an earlier version is replaced in place and reported as
+  `unlinked`, and nothing is backed up that holds no content of its own.
+
+  Each copied or generated file is now recorded in
+  `~/.agents/ai-install-state.json` with the hash the installer wrote, so a rerun
+  refreshes it only while it still matches. A file you have edited yourself is
+  preserved and reported as `preserved` instead of being overwritten; deleting it
+  hands ownership back to the installer.
+
 ## 2026-08-02
 
 - `pr-readiness` no longer demands a review that a single maintainer cannot get.

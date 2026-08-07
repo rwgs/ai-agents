@@ -111,12 +111,19 @@ defaults.
 The two agents read different files, so only what is genuinely portable is
 shared:
 
-- **Instructions are shared.** `ai-home/AGENTS.md` is linked to both
+- **Instructions are shared.** `ai-home/AGENTS.md` reaches both
   `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`. Claude Code does not read
-  `AGENTS.md`, which is why the link is renamed rather than copied.
+  `AGENTS.md`, which is why it is renamed rather than duplicated.
 - **Skills are shared.** One directory under `.agents/skills/` is linked into
   both agents' skill locations. Claude Code cannot see `.agents/skills/`, so the
   second link is required.
+- **On Windows nothing needs a privilege.** A symbolic link there requires
+  Developer Mode or an elevated shell, so the installer uses junctions for the
+  skill directories, a generated `@` import for `~/.claude/CLAUDE.md`, and copies
+  for `~/.codex/AGENTS.md` and the model profiles. One consequence is worth
+  knowing: **on Windows, editing `ai-home/AGENTS.md` does not reach Codex until
+  you rerun the installer.** Claude Code resolves its import at session start, so
+  it needs no rerun, and neither does any platform where the file is a link.
 - **The command allowlist has one source.** `ai-home/rules/default.rules`
   is hand-authored for Codex; the installer merges it into the machine's own
   rule file and derives Claude Code's `permissions.allow` entries from it. Edit

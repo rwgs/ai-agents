@@ -77,16 +77,28 @@ This repository manages only:
 
 ## How the installer applies each file
 
-| Repository path | Installed as | Method |
-| --- | --- | --- |
-| `ai-home/AGENTS.md` | `~/.codex/AGENTS.md` | symbolic link |
-| `ai-home/AGENTS.md` | `~/.claude/CLAUDE.md` | symbolic link |
-| `ai-home/codex/config.toml` | `~/.codex/config.toml` | merged key by key, plus generated trust entries |
-| `ai-home/rules/default.rules` | `~/.codex/rules/default.rules` | merged rule by rule |
-| `ai-home/codex/*.config.toml` | `~/.codex/<name>.config.toml` | symbolic link |
-| `ai-home/rules/default.rules` | `permissions.allow` in `~/.claude/settings.json` | derived and merged |
-| `.agents/skills/<name>/` | `~/.agents/skills/<name>/` | symbolic link |
-| `.agents/skills/<name>/` | `~/.claude/skills/<name>/` | symbolic link |
+| Repository path | Installed as | Method on Linux and macOS | Method on Windows |
+| --- | --- | --- | --- |
+| `ai-home/AGENTS.md` | `~/.codex/AGENTS.md` | symbolic link | copy |
+| `ai-home/AGENTS.md` | `~/.claude/CLAUDE.md` | symbolic link | generated `@` import |
+| `ai-home/codex/config.toml` | `~/.codex/config.toml` | merged key by key, plus generated trust entries | same |
+| `ai-home/rules/default.rules` | `~/.codex/rules/default.rules` | merged rule by rule | same |
+| `ai-home/codex/*.config.toml` | `~/.codex/<name>.config.toml` | symbolic link | copy |
+| `ai-home/rules/default.rules` | `permissions.allow` in `~/.claude/settings.json` | derived and merged | same |
+| `.agents/skills/<name>/` | `~/.agents/skills/<name>/` | symbolic link | junction |
+| `.agents/skills/<name>/` | `~/.claude/skills/<name>/` | symbolic link | junction |
+
+Windows differs because a symbolic link there needs Developer Mode or an elevated
+shell, and a machine that grants neither could otherwise install nothing. A
+junction and an import need no privilege. The two copies are what is left over:
+Codex offers no include mechanism for `AGENTS.md`, so editing `ai-home/AGENTS.md`
+does not reach Codex on Windows until the installer is run again. The `@` import
+and every link propagate an edit immediately, as before.
+
+Each copied or generated file is recorded in `AGENTS_HOME/ai-install-state.json`
+with the hash the installer wrote, so a later run rewrites it only while it still
+matches that record. A file the machine has changed is preserved and reported
+instead, and deleting it hands ownership back.
 
 Each run also prunes stale skill links: an entry in either skills directory that
 is a link into this repository's `.agents/skills/` whose source no longer exists
