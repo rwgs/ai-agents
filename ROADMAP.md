@@ -96,12 +96,14 @@ each agent actually reads.
 
 ## Phase 4: State-preserving installation and reliable validation
 
-Status: Unblocked on 2026-08-06 and in progress. The blocker was read as a
-property of this machine for four days and is a property of the installer: the
-Windows installer now creates junctions, an import, and copies rather than
-symbolic links, so it needs no privilege on any Windows machine. What remains is
-the first install itself. The code scanning this status used to name belongs to
-Phase 7 and is closed there as an accepted exception.
+Status: Complete but for a restart. The blocker was read as a property of this
+machine for four days and was a property of the installer: it now creates
+junctions, an import, and copies rather than symbolic links, so it needs no
+privilege on any Windows machine. The first install ran on 2026-08-07 and lost
+none of the machine's state, and push run `31193633136` passed all three
+platforms. What is left is confirming both agents after a restart, which the
+session that installed cannot perform. The code scanning this status used to name
+belongs to Phase 7 and is closed there as an accepted exception.
 
 ### Outcome
 

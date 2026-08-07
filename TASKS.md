@@ -137,15 +137,14 @@
 
 ## Current phase: State-preserving installation and reliable validation
 
-Unblocked on 2026-08-06. The item below waited four days on an action outside this
-environment, Windows Developer Mode or an elevated shell, because the blocker was
-recorded as a property of this machine. It was a property of the installer: 20 of
-its 24 Windows links never needed the privilege, and the other four had answers
-that are not symbolic links. The installer now needs no privilege on any Windows
-machine, so the install is ordinary work rather than a blocked item. The token
-that made CI runs unreadable is no longer a factor, `gh` having been authenticated
-on 2026-08-02, and the code-scanning repository setting belongs to the governance
-phase below.
+Both items are done, and everything the phase asked for is verified except one
+thing a restart has to show. The first item waited four days on an action outside
+this environment, Windows Developer Mode or an elevated shell, because the blocker
+was recorded as a property of this machine. It was a property of the installer: 20
+of its 24 Windows links never needed the privilege, and the other four had answers
+that are not symbolic links. The token that made CI runs unreadable is no longer a
+factor, `gh` having been authenticated on 2026-08-02, and the code-scanning
+repository setting belongs to the governance phase below.
 
 - [x] Stop the Windows installer needing a privilege the machine may withhold.
   Recorded in `DECISIONS.md` as "Windows installs without a privilege, by method
@@ -202,6 +201,12 @@ phase below.
   change removes. The junction fixture exercises the same branch through
   `Test-LinkTargetsSource`, and CI's elevated stale-link fixtures cover the
   symbolic-link branch of pruning.
+
+  Proved on three platforms on 2026-08-07. Push run `31193633136` on `aaa323a`
+  passed `ubuntu-latest`, `macos-latest`, and `windows-latest`, and the Windows job
+  ran the installer integration test under both PowerShell 7 and Windows PowerShell
+  5.1 as separate steps, alongside PSScriptAnalyzer. It was the only run for the
+  commit, so nothing cancelled it.
 
 - [x] Restore automatic validation on pushes to `main`. It works: the runs list
   now holds `push` events for `be8b8ea` at 04:54Z and `397241b` at 12:43Z on
@@ -369,11 +374,18 @@ phase below.
   A rerun is a no-op: 27 `already current` or `already linked` lines, no write, no
   merge, no backup, and the permission count unchanged at 1,454.
 
-  One half of the acceptance is left and needs a restart this session cannot
-  perform: both agents reporting the expected instructions and skills. Claude
-  Code's `/context` lists loaded memory files, which is what confirms the import
-  resolved, and the absolute-path import form is documented but has not been seen
-  to work here.
+  The skills half of the acceptance needs no restart and is met by observation
+  rather than by inference. Claude Code's available-skills list held none of this
+  repository's skills at the start of the session that ran the install, and after
+  it held exactly ten, matching `.agents/skills/` name for name. So Claude Code
+  discovers a skill through a junction, which is the one thing about the new method
+  that its own documentation does not state anywhere.
+
+  What is left needs a restart this session cannot perform: both agents reading the
+  instruction file. Claude Code loads `CLAUDE.md` at session start, so `/context`
+  listing it under Memory files is what confirms the absolute-path import resolved,
+  and that form is documented but has not been seen to work here. Codex reads a
+  plain copy, so it has nothing new to prove beyond being read at all.
 
 ## Completed phase: A tree of its own
 
