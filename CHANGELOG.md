@@ -8,6 +8,17 @@ are in the commit history.
 This repository publishes no versioned releases, so entries are grouped by date,
 newest first. Version headings replace the dates if tagging begins.
 
+## 2026-08-07
+
+- The `ai-project-manager` `AGENTS.md` template now routes `README.md`: it is
+  where a human or an agent arriving cold starts, it owns nothing the planning
+  documents own, and it links to them and to the files it describes rather than
+  restating them. A repository started or adopted from here gets the rule.
+  A repository that adopted earlier will not be told about it: `update-baseline`
+  compares headings, and this is a bullet inside a section every adopted copy
+  already carries, so add the line by hand where you want it. Skills are linked
+  rather than copied, so pulling is enough.
+
 ## 2026-08-06
 
 - Installing on Windows no longer needs Developer Mode or an elevated shell.

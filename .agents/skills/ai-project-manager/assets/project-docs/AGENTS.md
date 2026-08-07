@@ -48,3 +48,7 @@ way that looks like a broken project.
 - `PLAN.md` for the approach behind the change currently in flight.
 - `DECISIONS.md` before changing an area it constrains, and before proposing an
   approach it already rejected.
+- `README.md` is where a human or an agent arriving cold starts, and it owns none
+  of the above. It links to these documents, and to the files it describes,
+  rather than restating them: an explanation kept away from what it explains
+  drifts from it silently.
