@@ -133,7 +133,7 @@ names, because the prose below them is meant to have been rewritten:
 
 ```bash
 grep '^## ' SPEC.md
-grep '^## ' "$clone/.agents/skills/ai-project-manager/assets/project-docs/SPEC.md"
+grep '^## ' "$clone/.agents/skills/ai-project-manager/assets/project-docs/SPEC-template.md"
 ```
 
 Four templates are comparable that way: `AGENTS.md`, `SPEC.md`, `TASKS.md`, and

@@ -58,6 +58,8 @@ settles where they are.
 When the user asks for missing planning files, adapt the templates under
 `assets/project-docs/` to this repository. Cut the sections it does not have
 rather than leaving placeholders behind or inventing requirements to fill them.
+The `-template` suffix marks the file as a template and is not part of the name
+it lands under: `SPEC-template.md` becomes the repository's `SPEC.md`.
 
 ## Safety rules
 

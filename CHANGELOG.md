@@ -10,6 +10,13 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-08-10
 
+- The seven `ai-project-manager` project-document templates are renamed with a
+  `-template` suffix: `AGENTS-template.md`, `SPEC-template.md`,
+  `ROADMAP-template.md`, `TASKS-template.md`, `PLAN-template.md`,
+  `DECISIONS-template.md`, and `CHANGELOG-template.md`. Their contents are
+  unchanged, and the suffix is not part of the name a document lands under in a
+  repository. Skills are linked rather than copied, so pulling is enough.
+
 - The global instructions gained a `## Change discipline` section, and the
   `ai-project-manager` `AGENTS.md` template gained the same rules: state success as
   a check that can fail and pair each step of multi-step work with the check that
