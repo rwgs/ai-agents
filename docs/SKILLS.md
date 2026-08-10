@@ -55,7 +55,7 @@ Only `SKILL.md` is required. It must open with YAML front matter carrying a
 - Keep descriptions agent-neutral. Both agents select skills from the
   description, so wording such as "Use when Codex is asked to" biases selection
   against the other agent. Name an agent only when the skill genuinely applies
-  to just that one, as `show-codex-reset-expiries` does.
+  to just that one.
 - Cross-reference sibling skills whose scope is adjacent, so the boundary is
   explicit in both descriptions.
 - Write the steps as imperatives, each with its inputs, outputs, and validation.
@@ -79,9 +79,9 @@ drawn into the repositories that use them.
 That bar is about the repository a skill is drawn into. A skill about an agent's
 own operation is placed by machine reach instead, because it has no repository
 dependency at all: pooling it would leave a user-wide answer available only in
-the repositories that happened to copy it. `show-codex-reset-expiries` is
-installed for that reason despite naming one product, and its description is
-gated on the user asking for it, so the trigger cannot misfire.
+the repositories that happened to copy it. Such a skill is installed even though
+it names one product, provided its description is gated tightly enough that the
+trigger cannot misfire. Nothing in the current set is placed this way.
 
 For a language skill, the test is what the language is used for. Install it when
 an agent reaches for that language as a tool in a repository of any kind,
@@ -108,7 +108,6 @@ Installed into both agents by the installer.
 - `powershell-scripting`
 - `pr-readiness`
 - `python-scripting`
-- `show-codex-reset-expiries`
 - `start-repository`
 - `update-baseline`
 - `web-verification`

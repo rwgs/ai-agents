@@ -8,6 +8,45 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-10 The Codex reset-expiry skill is removed, not pooled
+
+Status: Accepted. Supersedes in part "A skill about the agent's own operation is
+installed, not pooled" below, which rejected dropping this skill. The placement
+clause that entry added stands.
+
+### Decision
+
+`show-codex-reset-expiries` is deleted, along with its `openai.yaml` and its
+`show-reset-expiries.mjs`. It is not moved to `rwgs/ai-skills`. The installed set
+is nine, so the installer has to be rerun to prune its two links per machine.
+
+The machine-reach clause stays in `docs/SKILLS.md` with the example removed: a
+skill about an agent's own operation is still installed rather than pooled.
+
+### Why
+
+The check is no longer wanted. The earlier entry rejected dropping the skill
+because it was the only thing here that reads the reset-credit expiries, which is
+an argument against pooling or duplicating a wanted check, not against retiring
+one.
+
+### Rejected alternatives
+
+- Move it to the pool: the pool exists for skills a repository draws in, and this
+  one has no repository dependency, so a pooled copy would sit unused in whichever
+  repository copied it. Its content is in this repository's history if it is ever
+  wanted again.
+- Keep it installed because its trigger is harmless: an always-loaded description
+  is a cost even when it never fires, and the reason for keeping it was that the
+  answer was wanted.
+
+### Consequences
+
+Nothing installed is placed by the machine-reach clause now, so the next candidate
+is placed by reading the rule rather than by comparing itself to a sibling.
+Neither agent can report reset-credit expiries any more; nothing else here reads
+`rateLimitResetCredits`.
+
 ## 2026-08-06 Windows installs without a privilege, by method per target
 
 Status: Accepted. Removes the blocker Phase 4's last item has carried since
@@ -1013,9 +1052,11 @@ Phase 6's update mode reads one skill copy per name and one recorded pool commit
 
 ## 2026-08-01 A skill about the agent's own operation is installed, not pooled
 
-Status: Accepted. Adds the clause that "Install only the skills that earn a place
-on every machine" below needed and did not have, and that `docs/SKILLS.md` has
-been contradicting since `show-codex-reset-expiries` was installed.
+Status: Superseded in part by "The Codex reset-expiry skill is removed, not
+pooled" above, which drops the skill this entry declined to drop. The clause
+itself stands. Adds the clause that "Install only the skills that earn a place on
+every machine" below needed and did not have, and that `docs/SKILLS.md` has been
+contradicting since `show-codex-reset-expiries` was installed.
 
 ### Decision
 

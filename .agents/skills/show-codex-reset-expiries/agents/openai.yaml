@@ -1,7 +1,0 @@
-interface:
-  display_name: "Codex Reset Expiries"
-  short_description: "Show exact Codex reset-credit expiry times"
-  default_prompt: "Use $show-codex-reset-expiries to show when my available Codex reset credits expire."
-
-policy:
-  allow_implicit_invocation: false

@@ -8,6 +8,16 @@ are in the commit history.
 This repository publishes no versioned releases, so entries are grouped by date,
 newest first. Version headings replace the dates if tagging begins.
 
+## 2026-08-10
+
+- The `show-codex-reset-expiries` skill is removed. It reported when the signed-in
+  ChatGPT account's earned Codex reset credits expire, and that check is no longer
+  wanted. Nothing replaces it: neither agent can report those expiries now.
+
+  The skill goes away on pull, because both agents reach it through a link into
+  this repository. **Rerun the installer** to prune the two dangling links from
+  `~/.agents/skills/` and `~/.claude/skills/`. The installed set is nine.
+
 ## 2026-08-07
 
 - The `ai-project-manager` `AGENTS.md` template now routes `README.md`: it is
