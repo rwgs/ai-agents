@@ -17,13 +17,35 @@ What this project is, who uses it, and the outcome it delivers.
 
 ## Working boundaries
 
-- Leave unrelated changes exactly as found.
+- Leave unrelated changes exactly as found. Every changed line traces to
+  something the request asked for, so raise a simpler approach or an unrelated
+  defect rather than acting on it.
+- Make the smallest change that solves the stated problem. Add no speculative
+  feature, abstraction for a single call site, configuration knob, or handling for
+  a case that cannot occur.
+- Match the naming, layout, and style already in the file, even where a different
+  approach would be the better call in a new project.
+- Remove what the change orphans, such as an import nothing uses. Leave
+  pre-existing dead code alone unless asked to remove it, and mention it where it
+  matters.
 - Never commit or print credentials, sessions, private data, or environment
   files.
 - Ask before destructive work. Deleting, overwriting, resetting, force-pushing,
   migrating, and deploying are not implied by a request to fix something.
 - Ask before a change that settles a product or architecture question, rather
   than implementing one already settled.
+
+## Before editing
+
+- State the plan, or what success looks like, before editing, as a check that can
+  fail rather than a description: the test that reproduces the bug, the test for
+  the input that must be rejected, the same tests passing either side of a
+  refactor. Pair each step of multi-step work with the check that confirms it.
+- Settle an ambiguity by reading the code or running a command wherever that is
+  practical, and state any assumption that changes the result. Ask where the
+  readings lead to materially different work.
+- Say when a simpler approach than the one asked for would do, and challenge a
+  wrong premise before building on top of it.
 
 ## Commands
 
@@ -35,7 +57,8 @@ way that looks like a broken project.
 
 - Run the focused check while implementing.
 - Run the complete required local gate before reporting done.
-- Inspect the final status and diff.
+- Inspect the final status and diff, and confirm every changed line traces to
+  something the task asked for.
 - Verify visible behavior with screenshots or equivalent rendered output.
 - Report skipped checks and outstanding manual testing rather than omitting
   them.

@@ -36,7 +36,9 @@ Git passthrough covers every subcommand. Run `rtk --help` for the full catalog.
 - Stick to plain ASCII punctuation unless the file format demands otherwise.
 - Read the repository's own instructions, and whatever is already changed in the
   working tree, before editing anything.
-- Leave unrelated changes exactly as you found them.
+- Leave unrelated changes exactly as you found them. Every changed line traces to
+  something the request asked for, so raise a simpler approach or an unrelated
+  defect rather than acting on it.
 - Keep a change small enough to review in one sitting, and validate it.
 - Never print credentials, tokens, private keys, or the contents of secret
   files.
@@ -53,6 +55,26 @@ Git passthrough covers every subcommand. Run `rtk --help` for the full catalog.
   edits.
 - A stop point the user names is a hard boundary. Finish that milestone, then
   wait to be told to continue.
+
+## Change discipline
+
+- Say what success looks like before editing, as a check that can fail rather
+  than a description: the test that reproduces the bug, the test for the input
+  that must be rejected, the same tests passing either side of a refactor. Pair
+  each step of multi-step work with the check that confirms it, so the loop closes
+  without asking.
+- Make the smallest change that solves the stated problem. Add no speculative
+  feature, abstraction for a single call site, configuration knob, or handling for
+  a case that cannot occur, and rewrite your own work before showing it when the
+  same result fits in substantially less code.
+- Match the naming, layout, and style already in the file, even where a different
+  approach would be the better call in a new project.
+- Remove what your change orphans, such as an import nothing uses or a helper
+  nothing calls. Leave pre-existing dead code alone unless asked to remove it, and
+  mention it where it matters.
+- Settle an ambiguous request yourself where reading the code or running a command
+  answers it, and state the reading taken. Ask where the readings lead to
+  materially different work, and name what is unknown rather than filling the gap.
 
 ## Scope selection
 

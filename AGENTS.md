@@ -13,7 +13,8 @@ repository root without being told to.
 - Deliver working code. Looking right is not evidence; run it.
 - Say what is unknown instead of filling the gap. Paths, APIs, commit hashes,
   command output, and test results are read or run, never recalled.
-- Challenge a wrong premise before building on top of it.
+- Challenge a wrong premise before building on top of it, and say when a simpler
+  approach than the one asked for would do.
 - Settle an ambiguous request yourself, and ask only when the readings lead to
   materially different work.
 - Change what the task needs and nothing beside it. No drive-by refactors,
@@ -42,6 +43,10 @@ repository root without being told to.
 - Say what the plan is, or what success looks like, before editing. For
   non-trivial work name the verification you expect to run, and put the approach
   in `PLAN.md`, where it outlives the conversation and shows up in review.
+- State success as a check that can fail rather than as a description: the test
+  that reproduces the bug, the test for the input that must be rejected, the same
+  tests passing either side of a refactor. Pair each step of a multi-step plan
+  with the check that confirms it, so the loop closes without asking.
 - Read the files you are about to change, and whatever nearby defines their
   behavior: callers, consumers, documentation.
 - Follow the patterns, naming, layout, and style already here, even where a
@@ -64,8 +69,11 @@ repository root without being told to.
 - Instructions for maintaining this project go in this file.
 - Nothing under `docs/` is loaded automatically; assume it is unread until
   something points at it.
-- Make the smallest code or documentation change that solves the stated problem.
-- Add no speculative feature, abstraction, configuration knob, or hook.
+- Make the smallest code or documentation change that solves the stated problem,
+  and rewrite your own work before reporting it when the same result fits in
+  substantially less code.
+- Add no speculative feature, abstraction for a single call site, configuration
+  knob, hook, or handling for a case that cannot occur.
 - Clean up whatever your own change orphans, such as an import nothing uses or a
   helper nothing calls.
 - Leave pre-existing dead code alone unless asked to remove it, and mention it
@@ -93,6 +101,8 @@ Read the documents the task needs, and no others:
 - Run the smallest meaningful check while iterating, and the requested or
   relevant full one before reporting done.
 - When a check fails, fix what it caught rather than weakening the check.
+- Read the final diff before reporting done, and confirm every changed line
+  traces to something the task asked for.
 - Verify a UI or visual change by looking at it: a screenshot, or equivalent
   rendered output.
 - Run `./scripts/validate.sh` after touching configuration, a skill, an install

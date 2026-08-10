@@ -10,6 +10,24 @@ newest first. Version headings replace the dates if tagging begins.
 
 ## 2026-08-10
 
+- The global instructions gained a `## Change discipline` section, and the
+  `ai-project-manager` `AGENTS.md` template gained the same rules: state success as
+  a check that can fail and pair each step of multi-step work with the check that
+  confirms it, make the smallest change that solves the stated problem and add
+  nothing speculative, match the style already in the file, remove only what the
+  change orphans, and settle an ambiguity by reading the code rather than by
+  asking. Both agents get them in every repository.
+
+  Claude Code resolves its import at session start, so pulling is enough. **Rerun
+  the installer** for Codex on Windows, where `~/.codex/AGENTS.md` is a copy rather
+  than a link.
+
+  A repository that adopted earlier is offered the template's new `## Before
+  editing` section by `update-baseline`, which compares headings. The bullets added
+  to `## Working boundaries` and `## Validation` are not reported, because those
+  sections already exist in every adopted copy, so add those by hand where you want
+  them.
+
 - The `show-codex-reset-expiries` skill is removed. It reported when the signed-in
   ChatGPT account's earned Codex reset credits expire, and that check is no longer
   wanted. Nothing replaces it: neither agent can report those expiries now.
