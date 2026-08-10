@@ -41,9 +41,11 @@ What this project is, who uses it, and the outcome it delivers.
   fail rather than a description: the test that reproduces the bug, the test for
   the input that must be rejected, the same tests passing either side of a
   refactor. Pair each step of multi-step work with the check that confirms it.
-- Settle an ambiguity by reading the code or running a command wherever that is
-  practical, and state any assumption that changes the result. Ask where the
-  readings lead to materially different work.
+- Stop at any ambiguity in the request, before editing anything. Name what is
+  unclear and the readings it admits, and wait for an answer rather than picking
+  one silently or proceeding on the likeliest reading.
+- An unread fact is not an ambiguity. Read the code or run the command that
+  settles it, and state any assumption that changes the result.
 - Say when a simpler approach than the one asked for would do, and challenge a
   wrong premise before building on top of it.
 

@@ -72,9 +72,11 @@ Git passthrough covers every subcommand. Run `rtk --help` for the full catalog.
 - Remove what your change orphans, such as an import nothing uses or a helper
   nothing calls. Leave pre-existing dead code alone unless asked to remove it, and
   mention it where it matters.
-- Settle an ambiguous request yourself where reading the code or running a command
-  answers it, and state the reading taken. Ask where the readings lead to
-  materially different work, and name what is unknown rather than filling the gap.
+- Stop at any ambiguity in the request, before editing anything. Name what is
+  unclear and the readings it admits, and wait for an answer rather than picking
+  one silently or proceeding on the likeliest reading.
+- An unread fact is not an ambiguity. Read the code or run the command that
+  settles it, and name what stays unknown rather than filling the gap.
 
 ## Scope selection
 

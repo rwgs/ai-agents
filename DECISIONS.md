@@ -8,6 +8,59 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-08-10 An ambiguity stops the work and is named for review
+
+Status: Accepted. Replaces the `AGENTS.md` operating principle that an ambiguous
+request is settled by the agent and asked about only where the readings lead to
+materially different work, which had stood since that file was written.
+
+### Decision
+
+An ambiguity in what is being asked for stops the work before anything is edited.
+What is unclear and the readings it admits are named, and the answer is waited
+for. No reading is picked silently, and the likeliest reading is not a licence to
+proceed.
+
+An unread fact is not an ambiguity. A question about how the code behaves, what a
+command outputs, or which path exists is answered by reading or running it, and
+that route is unchanged.
+
+The rule lands in all three instruction files: this repository's `AGENTS.md`,
+`ai-home/AGENTS.md` for every repository on the machine, and the
+`ai-project-manager` `AGENTS.md` template for every repository adopted from here.
+
+### Why
+
+The maintainer's call, taken when the three candidate rules were put side by side
+with the wording each would produce. It prices a round trip as cheaper than work
+built on a reading nobody confirmed, which is the trade the superseded rule made
+in the other direction.
+
+The distinction that keeps the rule from stalling everything is between an
+ambiguous request and an unknown fact. Only the first stops the work; the second
+was never a question for the user, and this repository already requires it to be
+read or run rather than recalled.
+
+### Rejected alternatives
+
+- Keep the superseded rule and add only the requirement to name the readings
+  found: fewest interruptions, and it leaves the agent deciding which ambiguities
+  are material, which is the judgment being taken away from it.
+- Proceed on the likeliest reading every time and list every ambiguity in the
+  summary for review after the fact: no round trips at all, and review then
+  happens over work that may already have to be discarded.
+
+### Consequences
+
+Expect more questions on small work. That is the cost being accepted, not a
+defect to tune away later.
+
+Each agent's own default guidance points the other way: Claude Code's harness
+reserves blocking questions for cases where proceeding would be unsafe or make
+the work useless. The repository and global instruction files override it, and an
+agent that has been told to settle ambiguity itself by its own defaults is
+following this rule instead.
+
 ## 2026-08-10 The Codex reset-expiry skill is removed, not pooled
 
 Status: Accepted. Supersedes in part "A skill about the agent's own operation is

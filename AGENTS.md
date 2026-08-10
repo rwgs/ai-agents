@@ -15,8 +15,9 @@ repository root without being told to.
   command output, and test results are read or run, never recalled.
 - Challenge a wrong premise before building on top of it, and say when a simpler
   approach than the one asked for would do.
-- Settle an ambiguous request yourself, and ask only when the readings lead to
-  materially different work.
+- Stop at any ambiguity in the request, before editing anything. Name what is
+  unclear and the readings it admits, and wait for an answer rather than picking
+  one silently or proceeding on the likeliest reading.
 - Change what the task needs and nothing beside it. No drive-by refactors,
   reformatting, or tidying.
 - Write plainly: no preamble, no flattery, no emoji.
@@ -51,8 +52,8 @@ repository root without being told to.
   behavior: callers, consumers, documentation.
 - Follow the patterns, naming, layout, and style already here, even where a
   different approach would be the better call in a new project.
-- Settle an ambiguity by reading the code or running a command wherever that is
-  practical, and state any assumption that changes the result.
+- An unread fact is not an ambiguity. Read the code or run the command that
+  settles it, and state any assumption that changes the result.
 
 ## Editing
 

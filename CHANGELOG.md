@@ -14,9 +14,14 @@ newest first. Version headings replace the dates if tagging begins.
   `ai-project-manager` `AGENTS.md` template gained the same rules: state success as
   a check that can fail and pair each step of multi-step work with the check that
   confirms it, make the smallest change that solves the stated problem and add
-  nothing speculative, match the style already in the file, remove only what the
-  change orphans, and settle an ambiguity by reading the code rather than by
-  asking. Both agents get them in every repository.
+  nothing speculative, match the style already in the file, and remove only what
+  the change orphans. Both agents get them in every repository.
+
+  Ambiguity is now handled the other way round from before: an ambiguity in the
+  request stops the work before any edit, and the readings it admits are named for
+  review rather than settled by the agent. Reading the code or running a command
+  still settles an unread fact, which is not an ambiguity. Expect more questions
+  and fewer wrong assumptions.
 
   Claude Code resolves its import at session start, so pulling is enough. **Rerun
   the installer** for Codex on Windows, where `~/.codex/AGENTS.md` is a copy rather
