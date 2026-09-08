@@ -123,3 +123,23 @@ pre-existing *symbolic* link is untested, because fabricating one needs the
 privilege this change removes; the junction fixture exercises the same branch
 through `Test-LinkTargetsSource`, and CI's elevated stale-link fixtures cover the
 symbolic-link branch of pruning.
+
+## Repository review - 2026-09-08
+
+Review the baseline's design, installer safety, verification, and maintenance
+cost. Keep the installation plan above because this review does not replace or
+implement its outstanding manual checks. Deliver findings in `review.md`.
+
+1. Compare the documented ownership and approval guarantees with both installers
+   and current agent documentation. Each finding must name its source and impact.
+2. Run the available installer checks and reproduce suspected failures using
+   temporary fixtures. Separate demonstrated defects from design trade-offs and
+   name unavailable checks.
+3. Write prioritized findings and recommendations, check their references and
+   the final diff, then commit the review on `main`. Implementation of the
+   recommendations remains separate work.
+
+Results: `review.md` records five demonstrated findings and the design
+assessment. Windows PowerShell 5.1 integration passed with two reported fixture
+skips; full validation under Git Bash failed on its Unix symbolic-link fixture.
+The review names all unavailable checks and the scope of the temporary repros.
