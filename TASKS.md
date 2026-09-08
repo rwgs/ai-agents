@@ -218,12 +218,22 @@ observation from the phase below that needed an agent restart.
   dispatch only when there is nothing to push, which is what `AGENTS.md` already
   said.
 
-- [ ] Prove the three-platform behaviour in CI. Both installers changed, and this
+- [x] Prove the three-platform behaviour in CI. Both installers changed, and this
   environment can no longer run the Bash integration test at all: WSL is absent
-  from this machine as of 2026-09-08, where `AGENTS.md` still records it as the
-  way to run that suite in full. Git Bash reaches neither new Bash fixture,
-  failing first on a symbolic link and then on trust-root normalisation, both
-  pre-existing. Push to be asked for; read the run the push starts.
+  from this machine as of 2026-09-08, where `AGENTS.md` recorded it as the way to
+  run that suite in full. Git Bash reaches neither new Bash fixture, failing
+  first on a symbolic link and then on trust-root normalisation, both
+  pre-existing.
+
+  Proved by push run `34257584839` on `640d14c`, which passed `ubuntu-latest`,
+  `macos-latest`, and `windows-latest`. It was the only run for the commit, so
+  nothing cancelled it. The Linux job is what closes the local gap: it reported
+  `installer integration test passed` and `validation passed: 9 skills checked`,
+  so both new Bash fixtures ran there, and it ran the ShellCheck this machine has
+  no binary for. The Windows job ran `scripts/test-install.ps1` to
+  `installer integration test passed` under PowerShell 7 and again under Windows
+  PowerShell 5.1 as separate steps, on an elevated runner, which is what covers
+  the two stale symbolic-link fixtures skipped locally.
 
 - [ ] Carried forward from the phase below, which is otherwise closed: confirm
   both agents read the installed instruction file after a restart. Claude Code

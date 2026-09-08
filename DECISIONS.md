@@ -8,6 +8,89 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-09-08 The configuration merge refuses what it cannot classify
+
+Status: Accepted. Extends "Shared files are merged against a recorded provenance
+manifest", which chose textual editing over parsing and did not say what happens
+when the text is a shape the editor does not recognise.
+
+### Decision
+
+Both merges classify every line of `~/.codex/config.toml` before touching it. A
+line that is not blank, a comment, a recognised table header, or a recognised key
+makes the run preserve the whole file, report the line, and record nothing as
+managed. A table declared twice does the same. The merged output is checked by
+the same rule before it is written, so an editing defect is refused rather than
+saved.
+
+The merge stays textual. This is the boundary of the textual approach made
+explicit, not a step towards parsing TOML.
+
+### Why
+
+`review.md` demonstrated that the line-based regular expressions treat a header
+carrying a trailing comment and a dotted key as absent, so the merge appended a
+second `[features]` table and produced a file `tomllib` rejects with
+`Cannot declare ('features',) twice`. Both were reproduced again before the fix
+and after. An installer whose central promise is to preserve machine-owned
+settings must not be able to stop Codex from starting.
+
+One rule covers every shape rather than the two that were reported, because the
+next unrecognised form would otherwise fail the same silent way: array-of-tables
+headers and values continued across lines are refused by the same test.
+
+The cost is bounded and visible. A refusal applies none of the baseline's
+settings and no trust entries, and says so; this machine's real `config.toml`, 85
+lines and 28 headers, passes unchanged, as do all three shipped profiles.
+
+### Rejected alternatives
+
+- Teaching the regular expressions the commented header and the dotted key: it
+  answers the two inputs in the review and leaves the class of defect intact,
+  since the failure mode is silence rather than an error.
+- Parsing TOML properly in both implementations: PowerShell has no TOML parser,
+  and adding one to the installer contradicts the reason it is native PowerShell.
+- Validating the output by re-parsing it before the write: same problem on the
+  PowerShell side. Checking the output against the same classification rule is
+  what is implementable in both, and it catches the duplicate-table failure that
+  actually occurred.
+
+## 2026-09-08 A dry run previews the clone rather than updating it
+
+Status: Accepted. Qualifies the `SPEC.md` requirement to install from a clone at
+a fixed location that the same command updates on a rerun, which did not
+distinguish a rerun from a preview. No earlier entry covers the bootstrap.
+
+### Decision
+
+With a clone already present, a bootstrap dry run fetches, reports
+`would update <path> to <revision>`, and leaves the branch and working tree
+alone. A first run still clones to the permanent location. A run without the flag
+updates as before. The line naming the source reads `installing from`, because it
+prints before the installer runs.
+
+### Why
+
+The installer links into the clone, so the clone is the installed source: a
+preview that fast-forwards it changes the instructions and skills the agents read
+before anyone has agreed to anything. `review.md` reproduced that with temporary
+repositories, and the fix was reproduced the same way in both languages.
+
+A fetch is kept rather than removed. It writes remote-tracking refs, which no
+agent reads, and it is what lets the preview name the revision an install would
+move to.
+
+### Rejected alternatives
+
+- Previewing from a temporary checkout, which is what `review.md` recommended:
+  the installer's preview would then print link targets under a path that will
+  not exist, which is an accurate preview of the wrong install. The clone's
+  location is what the links point at, so the preview has to run from it.
+- Skipping the fetch as well: it makes the dry run unable to say whether an
+  update is pending, which is most of what a preview before an update is for.
+- Refusing to clone on a first dry run: there is nothing to preview from until
+  the clone exists, and both installer tests already treat that clone as expected.
+
 ## 2026-09-08 The allowlist is a separate grant, and is documented as one
 
 Status: Accepted. Extends "The portable Codex default asks before acting", which
