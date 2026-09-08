@@ -235,6 +235,27 @@ observation from the phase below that needed an agent restart.
   PowerShell 5.1 as separate steps, on an elevated runner, which is what covers
   the two stale symbolic-link fixtures skipped locally.
 
+- [x] Fix the bootstrap fixture in both installer tests, which failed every
+  Dependabot pull request. Found by reading the one CI failure nothing tracked:
+  run `33549247759` on pull request #1, opened 2026-09-01 and still open. Both
+  fixtures read a branch name off the checkout with
+  `git rev-parse --abbrev-ref HEAD`, and `actions/checkout` leaves a
+  `pull_request` build on a detached HEAD, where that returns the literal string
+  `HEAD`. The log reads `HEAD is now at fd27f85 Merge cd7cddf into 730217a` and
+  then `fatal: Remote branch HEAD not found in upstream origin`. Each fixture now
+  names its own branch and pushes the commit under test to it.
+
+  This is why the dependency-update mechanism has produced nothing usable. The
+  pins are a security control and Dependabot is the only thing that reports one
+  going stale, which "Bots may open pull requests, humans may not" kept it for;
+  a bump that can never go green is that report arriving unreadable.
+
+  Reproduced on Windows rather than inferred, because this machine runs that
+  suite in full: from a detached-HEAD clone, `scripts/test-install.ps1` failed
+  with `git clone --quiet --branch HEAD ... failed with exit code 128`, and
+  passes from the same detached clone after the fix. It still passes on a branch
+  under PowerShell 7 and Windows PowerShell 5.1.
+
 - [ ] Carried forward from the phase below, which is otherwise closed: confirm
   both agents read the installed instruction file after a restart. Claude Code
   listing `CLAUDE.md` under `/context` Memory files is what shows the

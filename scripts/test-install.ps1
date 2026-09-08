@@ -686,12 +686,23 @@ features.memories = false
     # never contacts the real remote.
     $bootstrapOrigin = Join-Path $taskTestRoot 'origin.git'
     $bootstrapClone = Join-Path $taskTestRoot 'bootstrap clone'
-    & git clone --quiet --bare $repoRoot $bootstrapOrigin
+
+    # The fixture names its own branch and pushes the commit under test to it,
+    # rather than reading a branch name off the checkout. `actions/checkout`
+    # leaves a pull_request build on a detached HEAD, where
+    # `rev-parse --abbrev-ref HEAD` is the literal string `HEAD` and
+    # `git clone --branch HEAD` fails; every Dependabot pull request runs that
+    # way, so reading the checkout fails every one of them.
+    $bootstrapBranch = 'installer-test'
+    & git init --quiet --bare $bootstrapOrigin
     Assert-Condition ($LASTEXITCODE -eq 0) 'Could not create the local bootstrap origin'
+    & git -C $bootstrapOrigin symbolic-ref HEAD "refs/heads/$bootstrapBranch"
+    & git -C $repoRoot push --quiet $bootstrapOrigin "HEAD:refs/heads/$bootstrapBranch"
+    Assert-Condition ($LASTEXITCODE -eq 0) 'Could not seed the local bootstrap origin'
 
     $env:AI_REPO_URL = $bootstrapOrigin
     $env:AI_INSTALL_DIR = $bootstrapClone
-    $env:AI_BRANCH = (& git -C $repoRoot rev-parse --abbrev-ref HEAD)
+    $env:AI_BRANCH = $bootstrapBranch
     $env:CODEX_HOME = Join-Path $taskTestRoot 'bootstrap codex'
     $env:AGENTS_HOME = Join-Path $taskTestRoot 'bootstrap agents'
     $env:CLAUDE_CONFIG_DIR = Join-Path $taskTestRoot 'bootstrap claude'

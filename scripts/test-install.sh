@@ -532,13 +532,22 @@ fi
 bootstrap_origin="$task_test_root/origin.git"
 bootstrap_install_dir="$task_test_root/bootstrap clone"
 bootstrap_log="$task_test_root/bootstrap.log"
-git clone --quiet --bare "$repo_root" "$bootstrap_origin"
+
+# The fixture names its own branch and pushes the commit under test to it,
+# rather than reading a branch name off the checkout. `actions/checkout` leaves a
+# pull_request build on a detached HEAD, where `rev-parse --abbrev-ref HEAD` is
+# the literal string `HEAD` and `git clone --branch HEAD` fails; every Dependabot
+# pull request runs that way, so reading the checkout fails every one of them.
+bootstrap_branch="installer-test"
+git init --quiet --bare "$bootstrap_origin"
+git -C "$bootstrap_origin" symbolic-ref HEAD "refs/heads/$bootstrap_branch"
+git -C "$repo_root" push --quiet "$bootstrap_origin" "HEAD:refs/heads/$bootstrap_branch"
 
 # The bootstrap's own output goes to a log, so a failure has to reprint it or
 # the run dies with nothing to read.
 run_bootstrap() {
   AI_REPO_URL="$bootstrap_origin" AI_INSTALL_DIR="$bootstrap_install_dir" \
-    AI_BRANCH="$(git -C "$repo_root" rev-parse --abbrev-ref HEAD)" \
+    AI_BRANCH="$bootstrap_branch" \
     HOME="$test_user_home" CODEX_HOME="$task_test_root/bootstrap codex" \
     AGENTS_HOME="$task_test_root/bootstrap agents" \
     CLAUDE_CONFIG_DIR="$task_test_root/bootstrap claude" \

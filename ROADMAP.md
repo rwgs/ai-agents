@@ -325,3 +325,48 @@ is irrelevant.
 - Local validation and a three-platform GitHub run pass with the changes.
 - Every Azure DevOps artifact states that it is unverified and what would verify
   it.
+
+## Phase 9: Hardening the guarantees the baseline claims
+
+Status: Complete. Push run `34257584839` on `640d14c` passed `ubuntu-latest`,
+`macos-latest`, and `windows-latest`, the Windows job running the installer test
+under both PowerShell editions.
+
+### Outcome
+
+Every guarantee the baseline advertises about preservation, previewing, and
+validation holds when tested, and the one it advertised but did not have is
+described as what it is instead.
+
+### Included work
+
+- Make both Codex configuration merges refuse a target they cannot classify line
+  by line, rather than appending a table and producing a file Codex will not
+  start on.
+- Stop a bootstrap dry run fast-forwarding the clone the agents read from.
+- Make skill validation errors reach the validator's exit status, and correct the
+  rule decision vocabulary to the three names Codex has.
+- Document the command allowlist as a grant separate from the sandbox, including
+  that a grant for a command that runs another command covers whatever it runs.
+- Reconcile the CodeQL, dependency-update, and dispatch-after-push claims that
+  had drifted from what the repository does.
+
+### Dependencies and risks
+
+- The Bash installer integration test cannot run on this machine at all: Git Bash
+  cannot create a symbolic link, and WSL is no longer installed. CI is the only
+  evidence for that half, so a change to `scripts/install.sh` or its test is
+  unproven until a run reads back.
+- A refusal to merge is a visible no-op rather than a failure. A machine whose
+  `config.toml` uses a form the merge cannot classify receives none of the
+  baseline's settings until the file is simplified, and only the installer's
+  output says so.
+
+### Exit criteria
+
+- Each finding in `review.md` is closed by a change that was reproduced before it
+  and verified after it, or documented as the posture it actually is.
+- Both installer tests carry the fixtures for the defects found, and fail without
+  the fixes.
+- A three-platform GitHub run passes, with the Windows job green under both
+  PowerShell editions.
