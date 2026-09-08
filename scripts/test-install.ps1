@@ -687,17 +687,22 @@ features.memories = false
     $bootstrapOrigin = Join-Path $taskTestRoot 'origin.git'
     $bootstrapClone = Join-Path $taskTestRoot 'bootstrap clone'
 
-    # The fixture names its own branch and pushes the commit under test to it,
-    # rather than reading a branch name off the checkout. `actions/checkout`
-    # leaves a pull_request build on a detached HEAD, where
-    # `rev-parse --abbrev-ref HEAD` is the literal string `HEAD` and
-    # `git clone --branch HEAD` fails; every Dependabot pull request runs that
-    # way, so reading the checkout fails every one of them.
+    # The fixture names its own branch and fetches the commit under test into
+    # it, because actions/checkout gives a pull_request build a checkout with
+    # neither property this needs, and every Dependabot pull request is one.
+    #
+    # It is detached, so `rev-parse --abbrev-ref HEAD` is the literal string
+    # `HEAD`, `git clone --branch HEAD` fails, and a bare clone has no branch to
+    # copy and comes out empty. It is also shallow, so pushing out of it and
+    # fetching all of it are both refused with `shallow update not allowed`; a
+    # depth-1 fetch is what carries one commit across without grafting history
+    # onto a shallow root.
     $bootstrapBranch = 'installer-test'
     & git init --quiet --bare $bootstrapOrigin
     Assert-Condition ($LASTEXITCODE -eq 0) 'Could not create the local bootstrap origin'
     & git -C $bootstrapOrigin symbolic-ref HEAD "refs/heads/$bootstrapBranch"
-    & git -C $repoRoot push --quiet $bootstrapOrigin "HEAD:refs/heads/$bootstrapBranch"
+    & git -C $bootstrapOrigin fetch --quiet --depth=1 `
+        $repoRoot "HEAD:refs/heads/$bootstrapBranch"
     Assert-Condition ($LASTEXITCODE -eq 0) 'Could not seed the local bootstrap origin'
 
     $env:AI_REPO_URL = $bootstrapOrigin

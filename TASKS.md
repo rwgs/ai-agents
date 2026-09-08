@@ -250,11 +250,24 @@ observation from the phase below that needed an agent restart.
   going stale, which "Bots may open pull requests, humans may not" kept it for;
   a bump that can never go green is that report arriving unreadable.
 
-  Reproduced on Windows rather than inferred, because this machine runs that
-  suite in full: from a detached-HEAD clone, `scripts/test-install.ps1` failed
-  with `git clone --quiet --branch HEAD ... failed with exit code 128`, and
-  passes from the same detached clone after the fix. It still passes on a branch
-  under PowerShell 7 and Windows PowerShell 5.1.
+  The first fix was wrong, and CI is what said so. Seeding the fixture by
+  pushing the commit under test into it failed on all three platforms with
+  `shallow update not allowed`, in run `34259018211`, because
+  `actions/checkout` clones to depth 1 and a shallow repository cannot push its
+  history anywhere. The local reproduction had missed it by being a full clone.
+
+  The checkout is short of both properties the fixture needs, and the second fix
+  answers both: it is detached, so there is no branch name to read and a bare
+  clone of it comes out empty, and it is shallow, so pushing out of it and
+  fetching all of it are both refused. The fixture now creates its bare origin,
+  points HEAD at a branch it names, and fetches the commit in with `--depth=1`,
+  which carries one commit without grafting onto a shallow root.
+
+  Verified against a replica built to match, rather than against this machine:
+  a depth-1 clone, detached, with its one local branch deleted.
+  `scripts/test-install.ps1` passes there and fails there without the fix, with
+  `git clone --quiet --branch HEAD ... failed with exit code 128`. It still
+  passes on an ordinary branch under PowerShell 7 and Windows PowerShell 5.1.
 
 - [ ] Carried forward from the phase below, which is otherwise closed: confirm
   both agents read the installed instruction file after a restart. Claude Code

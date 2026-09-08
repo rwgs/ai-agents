@@ -533,15 +533,20 @@ bootstrap_origin="$task_test_root/origin.git"
 bootstrap_install_dir="$task_test_root/bootstrap clone"
 bootstrap_log="$task_test_root/bootstrap.log"
 
-# The fixture names its own branch and pushes the commit under test to it,
-# rather than reading a branch name off the checkout. `actions/checkout` leaves a
-# pull_request build on a detached HEAD, where `rev-parse --abbrev-ref HEAD` is
-# the literal string `HEAD` and `git clone --branch HEAD` fails; every Dependabot
-# pull request runs that way, so reading the checkout fails every one of them.
+# The fixture names its own branch and fetches the commit under test into it,
+# because `actions/checkout` gives a pull_request build a checkout with neither
+# property this needs, and every Dependabot pull request is one.
+#
+# It is detached, so `rev-parse --abbrev-ref HEAD` is the literal string `HEAD`,
+# `git clone --branch HEAD` fails, and a bare clone has no branch to copy and
+# comes out empty. It is also shallow, so pushing out of it and fetching all of
+# it are both refused with `shallow update not allowed`; a depth-1 fetch is what
+# carries one commit across without grafting history onto a shallow root.
 bootstrap_branch="installer-test"
 git init --quiet --bare "$bootstrap_origin"
 git -C "$bootstrap_origin" symbolic-ref HEAD "refs/heads/$bootstrap_branch"
-git -C "$repo_root" push --quiet "$bootstrap_origin" "HEAD:refs/heads/$bootstrap_branch"
+git -C "$bootstrap_origin" fetch --quiet --depth=1 \
+  "$repo_root" "HEAD:refs/heads/$bootstrap_branch"
 
 # The bootstrap's own output goes to a log, so a failure has to reprint it or
 # the run dies with nothing to read.
