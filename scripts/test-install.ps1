@@ -649,6 +649,38 @@ prefix_rule(pattern=["sed"], decision="allow")
         [System.IO.File]::ReadAllText($provenanceConfig).Contains('approval_policy = "on-request"')
     ) 'Merge lost a managed key after the machine reverted it'
 
+    # Valid TOML this line-based merge cannot classify is preserved whole and
+    # reported. Appending to it would declare a table twice and stop Codex from
+    # starting, which is the opposite of preserving machine-owned settings. The
+    # same two fixtures are in scripts/test-install.sh.
+    $unsupportedConfigs = [ordered] @{
+        'a table header with a trailing comment' = @"
+[features] # local choices
+memories = false
+"@
+        'a dotted key'                           = @'
+features.memories = false
+'@
+    }
+
+    foreach ($description in $unsupportedConfigs.Keys) {
+        $fixture = $unsupportedConfigs[$description] + "`n"
+        [System.IO.File]::WriteAllText(
+            $provenanceConfig, $fixture, [System.Text.UTF8Encoding]::new($false))
+
+        $unsupportedLog = Invoke-ProvenanceMerge -Source $curatedAll
+
+        Assert-Condition (
+            [System.IO.File]::ReadAllText($provenanceConfig) -ceq $fixture
+        ) "Merge rewrote a config.toml holding $description"
+        Assert-Condition (
+            [System.IO.File]::ReadAllText($provenanceConfig).Contains('memories = false')
+        ) "Merge lost the machine's setting in a config.toml holding $description"
+        Assert-Condition (
+            ($unsupportedLog -join "`n") -match '(?m)^preserved: .*cannot parse'
+        ) "Merge did not report the unparsed line in a config.toml holding $description"
+    }
+
     # The bootstrap clones and then installs from the clone. It is exercised
     # against a local copy of this repository, so the test needs no network and
     # never contacts the real remote.
@@ -678,14 +710,38 @@ prefix_rule(pattern=["sed"], decision="allow")
         -not (Test-Path -LiteralPath $env:CODEX_HOME)
     ) 'Bootstrap dry run created CODEX_HOME'
 
-    # A rerun updates the existing clone instead of cloning again.
+    # A rerun previews the update rather than performing it, because the
+    # installed links point into this clone. Upstream is moved first, so the
+    # assertion is about a real pending change and not about a rerun with
+    # nothing to fetch.
+    $bootstrapRevision = & git -C $bootstrapClone rev-parse HEAD
+    $bootstrapUpstream = Join-Path $taskTestRoot 'upstream'
+    & git clone --quiet $bootstrapOrigin $bootstrapUpstream
+    Assert-Condition ($LASTEXITCODE -eq 0) 'Could not clone the bootstrap upstream fixture'
+    Add-Content -LiteralPath (Join-Path $bootstrapUpstream 'ai-home/AGENTS.md') -Value 'version two'
+    & git -C $bootstrapUpstream -c user.name=test -c user.email=test@example.com `
+        commit --quiet --all --message 'move upstream'
+    & git -C $bootstrapUpstream push --quiet origin HEAD
+
+    # Asserted rather than assumed: a dry run that changes nothing proves
+    # nothing unless there was something upstream for it to have pulled in.
+    Assert-Condition (
+        (& git -C $bootstrapOrigin rev-parse HEAD) -ne $bootstrapRevision
+    ) 'The upstream fixture did not move'
+
     $bootstrapLog = @(& (Join-Path $repoRoot 'scripts/bootstrap.ps1') -DryRun)
     Assert-Condition (
-        ($bootstrapLog -join "`n") -match '(?m)^updating '
-    ) 'Bootstrap rerun did not update the existing clone'
+        ($bootstrapLog -join "`n") -match '(?m)^would update '
+    ) 'Bootstrap rerun did not report the update it would make'
     Assert-Condition (
         ($bootstrapLog -join "`n") -match '(?m)^dry run complete$'
     ) 'Bootstrap rerun did not run the installer'
+    Assert-Condition (
+        (& git -C $bootstrapClone rev-parse HEAD) -eq $bootstrapRevision
+    ) 'Bootstrap dry run moved the installed clone'
+    Assert-Condition (
+        -not ((Get-Content -LiteralPath (Join-Path $bootstrapClone 'ai-home/AGENTS.md')) -contains 'version two')
+    ) 'Bootstrap dry run changed what the agents read'
 
     Assert-Condition (
         (Get-FileHash -LiteralPath (Join-Path $repoRoot 'ai-home/rules/default.rules') -Algorithm SHA256).Hash -eq

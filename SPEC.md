@@ -41,6 +41,11 @@ the agent state already on the machine at risk.
   while applying repository-owned defaults.
 - Default Codex to a workspace-write sandbox that asks before acting outside it,
   so the baseline never escalates a machine's execution posture silently.
+- Ship a curated allowlist that is deliberately broader than that sandbox, and
+  say so where the sandbox is described. An `allow` decision runs its command
+  outside the sandbox without prompting, and a grant for a command that runs
+  another command covers whatever it runs, so the list is a standing grant of
+  unattended execution rather than a refinement of the workspace boundary.
 - Touch no credential, session, history file, cache, plugin state, or runtime
   database, unless plugin installation was explicitly requested.
 - Run repeatedly without rewriting a link that is already correct.
@@ -257,10 +262,11 @@ installer must preserve.
 
 ## Unresolved questions
 
-- How dependency updates and dependency review work after the accepted decision
-  to create no branches or pull requests. Dependabot and the current dependency
-  review action both deliver through pull requests. Azure DevOps is the same
-  question again with no Dependabot to answer it.
+- How dependency updates reach a repository on Azure DevOps, which has no
+  Dependabot to answer the question. GitHub is settled: "Bots may open pull
+  requests, humans may not" keeps Dependabot and drops the `dependency-review`
+  job, and "Dependency updates are monthly, grouped, and pinned to a version tag"
+  sets the cadence.
 - Which Azure DevOps features stand in for the GitHub ones the security baseline
   names. The hosted service sells GitHub Advanced Security for Azure DevOps;
   whether an equivalent reaches Azure DevOps Server was not established here,

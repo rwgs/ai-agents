@@ -135,7 +135,109 @@
 - [x] Remove the empty `skills-optional/` directory left on disk by the commit
   that dropped the optional tree. Nothing tracked, ignored, or referenced it.
 
-## Current phase: State-preserving installation and reliable validation
+## Current phase: Hardening the guarantees the baseline claims
+
+Every finding in `review.md` is fixed. Two were reproduced before the fix and
+again after; two more were exercised directly because this environment cannot run
+the suite that covers them; one was a claim rather than a defect and was corrected
+in the documentation. What is left is evidence, not work: a CI run, and one
+observation from the phase below that needed an agent restart.
+
+- [x] Stop the Codex configuration merge turning valid TOML into invalid TOML.
+  Both merges now classify every line of the target before touching it, and
+  refuse the whole file when one is neither blank, a comment, a table header, nor
+  a key, or when a table is declared twice. The merged output is checked by the
+  same rule before it is written, so an editing defect is refused rather than
+  saved. A refusal preserves the file, reports the line, and returns the recorded
+  state unchanged, which is the path the Claude settings merge already took for
+  invalid JSON.
+
+  Reproduced first. `[features] # local choices` with `memories = false` made the
+  Python merge append a second `[features]`, and `tomllib` rejected the result
+  with `Cannot declare ('features',) twice`; `features.memories = false` failed
+  the same way. Both now report `preserved: ... cannot parse`, leave the file
+  byte-identical, and leave `memories = false` in place. Array-of-tables headers
+  and multi-line values are refused by the same rule. This machine's real
+  `~/.codex/config.toml`, 85 lines and 28 headers, still passes, as do all three
+  shipped profiles, so the guard costs nothing here.
+
+  Both installer tests carry the same two fixtures, asserting preservation, the
+  report, and that the file still parses.
+
+- [x] Stop a bootstrap dry run updating the source the agents read. Both scripts
+  fetch, report `would update <path> to <revision>`, and leave the branch and
+  working tree alone; a first run still clones, because there is nothing to
+  preview from until it does.
+
+  Verified against temporary local repositories in both languages: with upstream
+  moved from `version one` to `version two`, each dry run reported the pending
+  revision, left the clone at its original commit, and left the file reading
+  `version one`; each run without the flag updated to `version two`. Both
+  installer tests now move a real upstream commit first and assert the clone's
+  revision and content are unchanged, because a dry run that changes nothing
+  proves nothing when there was nothing to pull in.
+
+- [x] Make skill validation errors reach the exit status. `validate_skill_tree`
+  ran inside a command substitution, so every `fail` it called incremented a
+  counter in a subshell that then exited. It now collects the inventory in a
+  variable and runs in the parent shell.
+
+  Measured both ways on the same fixture, a copy of the repository with every
+  skill's `description` line deleted: the committed validator printed nine errors
+  and ended `validation passed: 9 skills checked`, exit 0; the fixed one prints
+  the same nine and ends `validation failed with 9 error(s)`, exit 1. The
+  integration test was stubbed out for both runs, because Git Bash cannot create
+  the symbolic link it needs, and stubbing it identically either side is what
+  makes the two comparable.
+
+  No automated regression test: the validator's own harness would have to run the
+  full installer integration test, which needs a symbolic-link privilege and
+  several minutes, so the check would be skipped exactly where it matters.
+
+- [x] Correct the rule decision vocabulary in the fallback check, from
+  `allow|deny|ask` to `allow|prompt|forbidden`. The shipped rules all use `allow`,
+  so nothing was being rejected; the risk was a future tightening passing the
+  fallback with a rule Codex refuses. Codex is not installed in this environment,
+  so `codex execpolicy` did not re-check it. The three names come from the
+  official rules documentation, fetched on 2026-09-08, and match what `review.md`
+  recorded against Codex CLI 0.153.0.
+
+- [x] Decide the approval posture the baseline advertises. It documents the one
+  it has rather than narrowing to the one it claimed, recorded in `DECISIONS.md`
+  as "The allowlist is a separate grant, and is documented as one". No rule
+  changed. `README.md`, `SPEC.md`, and `docs/AGENT_LAYOUT.md` now separate the
+  sandbox from the allowlist and state that a grant for a command that runs
+  another command covers whatever it runs.
+
+- [x] Reconcile the three documentation contradictions `review.md` named.
+  `README.md` no longer describes CodeQL analysis as something that happens: the
+  workflow is dispatch-only and its upload is refused until code scanning is
+  enabled for this private repository. `SPEC.md` narrows its unresolved
+  dependency-update question to Azure DevOps, since two accepted decisions settled
+  GitHub. `docs/WORKFLOW.md` step 15 says to read the run a push starts and to
+  dispatch only when there is nothing to push, which is what `AGENTS.md` already
+  said.
+
+- [ ] Prove the three-platform behaviour in CI. Both installers changed, and this
+  environment can no longer run the Bash integration test at all: WSL is absent
+  from this machine as of 2026-09-08, where `AGENTS.md` still records it as the
+  way to run that suite in full. Git Bash reaches neither new Bash fixture,
+  failing first on a symbolic link and then on trust-root normalisation, both
+  pre-existing. Push to be asked for; read the run the push starts.
+
+- [ ] Carried forward from the phase below, which is otherwise closed: confirm
+  both agents read the installed instruction file after a restart. Claude Code
+  listing `CLAUDE.md` under `/context` Memory files is what shows the
+  absolute-path import resolved.
+
+  It needs the baseline installed, and it is not installed here now.
+  `~/.codex/rules/` is absent and `~/.codex/AGENTS.md` is empty on 2026-09-08,
+  where the install of 2026-08-07 recorded below left 187 rules and a copy of
+  `ai-home/AGENTS.md`. `~/.codex/config.toml` still holds the merged keys. What
+  removed the other two was not established; rerun the installer before reading
+  anything into the restart.
+
+## Completed phase: State-preserving installation and reliable validation
 
 Both items are done, and everything the phase asked for is verified except one
 thing a restart has to show. The first item waited four days on an action outside

@@ -173,6 +173,15 @@ This grants Claude Code the same latitude the Codex configuration already
 assumes, including system-affecting commands such as `systemctl` and `pkexec`.
 Remove a `prefix_rule` line to withdraw a command from both agents.
 
+That latitude is wider than the command names suggest, and the sandbox does not
+contain it. Codex documents an `allow` decision as running the command "outside
+the sandbox without prompting", and it matches a rule on leading tokens, so a
+grant for a command that runs another command covers whatever it runs. `rtk`,
+which this repository's instructions route noisy commands through, matches
+`rtk git push --force` by the same rule that matches `rtk cargo build`; `xargs`
+has the same shape and `pkexec` runs its argument as root. `README.md` states
+this beside the sandbox setting so the two are not read as one guarantee.
+
 ## GitHub project trust
 
 Codex project trust uses exact absolute project paths. A parent project entry

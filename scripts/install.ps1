@@ -527,6 +527,48 @@ function Get-ManagedSourceEntry {
     return $entries
 }
 
+function Get-ConfigDefect {
+    param(
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [AllowEmptyString()]
+        [string[]] $Line
+    )
+
+    # The merge is textual, so it may only touch a document whose every line it
+    # classifies. A line that is neither blank, a comment, a table header, nor a
+    # key is one of the forms it cannot place a key into safely: a header
+    # carrying a trailing comment, a dotted key, an array-of-tables header, or a
+    # value continued across lines. A table declared twice is invalid TOML
+    # already, and writing into either copy would guess which one Codex reads.
+    $seen = [System.Collections.Generic.HashSet[string]]::new(
+        [System.StringComparer]::Ordinal
+    )
+
+    for ($number = 0; $number -lt $Line.Count; $number++) {
+        $text = $Line[$number]
+        $trimmed = $text.Trim()
+
+        if (-not $trimmed -or $trimmed.StartsWith('#')) {
+            continue
+        }
+
+        if ($text -match '^\s*\[([^\[\]]*)\]\s*$') {
+            $table = $Matches[1].Trim()
+            if (-not $seen.Add($table)) {
+                return "declares [$table] twice (line $($number + 1))"
+            }
+            continue
+        }
+
+        if ($text -notmatch '^\s*([A-Za-z0-9_-]+|"(?:[^"\\]|\\.)*"|''[^'']*'')\s*=') {
+            return "holds a line this installer cannot parse (line $($number + 1): $trimmed)"
+        }
+    }
+
+    return $null
+}
+
 function Add-ConfigKey {
     param(
         # A mandatory collection parameter rejects an empty element unless it is
@@ -602,6 +644,18 @@ function Merge-CodexConfig {
         foreach ($line in (Split-FileText ([System.IO.File]::ReadAllText($Target)))) {
             $lines.Add($line)
         }
+    }
+
+    $preservedState = [ordered] @{
+        keys        = @(Get-StateList -Record $State -Name 'keys')
+        preexisting = @(Get-StateList -Record $State -Name 'preexisting')
+        trust       = @(Get-StateList -Record $State -Name 'trust')
+    }
+
+    $defect = Get-ConfigDefect -Line $lines.ToArray()
+    if ($defect) {
+        $script:mergeReport.Add("preserved: $Target $defect")
+        return [pscustomobject] @{ Content = $null; State = $preservedState }
     }
 
     $recordedKeys = @{}
@@ -754,6 +808,14 @@ function Merge-CodexConfig {
             $script:mergeReport.Add("preserved: changed trust entry for $($record.path)")
             $trust.Add($record)
         }
+    }
+
+    # The proposed document is checked by the same rule as the target, so a
+    # defect in the editing above is refused rather than written out.
+    $defect = Get-ConfigDefect -Line $lines.ToArray()
+    if ($defect) {
+        $script:mergeReport.Add("preserved: merging $Target would produce a file that $defect")
+        return [pscustomobject] @{ Content = $null; State = $preservedState }
     }
 
     $content = $null

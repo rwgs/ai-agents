@@ -8,6 +8,55 @@ Record a decision only when it constrains future work and its rationale cannot
 be recovered by reading the code. Routine implementation choices belong in the
 diff.
 
+## 2026-09-08 The allowlist is a separate grant, and is documented as one
+
+Status: Accepted. Extends "The portable Codex default asks before acting", which
+chose the sandbox and said nothing about what the rule file grants outside it.
+
+### Decision
+
+Every `prefix_rule` in `ai-home/rules/default.rules` stays. `README.md`,
+`SPEC.md`, and `docs/AGENT_LAYOUT.md` state the sandbox and the allowlist as two
+separate things: the sandbox asks before acting outside the workspace, and the
+allowlist is a standing grant of unattended execution that the sandbox does not
+contain.
+
+They also state the consequence of prefix matching, which the command names hide:
+a grant for a command that runs another command covers whatever it runs. `rtk`,
+`xargs`, and `pkexec` are named because they are the three where that matters
+most.
+
+### Why
+
+`review.md` found `README.md` promising that Codex "asks before acting outside"
+the workspace while 139 rules run outside the sandbox without prompting, and
+demonstrated it with `codex execpolicy check --rules ai-home/rules/default.rules
+rtk git push --force` returning `allow` under Codex CLI 0.153.0. The official
+rules documentation, re-fetched on 2026-09-08, defines `allow` as running the
+command "outside the sandbox without prompting" and gives the decisions as
+`allow`, `prompt`, and `forbidden`.
+
+Both halves are true; only their combination was being sold as one guarantee. The
+defect is therefore in the claim, not in the rules, and the cheapest correct fix
+is to stop making the claim.
+
+The grants match how this baseline is actually used. It exists so both agents work
+without a prompt for each step, on a single maintainer's machines.
+
+### Rejected alternatives
+
+- Tightening the list to match the advertised posture: it contradicts this
+  repository's own instruction to route noisy commands through `rtk`, which only
+  works because `rtk` is granted, and it cannot reach Claude Code at all until the
+  derivation is extended, since `SPEC.md` records that only a single-token pattern
+  derives a grant. Scoping `rtk` to subcommands is that same blocked work.
+- Removing only `rtk`, `pkexec`, and `xargs`: it keeps the RTK routing rule in
+  `AGENTS.md` pointing at a command that now prompts every time, which trades a
+  documented posture for an undocumented friction.
+- Recording the inconsistency and changing nothing: the next reader of `README.md`
+  is not reading `DECISIONS.md`, so the misleading sentence would keep being read
+  as a guarantee.
+
 ## 2026-08-10 An ambiguity stops the work and is named for review
 
 Status: Accepted. Replaces the `AGENTS.md` operating principle that an ambiguous

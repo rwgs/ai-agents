@@ -158,6 +158,41 @@ def parse_source_entries(text):
     return entries
 
 
+def unsupported_config(lines):
+    """Return why these lines cannot be merged, or None when they can.
+
+    The merge is textual, so it may only touch a document whose every line it
+    classifies. A line that is neither blank, a comment, a table header, nor a
+    key is one of the forms it cannot place a key into safely: a header carrying
+    a trailing comment, a dotted key, an array-of-tables header, or a value
+    continued across lines. A table declared twice is invalid TOML already, and
+    writing into either copy would guess which one Codex reads.
+    """
+
+    seen = set()
+
+    for number, line in enumerate(lines, start=1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+
+        header = TABLE_PATTERN.match(line)
+        if header:
+            table = header.group(1).strip()
+            if table in seen:
+                return "declares [%s] twice (line %d)" % (table, number)
+            seen.add(table)
+            continue
+
+        if not KEY_PATTERN.match(line):
+            return "holds a line this installer cannot parse (line %d: %s)" % (
+                number,
+                stripped,
+            )
+
+    return None
+
+
 def insert_config_key(lines, table, new_line):
     table_end, _, _ = index_config(lines)
 
@@ -233,6 +268,17 @@ def merge_config(source, target, state, trust_roots, report):
         raise SystemExit("error: no managed entries in %s" % source)
 
     lines = split_lines(read_text(target))
+    preserved_state = {
+        "keys": state.get("keys", []),
+        "preexisting": state.get("preexisting", []),
+        "trust": state.get("trust", []),
+    }
+
+    defect = unsupported_config(lines)
+    if defect:
+        report.add("preserved: %s %s" % (target, defect))
+        return None, preserved_state
+
     recorded_keys = {
         (record["table"], record["key"]): record["line"]
         for record in state.get("keys", [])
@@ -351,6 +397,13 @@ def merge_config(source, target, state, trust_roots, report):
         else:
             report.add("preserved: changed trust entry for %s" % record["path"])
             trust.append(record)
+
+    # The proposed document is checked by the same rule as the target, so a
+    # defect in the editing above is refused rather than written out.
+    defect = unsupported_config(lines)
+    if defect:
+        report.add("preserved: merging %s would produce a file that %s" % (target, defect))
+        return None, preserved_state
 
     return (
         join_lines(lines) if changed else None,

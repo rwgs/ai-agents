@@ -115,15 +115,18 @@ Read the documents the task needs, and no others:
   cannot create a symbolic link, which CI covers because it runs elevated.
 - The Bash installer integration test creates symbolic links, so run
   `./scripts/validate.sh` from an environment that can. Git Bash on Windows
-  cannot, so it fails there on a clean tree; WSL passes in full.
+  cannot, so it fails there on a clean tree, on the first link assertion and
+  again on trust-root normalisation. WSL used to pass in full and is no longer
+  installed here, checked on 2026-09-08, so CI is currently the only place that
+  suite runs. Say that rather than reporting a Git Bash run as validation.
 - Avoid reading a file into a byte array and writing one back in the PowerShell
   installer. Defender's AMSI blocks the whole script as malicious when it does,
   which reads as a parser error on line 1. `Copy-Item`, `WriteAllText`, and
   `Get-FileHash` do the same work and are not flagged.
-- `./scripts/validate.sh` skips ShellCheck, the Node syntax check, and both
-  PowerShell checks wherever those tools are absent, and the WSL installation
-  here has none of the three. Report which checks a run performed rather than
-  that validation passed, and run the PowerShell ones from Windows.
+- `./scripts/validate.sh` skips ShellCheck, the Node syntax check, the Codex
+  policy check, and both PowerShell checks wherever those tools are absent.
+  Report which checks a run performed rather than that validation passed, and run
+  the PowerShell ones from Windows, where both editions are present.
 
 ## Version control
 

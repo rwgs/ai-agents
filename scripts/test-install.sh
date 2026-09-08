@@ -493,6 +493,37 @@ EOF
   merge_state "$curated_reduced" >"$provenance_root/fourth.log"
   grep -Fqx 'approval_policy = "on-request"' "$provenance_config" ||
     fail "merge lost a managed key after the machine reverted it"
+
+  # Valid TOML this line-based merge cannot classify is preserved whole and
+  # reported. Appending to it would declare a table twice and stop Codex from
+  # starting, which is the opposite of preserving machine-owned settings. The
+  # same two fixtures are in scripts/test-install.ps1.
+  assert_unsupported_config() {
+    local description="$1"
+    local fixture="$2"
+    local before
+
+    printf '%s' "$fixture" >"$provenance_config"
+    before="$(cksum <"$provenance_config")"
+    merge_state "$curated_all" >"$provenance_root/unsupported.log"
+
+    [[ "$(cksum <"$provenance_config")" == "$before" ]] ||
+      fail "merge rewrote a config.toml holding $description"
+    grep -Fq 'memories = false' "$provenance_config" ||
+      fail "merge lost the machine's setting in a config.toml holding $description"
+    grep -q '^preserved: .*cannot parse' "$provenance_root/unsupported.log" ||
+      fail "merge did not report the unparsed line in a config.toml holding $description"
+    "$test_python" -c 'import pathlib, sys, tomllib; tomllib.loads(pathlib.Path(sys.argv[1]).read_text())' \
+      "$provenance_config" ||
+      fail "merge left an unparseable config.toml holding $description"
+  }
+
+  assert_unsupported_config 'a table header with a trailing comment' \
+    '[features] # local choices
+memories = false
+'
+  assert_unsupported_config 'a dotted key' 'features.memories = false
+'
 fi
 
 # The bootstrap clones and then installs from the clone. It is exercised against
@@ -527,13 +558,32 @@ grep -q '^dry run complete$' "$bootstrap_log" ||
 [[ ! -e "$task_test_root/bootstrap codex" ]] ||
   fail "bootstrap dry run created CODEX_HOME"
 
-# A rerun updates the existing clone instead of cloning again.
+# A rerun previews the update rather than performing it, because the installed
+# links point into this clone. Upstream is moved first, so the assertion is about
+# a real pending change and not about a rerun with nothing to fetch.
+bootstrap_revision="$(git -C "$bootstrap_install_dir" rev-parse HEAD)"
+bootstrap_upstream="$task_test_root/upstream"
+git clone --quiet "$bootstrap_origin" "$bootstrap_upstream"
+printf 'version two\n' >>"$bootstrap_upstream/ai-home/AGENTS.md"
+git -C "$bootstrap_upstream" -c user.name=test -c user.email=test@example.com \
+  commit --quiet --all --message 'move upstream'
+git -C "$bootstrap_upstream" push --quiet origin HEAD
+
+# Asserted rather than assumed: a dry run that changes nothing proves nothing
+# unless there was something upstream for it to have pulled in.
+[[ "$(git -C "$bootstrap_origin" rev-parse HEAD)" != "$bootstrap_revision" ]] ||
+  fail "the upstream fixture did not move"
+
 run_bootstrap
 
-grep -q "^updating $bootstrap_install_dir\$" "$bootstrap_log" ||
-  fail "bootstrap rerun did not update the existing clone"
+grep -q "^would update $bootstrap_install_dir to " "$bootstrap_log" ||
+  fail "bootstrap rerun did not report the update it would make"
 grep -q '^dry run complete$' "$bootstrap_log" ||
   fail "bootstrap rerun did not run the installer"
+[[ "$(git -C "$bootstrap_install_dir" rev-parse HEAD)" == "$bootstrap_revision" ]] ||
+  fail "bootstrap dry run moved the installed clone"
+! grep -q '^version two$' "$bootstrap_install_dir/ai-home/AGENTS.md" ||
+  fail "bootstrap dry run changed what the agents read"
 
 [[ "$(cksum <"$repo_root/ai-home/rules/default.rules")" == "$repo_rules_checksum" ]] ||
   fail "the installer wrote into this repository's curated rule file"

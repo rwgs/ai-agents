@@ -144,13 +144,15 @@ claude_md_lines="$(grep -cv '^[[:space:]]*$' "$repo_root/CLAUDE.md")"
 # Codex rejects the whole file when one line is malformed, and `codex execpolicy`
 # is only available where Codex is installed, so the structure is checked here
 # too. Every entry is one prefix_rule with a non-empty quoted pattern list and a
-# known decision.
+# known decision. The decisions are the three the rules documentation names and
+# Codex CLI 0.153.0 accepts; `deny` and `ask` read like the right words and are
+# both rejected by the parser.
 while IFS= read -r rule_line; do
   [[ -n "$rule_line" ]] || continue
   fail "malformed rule in ai-home/rules/default.rules: $rule_line"
 done <<<"$(
   grep -Ev '^[[:space:]]*(#|$)' "$repo_root/ai-home/rules/default.rules" |
-    grep -Ev '^prefix_rule\(pattern=\["[^"]+"(, "[^"]+")*\], decision="(allow|deny|ask)"\)$' ||
+    grep -Ev '^prefix_rule\(pattern=\["[^"]+"(, "[^"]+")*\], decision="(allow|prompt|forbidden)"\)$' ||
     true
 )"
 
@@ -169,6 +171,11 @@ printf '%s\n' "$derived_rules" | grep -Fqx rtk ||
 if [[ -d "$repo_root/.codex/skills" ]]; then
   fail "legacy .codex/skills directory still exists"
 fi
+
+# The inventory is collected in a variable rather than printed, because a
+# command substitution would run this in a subshell where every `fail` it makes
+# increments a counter that is then discarded and the run exits 0.
+skill_inventory=""
 
 validate_skill_tree() {
   local tree="$1"
@@ -192,7 +199,7 @@ validate_skill_tree() {
     [[ "$skill_name" == "$skill_basename" ]] ||
       fail "${skill_file#"$repo_root"/} name does not match its directory"
     ! grep -q '\[TODO:' "$skill_file" || fail "${skill_file#"$repo_root"/} contains TODO placeholders"
-    printf '%s\n' "$skill_basename"
+    skill_inventory+="$skill_basename"$'\n'
   done
 }
 
@@ -204,11 +211,9 @@ documented_under() {
     sort
 }
 
-installed_skills="$(validate_skill_tree .agents/skills | sort)"
-
-# Counted here rather than inside the function, because command substitution
-# runs it in a subshell where an incremented counter would be discarded.
-skill_count="$(printf '%s\n' "$installed_skills" | grep -c .)"
+validate_skill_tree .agents/skills
+installed_skills="$(printf '%s' "$skill_inventory" | sort)"
+skill_count="$(printf '%s\n' "$installed_skills" | grep -c . || true)"
 
 [[ -n "$installed_skills" ]] || fail "no skills found under .agents/skills"
 

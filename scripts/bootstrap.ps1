@@ -56,13 +56,24 @@ function Invoke-Git {
     }
 }
 
+# The installed links point into this clone, so the clone is part of the target
+# system a dry run must not change. Fetching only writes remote-tracking refs,
+# which no agent reads, and it is what lets the preview name the revision an
+# install would move to.
 if (Test-Path -LiteralPath (Join-Path $installDir '.git')) {
-    Write-Output "updating $installDir"
     Invoke-Git -Authenticated -Argument @('-C', $installDir, 'fetch', '--quiet', 'origin', $branch)
-    Invoke-Git -Argument @('-C', $installDir, 'checkout', '--quiet', $branch)
-    # Fast-forward only: a local edit or a rewritten history stops the run
-    # instead of being merged or discarded.
-    Invoke-Git -Argument @('-C', $installDir, 'merge', '--ff-only', '--quiet', "origin/$branch")
+
+    if ($DryRun) {
+        $upstream = & git -C $installDir rev-parse --short "origin/$branch"
+        Write-Output "would update $installDir to $upstream"
+    }
+    else {
+        Write-Output "updating $installDir"
+        Invoke-Git -Argument @('-C', $installDir, 'checkout', '--quiet', $branch)
+        # Fast-forward only: a local edit or a rewritten history stops the run
+        # instead of being merged or discarded.
+        Invoke-Git -Argument @('-C', $installDir, 'merge', '--ff-only', '--quiet', "origin/$branch")
+    }
 }
 else {
     Write-Output "cloning $repoUrl into $installDir"
@@ -74,7 +85,7 @@ else {
 }
 
 $revision = & git -C $installDir rev-parse --short HEAD
-Write-Output "installed from $installDir at $revision"
+Write-Output "installing from $installDir at $revision"
 
 # A hashtable, because splatting an array would pass -DryRun as a positional
 # argument and the installer takes named switches.

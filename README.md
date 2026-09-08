@@ -154,6 +154,26 @@ written in terms of. The baseline deliberately does not ship Codex's
 unrestricted `danger-full-access` and `never` pair; choose that per machine if
 you want it.
 
+The allowlist is the other half, and it is separate from the sandbox rather than
+a refinement of it. Codex's own documentation defines an `allow` decision as
+running the command "outside the sandbox without prompting", so every command in
+`ai-home/rules/default.rules` is a standing grant of unattended execution with
+no workspace boundary. That is the intended posture here, not an oversight: this
+baseline is for machines where both agents are meant to work without a prompt
+for each step.
+
+Read the list as broader than the commands it names. Codex matches a
+`prefix_rule` on its leading tokens, so allowing a command that runs another
+command allows whatever it runs. `rtk` is the clearest case, since `rtk` wraps
+any command and this repository's instructions route noisy commands through it:
+`rtk cargo build` and `rtk git push --force` match the same rule. `xargs` has the
+same shape, and `pkexec` runs its argument as root. The same grants reach Claude
+Code, derived into `permissions.allow` as `Bash(...)` and `PowerShell(...)`
+entries.
+
+Delete a `prefix_rule` line and rerun the installer to withdraw a command from
+both agents.
+
 ### Trust local Git projects
 
 Every installation adds trusted-project entries to `~/.codex/config.toml` for
@@ -361,9 +381,12 @@ That run includes an installer integration test, isolated in temporary
 directories, on Linux or macOS.
 GitHub Actions runs the same validation on Linux and macOS and exercises the
 PowerShell installer on Windows under both PowerShell 7 and Windows PowerShell
-5.1. A separate CodeQL workflow analyses the Python and JavaScript in the
+5.1. A separate CodeQL workflow covers the Python and JavaScript in the
 repository; the shell and PowerShell installers are covered by ShellCheck and
-PSScriptAnalyzer instead, because CodeQL does not support them.
+PSScriptAnalyzer instead, because CodeQL does not support them. That workflow is
+dispatch-only and cannot yet report: code scanning has to be enabled for this
+private repository before the upload is accepted, so it builds its databases and
+then fails at the end.
 
 ## Repository layout
 

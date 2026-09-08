@@ -51,9 +51,11 @@ says which gates apply to a repository rather than which ones exist.
     remaining item has a documented reason.
 14. Commit the focused change to `main` once its verification passes. Neither a
     branch nor a pull request is part of this flow.
-15. When a change needs evidence only CI can produce, ask to push, then dispatch
-    the validation workflow and read the run. Apply the same security checks that
-    the security baseline below establishes for the repository.
+15. When a change needs evidence only CI can produce, ask to push, then read the
+    run the push itself starts. Dispatch only where there is nothing to push,
+    because a dispatch for a commit that was just pushed lands in the same
+    concurrency group and cancels one of the two runs. Apply the same security
+    checks that the security baseline below establishes for the repository.
 16. Fix or explain every finding and repeat the checks after every push.
 17. Complete and document required manual testing on the real target
     environment.

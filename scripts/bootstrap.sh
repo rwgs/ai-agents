@@ -35,20 +35,35 @@ authenticated_git() {
   fi
 }
 
+# The installed links point into this clone, so the clone is part of the target
+# system a dry run must not change. Fetching only writes remote-tracking refs,
+# which no agent reads, and it is what lets the preview name the revision an
+# install would move to.
+dry_run=""
+for argument in "$@"; do
+  [[ "$argument" == "--dry-run" ]] && dry_run="yes"
+done
+
 if [[ -d "$install_dir/.git" ]]; then
-  printf 'updating %s\n' "$install_dir"
   authenticated_git -C "$install_dir" fetch --quiet origin "$branch"
-  git -C "$install_dir" checkout --quiet "$branch"
-  # Fast-forward only: a local edit or a rewritten history stops the run instead
-  # of being merged or discarded.
-  git -C "$install_dir" merge --ff-only --quiet "origin/$branch"
+
+  if [[ -n "$dry_run" ]]; then
+    printf 'would update %s to %s\n' \
+      "$install_dir" "$(git -C "$install_dir" rev-parse --short "origin/$branch")"
+  else
+    printf 'updating %s\n' "$install_dir"
+    git -C "$install_dir" checkout --quiet "$branch"
+    # Fast-forward only: a local edit or a rewritten history stops the run instead
+    # of being merged or discarded.
+    git -C "$install_dir" merge --ff-only --quiet "origin/$branch"
+  fi
 else
   printf 'cloning %s into %s\n' "$repo_url" "$install_dir"
   mkdir -p "$(dirname "$install_dir")"
   authenticated_git clone --quiet --branch "$branch" "$repo_url" "$install_dir"
 fi
 
-printf 'installed from %s at %s\n' \
+printf 'installing from %s at %s\n' \
   "$install_dir" "$(git -C "$install_dir" rev-parse --short HEAD)"
 
 # Every remaining argument belongs to the installer, so --dry-run and --plugins

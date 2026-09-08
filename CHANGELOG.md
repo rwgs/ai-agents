@@ -8,6 +8,35 @@ are in the commit history.
 This repository publishes no versioned releases, so entries are grouped by date,
 newest first. Version headings replace the dates if tagging begins.
 
+## 2026-09-08
+
+- The Codex configuration merge now refuses a `~/.codex/config.toml` it cannot
+  read line by line, preserving the file whole and reporting the line it stopped
+  at. It used to append a second table in that case, which produced a
+  `config.toml` Codex will not start on. The forms that trigger it are a table
+  header with a trailing comment, a dotted key such as
+  `features.memories = false`, an array-of-tables header, and a value continued
+  across lines. **Read the installer's output**: a `preserved:` line naming an
+  unparsed line means none of the baseline's settings and no trust entries were
+  applied, and the file has to be simplified by hand before a rerun will take
+  them. Every other configuration merges as before.
+
+- A bootstrap dry run no longer updates the clone it installs from. It fetches,
+  reports `would update <path> to <revision>`, and leaves the branch and working
+  tree where they are, so a preview cannot change the instructions and skills the
+  agents are currently reading. A first run still clones, because there is
+  nothing to preview from until it does, and a run without the flag updates as
+  before. The line naming the source now reads `installing from` rather than
+  `installed from`, because it prints before the installer runs.
+
+- `README.md`, `SPEC.md`, and `docs/AGENT_LAYOUT.md` now state the command
+  allowlist as a grant separate from the sandbox rather than a refinement of it.
+  No rule changed and no permission was added or withdrawn; **the machines behave
+  exactly as before**. What changed is the description: an allowed command runs
+  outside the sandbox without prompting, and a grant for a command that runs
+  another command covers whatever it runs, which is worth knowing about `rtk`,
+  `xargs`, and `pkexec`.
+
 ## 2026-08-10
 
 - The seven `ai-project-manager` project-document templates are renamed with a

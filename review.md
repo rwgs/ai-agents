@@ -3,6 +3,13 @@
 Reviewed on 2026-09-08 at commit
 `730217aa4a03b2990e187279f1239e0130855d3e`.
 
+All five findings were acted on later the same day, and the three documentation
+contradictions below with them. The findings are left as written, because a
+review is a record of what was true when it was made. What was done about each,
+and what it was verified against, is the current phase in `TASKS.md`. Finding 2
+was closed by documenting the posture rather than narrowing the allowlist, which
+is recorded in `DECISIONS.md`.
+
 ## Assessment
 
 The direction is right for one developer using two agents across operating
